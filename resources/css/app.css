@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    /* Light Mode Colors */
+    --auto-white: #FFFFFF;
+    --auto-light-bg: #F9FAFB;
+    --auto-light-card: #FFFFFF;
+    --auto-text-dark: #1F2937;
+    --auto-text-gray: #6B7280;
+
+    /* Common Colors (both themes) */
+    --auto-red: #E63946;
+    --auto-accent-glow: rgba(230, 57, 70, 0.2);
+
+    /* System Colors - Light Theme Default */
+    --font-size: 16px;
+    --background: #FFFFFF;
+    --foreground: #1F2937;
+    --card: #FFFFFF;
+    --card-foreground: #1F2937;
+    --popover: #FFFFFF;
+    --popover-foreground: #1F2937;
+    --primary: #E63946;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F3F4F6;
+    --secondary-foreground: #1F2937;
+    --muted: #F3F4F6;
+    --muted-foreground: #6B7280;
+    --accent: #E63946;
+    --accent-foreground: #FFFFFF;
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(0, 0, 0, 0.1);
+    --input: rgba(0, 0, 0, 0.05);
+    --input-background: #FFFFFF;
+    --switch-background: #E5E7EB;
+    --font-weight-medium: 500;
+    --font-weight-normal: 400;
+    --ring: #E63946;
+    --chart-1: #E63946;
+    --chart-2: #457B9D;
+    --chart-3: #F59E0B;
+    --chart-4: #10B981;
+    --chart-5: #8B5CF6;
+    --radius: 0.75rem;
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #1F2937;
+    --sidebar-primary: #E63946;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F9FAFB;
+    --sidebar-accent-foreground: #1F2937;
+    --sidebar-border: rgba(0, 0, 0, 0.1);
+    --sidebar-ring: #E63946;
+}
+
+:root.dark {
+    /* Dark Automotive Premium Theme */
+    --auto-black: #0B0B0B;
+    --auto-graphite: #151515;
+    --auto-steel: #2F2F2F;
+    --auto-white: #FFFFFF;
+    --auto-light-gray: #B8B8B8;
+
+    /* System Colors - Dark Theme */
+    --background: #0B0B0B;
+    --foreground: #FFFFFF;
+    --card: #151515;
+    --card-foreground: #FFFFFF;
+    --popover: #1F1F1F;
+    --popover-foreground: #FFFFFF;
+    --primary: #E63946;
+    --primary-foreground: #FFFFFF;
+    --secondary: #2F2F2F;
+    --secondary-foreground: #FFFFFF;
+    --muted: #2F2F2F;
+    --muted-foreground: #B8B8B8;
+    --accent: #E63946;
+    --accent-foreground: #FFFFFF;
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(255, 255, 255, 0.1);
+    --input: rgba(255, 255, 255, 0.05);
+    --input-background: #1F1F1F;
+    --switch-background: #2F2F2F;
+    --ring: #E63946;
+    --sidebar: #0B0B0B;
+    --sidebar-foreground: #FFFFFF;
+    --sidebar-primary: #E63946;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #1F1F1F;
+    --sidebar-accent-foreground: #FFFFFF;
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+    --sidebar-ring: #E63946;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-input-background: var(--input-background);
+    --color-switch-background: var(--switch-background);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Automotive Custom Colors */
+    --color-auto-black: var(--auto-black);
+    --color-auto-graphite: var(--auto-graphite);
+    --color-auto-red: var(--auto-red);
+    --color-auto-steel: var(--auto-steel);
+    --color-auto-white: var(--auto-white);
+    --color-auto-light-gray: var(--auto-light-gray);
+    --color-auto-accent-glow: var(--auto-accent-glow);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-white dark:bg-[#0B0B0B] text-gray-900 dark:text-white transition-colors duration-200;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body.dark {
+        background-image:
+            radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.03) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(230, 57, 70, 0.03) 0%, transparent 50%);
+        background-attachment: fixed;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Orbitron', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    html {
+        font-size: var(--font-size);
+        scroll-behavior: smooth;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    h2 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    button {
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.5;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input, textarea, select {
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+}
+
+/* Glass Morphism Effect */
+@utility glass-card {
+    background: rgba(21, 21, 21, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+@utility glass-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &:hover {
+        background: rgba(21, 21, 21, 0.9);
+        border-color: rgba(230, 57, 70, 0.5);
+        box-shadow: 0 8px 32px 0 rgba(230, 57, 70, 0.2);
+        transform: translateY(-2px);
+    }
+}
+
+@utility glow-red {
+    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+}
+
+@utility glow-red-hover {
+    &:hover {
+        box-shadow: 0 0 30px rgba(230, 57, 70, 0.5);
+    }
+}
+
+@utility text-glow {
+    text-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
+}
+
+@utility gradient-red {
+    background: linear-gradient(135deg, #E63946 0%, #D62828 100%);
+}
+
+@utility bg-gradient-red {
+    background: linear-gradient(135deg, #E63946 0%, #D62828 100%);
+}
+
+@utility gradient-dark {
+    background: linear-gradient(135deg, #151515 0%, #0B0B0B 100%);
+}
+
+@utility bg-gradient-dark {
+    background: linear-gradient(135deg, #151515 0%, #0B0B0B 100%);
+}
+
+@utility border-gradient {
+    border-image: linear-gradient(135deg, #E63946 0%, transparent 100%) 1;
+}
