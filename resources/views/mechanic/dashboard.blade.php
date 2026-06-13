@@ -9,33 +9,46 @@
         selectedJobId: null,
         updateNote: '',
         selectedPhotos: [],
-        assignedJobs: [
-            {
-                id: 1,
-                customer: 'Juan Dela Cruz',
-                service: 'Paint Job',
-                vehicle: 'Toyota Supra 2021',
-                status: 'in-progress',
-                priority: 'High'
-            },
-            {
-                id: 2,
-                customer: 'Maria Santos',
-                service: 'Engine Customization',
-                vehicle: 'Honda Civic 2020',
-                status: 'pending',
-                priority: 'Medium'
-            }
-        ],
+        assignedJobs: @js($assignedJobs),
 
         handleStartJob(job) {
-            job.status = 'in-progress';
-            showToast.success('Job #' + job.id + ' started!');
+            fetch('/mechanic/jobs/' + job.id + '/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    job.status = 'in-progress';
+                    showToast.success('Job #' + job.id + ' started!');
+                } else {
+                    showToast.error('Failed to start job.');
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handlePauseJob(job) {
-            job.status = 'pending';
-            showToast.info('Job #' + job.id + ' paused!');
+            fetch('/mechanic/jobs/' + job.id + '/pause', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    job.status = 'pending';
+                    showToast.info('Job #' + job.id + ' paused!');
+                } else {
+                    showToast.error('Failed to pause job.');
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handleUpdateProgress(jobId) {
@@ -62,12 +75,31 @@
         },
 
         handleSubmitUpdate() {
-            if (!this.updateNote.trim() && this.selectedPhotos.length === 0) {
-                showToast.error('Please add a note or at least one photo');
+            if (!this.updateNote.trim()) {
+                showToast.error('Please add a note');
                 return;
             }
-            showToast.success('Progress update sent! ' + this.selectedPhotos.length + ' photo(s) attached. Customer will be notified.');
-            this.closeModal();
+            fetch('/mechanic/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    jobId: this.selectedJobId,
+                    note: this.updateNote
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast.success('Progress update note saved successfully! Customer will be notified.');
+                    this.closeModal();
+                } else {
+                    showToast.error('Failed to save progress update: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         closeModal() {
@@ -89,25 +121,25 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-stat-card
             title="Assigned Jobs"
-            value="2"
+            value="{{ $assignedJobsCount }}"
             icon="wrench"
             color="blue"
         />
         <x-stat-card
             title="In Progress"
-            value="1"
+            value="{{ $inProgressCount }}"
             icon="clock"
             color="red"
         />
         <x-stat-card
             title="Completed Today"
-            value="3"
+            value="{{ $completedTodayCount }}"
             icon="check-square"
             color="green"
         />
         <x-stat-card
             title="Pending Start"
-            value="1"
+            value="{{ $pendingStartCount }}"
             icon="info"
             color="charcoal"
         />

@@ -1,0 +1,1041 @@
+# AutoProject+ — Production Database Architecture
+
+**Role:** Senior Database Architect  
+**Scope:** Complete production schema design aligned with the existing Laravel 12 codebase and audit findings  
+**Status:** Design document only — no migrations or code generated
+
+---
+
+## Executive Summary
+
+The AutoProject+ schema is **~95% production-ready**. Thirty-two migrations already define **34 business tables** (plus 4 Laravel framework tables). The design is normalized, FK-constrained, and module-aligned.
+
+**Gaps for full production:**
+
+| Gap | Recommended Addition |
+|---|---|
+| Centralized business config (fees, payment accounts) | `business_settings` |
+| User notification inbox | `notifications` |
+| Optional per-user delivery preferences | `notification_preferences` |
+
+Everything else is **backend wiring and seeders**, not new entity tables.
+
+---
+
+## 1. ERD (Text Format)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           AUTHENTICATION & RBAC                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌──────────────┐       ┌──────────────┐       ┌─────────────────┐              │
+│  │    roles     │◄──┐   │ permissions  │       │ customer_profiles│              │
+│  │──────────────│   │   │──────────────│       │─────────────────│              │
+│  │ id (PK)      │   │   │ id (PK)      │       │ id (PK)         │              │
+│  │ name         │   │   │ name         │       │ user_id (FK,UQ) │──┐           │
+│  │ slug (UQ)    │   │   │ slug (UQ)    │       │ address         │  │           │
+│  └──────┬───────┘   │   │ group        │       └─────────────────┘  │           │
+│         │           │   └──────┬───────┘                              │           │
+│         │    ┌──────┴────────┴───────┐                               │           │
+│         │    │   role_permission     │                               │           │
+│         │    │───────────────────────│                               │           │
+│         │    │ role_id (FK)          │                               │           │
+│         │    │ permission_id (FK)    │                               │           │
+│         │    └───────────────────────┘                               │           │
+│         │                                                            │           │
+│  ┌──────▼───────────────────────────────────────────────────────────▼──┐        │
+│  │                              users                                   │        │
+│  │─────────────────────────────────────────────────────────────────────│        │
+│  │ id (PK) │ name │ email (UQ) │ phone │ role_id (FK) │ status │ ...  │        │
+│  └──────┬──────────────────────────────────────────────────────────────┘        │
+│         │                                                                        │
+│  ┌──────┴──────┐    ┌──────────────────┐    ┌─────────────────────────┐         │
+│  │  sessions   │    │password_reset_   │    │ notifications (NEW)     │         │
+│  │─────────────│    │tokens            │    │─────────────────────────│         │
+│  │ user_id(FK) │    │ email (PK)       │    │ notifiable (morph)      │         │
+│  └─────────────┘    └──────────────────┘    └─────────────────────────┘         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    SERVICE CATALOG & SCHEDULING                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌──────────────────┐     ┌──────────────┐     ┌──────────────────┐           │
+│  │service_categories│────►│   services   │────►│  service_brands  │           │
+│  │──────────────────│ 1:N │──────────────│ 1:N │──────────────────│           │
+│  │ slug (UQ)        │     │ code (UQ)    │     │ name             │           │
+│  │ icon, color      │     │ min/max_cost │     └──────────────────┘           │
+│  └──────────────────┘     └──────────────┘                                      │
+│                                                                                  │
+│  ┌────────────────────────┐    ┌─────────────────────────┐                      │
+│  │appointment_slot_configs│    │ business_closure_dates  │                      │
+│  │────────────────────────│    │─────────────────────────│                      │
+│  │ day_of_week, capacity  │    │ closure_date (UQ)       │                      │
+│  └────────────────────────┘    └─────────────────────────┘                      │
+│                                                                                  │
+│  ┌────────────────────────┐  (NEW — production config)                          │
+│  │  business_settings     │                                                    │
+│  │────────────────────────│                                                    │
+│  │ key (UQ), value, type  │                                                    │
+│  └────────────────────────┘                                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│              VEHICLE → BOOKING → QUOTATION → PAYMENT                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  users ──1:N──► vehicles ──1:N──► bookings ◄──1:1── job_orders                 │
+│                      │                │                                          │
+│                      │                ├──1:N── booking_services ──N:1── services │
+│                      │                ├──1:N── quotations                         │
+│                      │                │           └──1:N── quotation_line_items   │
+│                      │                ├──1:N── payments                           │
+│                      │                │           └──1:N── payment_proofs       │
+│                      │                ├──1:N── booking_status_logs              │
+│                      │                └──1:N── support_tickets                  │
+│                      │                                                          │
+│                      └──────────────────────────────────────────────────────────│
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    JOB ORDERS & MECHANIC WORKFLOW                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  bookings ──1:1──► job_orders ──N:1──► users (mechanic_id)                       │
+│                         │                                                        │
+│                         ├──1:N── service_stage_progress ──N:1── service_stages  │
+│                         └──1:N── service_updates ──1:N── service_update_photos   │
+│                                      │                                           │
+│                                      └──N:1── users (author)                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    SUPPORT, REPORTS & ANALYTICS                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  support_tickets ──1:N── support_ticket_replies                                 │
+│        │                                                                         │
+│        └──morph── support_ticket_attachments (tickets + replies)                │
+│                                                                                  │
+│  daily_metrics_snapshots (aggregate cache)                                      │
+│  report_exports ──N:1── users (requested_by)                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Complete Table List
+
+### 2.1 Framework & Infrastructure (Laravel)
+
+| # | Table | Module | Status |
+|---|---|---|---|
+| F1 | `users` | Authentication | Exists |
+| F2 | `password_reset_tokens` | Authentication | Exists |
+| F3 | `sessions` | Authentication | Exists |
+| F4 | `cache` / `cache_locks` | Infrastructure | Exists |
+| F5 | `jobs` / `job_batches` / `failed_jobs` | Queue | Exists |
+
+### 2.2 Business Tables (34 existing + 2 recommended)
+
+| # | Table | Module | Status |
+|---|---|---|---|
+| 1 | `roles` | RBAC | Exists |
+| 2 | `permissions` | RBAC | Exists |
+| 3 | `role_permission` | RBAC | Exists |
+| 4 | `customer_profiles` | Authentication | Exists |
+| 5 | `service_categories` | Booking (catalog) | Exists |
+| 6 | `services` | Booking (catalog) | Exists |
+| 7 | `service_brands` | Booking (catalog) | Exists |
+| 8 | `appointment_slot_configs` | Booking (scheduling) | Exists |
+| 9 | `business_closure_dates` | Booking (scheduling) | Exists |
+| 10 | `vehicles` | Vehicle Management | Exists |
+| 11 | `bookings` | Booking Management | Exists |
+| 12 | `booking_services` | Booking Management | Exists |
+| 13 | `booking_status_logs` | Booking Management | Exists |
+| 14 | `quotations` | Cost Estimation | Exists |
+| 15 | `quotation_line_items` | Cost Estimation | Exists |
+| 16 | `payments` | Payment Verification | Exists |
+| 17 | `payment_proofs` | Payment Verification | Exists |
+| 18 | `service_stages` | Mechanic Workflow | Exists |
+| 19 | `job_orders` | Job Orders | Exists |
+| 20 | `service_stage_progress` | Mechanic Workflow | Exists |
+| 21 | `service_updates` | Mechanic Workflow | Exists |
+| 22 | `service_update_photos` | Mechanic Workflow | Exists |
+| 23 | `support_tickets` | Support Tickets | Exists |
+| 24 | `support_ticket_replies` | Support Tickets | Exists |
+| 25 | `support_ticket_attachments` | Support Tickets | Exists |
+| 26 | `daily_metrics_snapshots` | Reports & Analytics | Exists |
+| 27 | `report_exports` | Reports & Analytics | Exists |
+| 28 | `business_settings` | Cross-cutting config | **Recommended NEW** |
+| 29 | `notifications` | Notifications | **Recommended NEW** |
+| 30 | `notification_preferences` | Notifications | **Optional NEW** |
+
+**Total production tables: 40 business + 8 framework = 48**
+
+---
+
+## 3. Module-by-Module Schema Specification
+
+---
+
+### Module 1: Authentication
+
+#### Table: `users`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK, AUTO_INCREMENT | Primary key |
+| `name` | `VARCHAR(255)` | NOT NULL | Display name |
+| `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Login identifier |
+| `phone` | `VARCHAR(255)` | NULLABLE | Contact number |
+| `role_id` | `BIGINT UNSIGNED` | NOT NULL, FK → `roles.id` | RBAC role assignment |
+| `status` | `VARCHAR(255)` | NOT NULL, DEFAULT `'active'` | `active` / `inactive` |
+| `email_verified_at` | `TIMESTAMP` | NULLABLE | Email verification |
+| `password` | `VARCHAR(255)` | NOT NULL | Hashed password |
+| `remember_token` | `VARCHAR(100)` | NULLABLE | Session persistence |
+| `created_at` | `TIMESTAMP` | NULLABLE | Audit |
+| `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+| `deleted_at` | `TIMESTAMP` | NULLABLE | Soft delete |
+
+**Foreign Keys:** `role_id` → `roles(id)` ON UPDATE CASCADE, ON DELETE RESTRICT  
+**Indexes:** `email` (UNIQUE), `status`, `role_id` (FK index)
+
+**Relationships:**
+- `users` N:1 `roles`
+- `users` 1:1 `customer_profiles`
+- `users` 1:N `vehicles`, `bookings`, `payments`, `support_tickets`, `job_orders` (as mechanic)
+
+---
+
+#### Table: `customer_profiles`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `user_id` | `BIGINT UNSIGNED` | NOT NULL, UNIQUE, FK → `users.id` | Owner |
+| `address` | `VARCHAR(255)` | NULLABLE | Street address |
+| `city` | `VARCHAR(255)` | NULLABLE | City |
+| `province` | `VARCHAR(255)` | NULLABLE | Province/state |
+| `postal_code` | `VARCHAR(20)` | NULLABLE | Postal code |
+| `created_at` / `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+| `deleted_at` | `TIMESTAMP` | NULLABLE | Soft delete |
+
+**Foreign Keys:** `user_id` → `users(id)` ON UPDATE CASCADE, ON DELETE RESTRICT  
+**Indexes:** `user_id` (UNIQUE)
+
+---
+
+#### Table: `password_reset_tokens`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `email` | `VARCHAR(255)` PK | User email |
+| `token` | `VARCHAR(255)` | Reset token hash |
+| `created_at` | `TIMESTAMP` | Expiry tracking |
+
+---
+
+#### Table: `sessions`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | `VARCHAR(255)` PK | Session ID |
+| `user_id` | `BIGINT UNSIGNED` FK, NULLABLE | Authenticated user |
+| `ip_address` | `VARCHAR(45)` | Client IP |
+| `user_agent` | `TEXT` | Browser fingerprint |
+| `payload` | `LONGTEXT` | Session data |
+| `last_activity` | `INT` | Activity timestamp |
+
+**Indexes:** `user_id`, `last_activity`
+
+---
+
+### Module 2: RBAC
+
+#### Table: `roles`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `name` | `VARCHAR(255)` | NOT NULL | Display name (Administrator) |
+| `slug` | `VARCHAR(255)` | NOT NULL, UNIQUE | `admin`, `staff`, `mechanic`, `customer` |
+| `description` | `VARCHAR(255)` | NULLABLE | Role description |
+| `created_at` / `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+
+**Indexes:** `slug` (UNIQUE)
+
+**Seed values:** 4 fixed roles — never user-created in production
+
+---
+
+#### Table: `permissions`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `name` | `VARCHAR(255)` | NOT NULL | Display name |
+| `slug` | `VARCHAR(255)` | NOT NULL, UNIQUE | Machine slug (`bookings.create`) |
+| `group` | `VARCHAR(255)` | NULLABLE | UI grouping (`customer`, `admin`) |
+| `created_at` / `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+
+**Indexes:** `slug` (UNIQUE), `group`
+
+**Seed values:** 37 permissions from `Permission` enum
+
+---
+
+#### Table: `role_permission`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `role_id` | `BIGINT UNSIGNED` | FK → `roles.id` | Role |
+| `permission_id` | `BIGINT UNSIGNED` | FK → `permissions.id` | Permission |
+| `created_at` / `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+
+**Foreign Keys:** Both CASCADE on update/delete  
+**Indexes:** UNIQUE(`role_id`, `permission_id`)
+
+**Relationships:** `roles` N:M `permissions` via pivot
+
+---
+
+### Module 3: Vehicle Management
+
+#### Table: `vehicles`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `user_id` | `BIGINT UNSIGNED` | NOT NULL, FK → `users.id` | Owner (customer) |
+| `make` | `VARCHAR(255)` | NOT NULL | e.g. Honda |
+| `model` | `VARCHAR(255)` | NOT NULL | e.g. Civic |
+| `year` | `SMALLINT UNSIGNED` | NOT NULL | Model year |
+| `plate_number` | `VARCHAR(255)` | NOT NULL, UNIQUE | Plate (global uniqueness) |
+| `color` | `VARCHAR(255)` | NULLABLE | Vehicle color |
+| `notes` | `TEXT` | NULLABLE | Special notes |
+| `created_at` / `updated_at` | `TIMESTAMP` | NULLABLE | Audit |
+| `deleted_at` | `TIMESTAMP` | NULLABLE | Soft delete |
+
+**Foreign Keys:** `user_id` → `users(id)` ON UPDATE CASCADE, ON DELETE RESTRICT  
+**Indexes:** `user_id`, `plate_number` (UNIQUE)
+
+**Relationships:** `vehicles` N:1 `users`; `vehicles` 1:N `bookings`
+
+**Design note:** Plate is globally unique (one vehicle record per plate). Booking flow uses `updateOrCreate` by `user_id` + `plate_number`.
+
+---
+
+### Module 4: Booking Management
+
+#### Supporting Tables (Service Catalog & Scheduling)
+
+##### `service_categories`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | Primary key |
+| `name` | VARCHAR | Category name |
+| `slug` | VARCHAR UNIQUE | URL/API identifier |
+| `icon` | VARCHAR NULL | UI icon name |
+| `color` | VARCHAR(20) NULL | UI color hex |
+| `sort_order` | SMALLINT UNSIGNED | Display order |
+| `is_active` | BOOLEAN | Active flag |
+| timestamps + soft deletes | | Audit |
+
+**Indexes:** (`is_active`, `sort_order`), `slug` UNIQUE
+
+##### `services`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | Primary key |
+| `service_category_id` | BIGINT FK | Parent category |
+| `code` | VARCHAR UNIQUE | Service code (`ext-001`) |
+| `name` | VARCHAR | Service name |
+| `description` | TEXT NULL | Description |
+| `min_cost` / `max_cost` | DECIMAL(12,2) | Price range for estimation |
+| `duration_label` | VARCHAR NULL | e.g. "2-3 days" |
+| `status` | VARCHAR | `active` / `inactive` |
+| timestamps + soft deletes | | Audit |
+
+**FK:** `service_category_id` → `service_categories`  
+**Indexes:** (`service_category_id`, `status`), `code` UNIQUE
+
+##### `service_brands`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `service_id` | BIGINT FK | Parent service |
+| `name` | VARCHAR | Brand name |
+| `sort_order` | SMALLINT UNSIGNED | Display order |
+| `is_active` | BOOLEAN | Active flag |
+| timestamps + soft deletes | | |
+
+**FK:** `service_id` → `services`  
+**Indexes:** (`service_id`, `is_active`)
+
+##### `appointment_slot_configs`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `day_of_week` | TINYINT UNSIGNED | 0=Sun … 6=Sat |
+| `starts_at` / `ends_at` | TIME | Operating hours |
+| `slot_duration_minutes` | SMALLINT UNSIGNED | Slot length (60) |
+| `max_capacity` | SMALLINT UNSIGNED | Concurrent bookings per slot |
+| `is_active` | BOOLEAN | Active flag |
+| timestamps | | |
+
+**Indexes:** (`day_of_week`, `is_active`)
+
+##### `business_closure_dates`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `closure_date` | DATE UNIQUE | Closed date |
+| `reason` | VARCHAR NULL | Holiday/reason |
+| `is_recurring_rule` | BOOLEAN | Future recurring support |
+| timestamps | | |
+
+---
+
+#### Table: `bookings`
+
+| Column | Data Type | Constraints | Purpose |
+|---|---|---|---|
+| `id` | `BIGINT UNSIGNED` | PK | Primary key |
+| `booking_number` | `VARCHAR(255)` | NOT NULL, UNIQUE | `BK-2026-000001` |
+| `user_id` | `BIGINT UNSIGNED` | FK → `users.id` | Customer |
+| `vehicle_id` | `BIGINT UNSIGNED` | FK → `vehicles.id` | Vehicle |
+| `status` | `VARCHAR(255)` | DEFAULT `'pending'` | Lifecycle status |
+| `preferred_date` | `DATE` | NOT NULL | Customer preferred date |
+| `preferred_time` | `TIME` | NOT NULL | Customer preferred time |
+| `scheduled_date` | `DATE` | NULLABLE | Confirmed schedule date |
+| `scheduled_time` | `TIME` | NULLABLE | Confirmed schedule time |
+| `customer_name` | `VARCHAR(255)` | NOT NULL | Snapshot at booking time |
+| `contact_number` | `VARCHAR(255)` | NOT NULL | Snapshot at booking time |
+| `notes` | `TEXT` | NULLABLE | Customer notes |
+| `terms_accepted_at` | `TIMESTAMP` | NULLABLE | T&C acceptance |
+| `rejection_reason` | `TEXT` | NULLABLE | Admin rejection reason |
+| `cancellation_reason` | `TEXT` | NULLABLE | Cancel reason |
+| `canceled_at` | `TIMESTAMP` | NULLABLE | Cancel timestamp |
+| `approved_by` | `BIGINT UNSIGNED` | FK → `users.id`, NULLABLE | Approving admin/staff |
+| `approved_at` | `TIMESTAMP` | NULLABLE | Approval timestamp |
+| `completed_at` | `TIMESTAMP` | NULLABLE | Completion timestamp |
+| timestamps + soft deletes | | Audit |
+
+**Status values:** `pending`, `approved`, `rejected`, `waiting_payment`, `confirmed`, `scheduled`, `in_progress`, `completed`, `cancelled`
+
+**Foreign Keys:**
+- `user_id` → `users` RESTRICT
+- `vehicle_id` → `vehicles` RESTRICT
+- `approved_by` → `users` NULL ON DELETE
+
+**Indexes:** `booking_number` UNIQUE, (`user_id`, `status`), (`preferred_date`, `preferred_time`), (`scheduled_date`, `scheduled_time`), `status`
+
+---
+
+#### Table: `booking_services`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `booking_id` | BIGINT FK | Parent booking |
+| `service_id` | BIGINT FK | Selected service |
+| `preferred_brand` | VARCHAR NULL | Customer brand choice |
+| timestamps | | |
+
+**FK:** `booking_id` CASCADE DELETE; `service_id` RESTRICT  
+**Indexes:** UNIQUE(`booking_id`, `service_id`)
+
+---
+
+#### Table: `booking_status_logs`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `booking_id` | BIGINT FK | Parent booking |
+| `from_status` | VARCHAR NULL | Previous status |
+| `to_status` | VARCHAR | New status |
+| `changed_by` | BIGINT FK NULL → users | Actor |
+| `reason` | TEXT NULL | Change reason |
+| `metadata` | JSON NULL | Extra context |
+| `created_at` | TIMESTAMP | Immutable log time |
+
+**Indexes:** (`booking_id`, `created_at`)
+
+**Design note:** Append-only audit — no `updated_at`.
+
+---
+
+### Module 5: Cost Estimation
+
+#### Table: `quotations`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `booking_id` | BIGINT FK | Parent booking |
+| `version` | INT UNSIGNED | Revision number (1, 2, 3…) |
+| `type` | VARCHAR | `initial_estimate`, `inspection`, `final`, `revision` |
+| `status` | VARCHAR | `draft`, `pending`, `approved`, `superseded`, `rejected` |
+| `min_total` / `max_total` | DECIMAL(12,2) | Cost range |
+| `final_total` | DECIMAL(12,2) NULL | Locked final price |
+| `currency` | CHAR(3) | Default `PHP` |
+| `notes` | TEXT NULL | Estimator notes |
+| `prepared_by` | BIGINT FK NULL → users | Staff who prepared |
+| `approved_by` | BIGINT FK NULL → users | Who approved estimate |
+| `approved_at` | TIMESTAMP NULL | |
+| `valid_until` | DATE NULL | Estimate expiry |
+| timestamps | | |
+
+**Indexes:** UNIQUE(`booking_id`, `version`), (`booking_id`, `status`)
+
+---
+
+#### Table: `quotation_line_items`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `quotation_id` | BIGINT FK | Parent quotation |
+| `service_id` | BIGINT FK NULL | Linked catalog service |
+| `description` | VARCHAR | Line description |
+| `brand_preference` | VARCHAR NULL | Selected brand |
+| `quantity` | DECIMAL(8,2) | Default 1 |
+| `unit_min` / `unit_max` | DECIMAL(12,2) | Per-unit range |
+| `unit_final` | DECIMAL(12,2) NULL | Locked unit price |
+| `sort_order` | SMALLINT UNSIGNED | Display order |
+| timestamps | | |
+
+**Indexes:** (`quotation_id`, `sort_order`)
+
+---
+
+### Module 6: Payment Verification
+
+#### Table: `payments`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `payment_number` | VARCHAR UNIQUE | `PAY-2026-000001` |
+| `booking_id` | BIGINT FK | Parent booking |
+| `user_id` | BIGINT FK | Paying customer |
+| `type` | VARCHAR | `reservation_fee`, `deposit`, `final_payment`, `refund` |
+| `amount` | DECIMAL(12,2) | Payment amount |
+| `currency` | CHAR(3) | Default `PHP` |
+| `method` | VARCHAR | `gcash`, `maya`, `cash`, `bank_transfer` |
+| `reference_number` | VARCHAR NULL | Customer payment ref |
+| `status` | VARCHAR | `pending`, `submitted`, `verified`, `rejected`, `refunded` |
+| `paid_at` | TIMESTAMP NULL | Customer submission time |
+| `verified_by` | BIGINT FK NULL → users | Verifying staff/admin |
+| `verified_at` | TIMESTAMP NULL | Verification time |
+| `rejection_reason` | TEXT NULL | If rejected |
+| `notes` | TEXT NULL | Internal notes |
+| timestamps | | |
+
+**Indexes:** `payment_number` UNIQUE, (`booking_id`, `type`), `reference_number`, `status`
+
+---
+
+#### Table: `payment_proofs`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `payment_id` | BIGINT FK | Parent payment |
+| `disk` | VARCHAR | Storage disk |
+| `file_path` | VARCHAR | Stored path |
+| `original_name` | VARCHAR NULL | Original filename |
+| `mime_type` | VARCHAR NULL | File MIME |
+| `size_bytes` | BIGINT UNSIGNED NULL | File size |
+| timestamps | | |
+
+**Indexes:** `payment_id`
+
+---
+
+### Module 7: Job Orders
+
+#### Table: `job_orders`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `job_number` | VARCHAR UNIQUE | `JO-2026-000001` |
+| `booking_id` | BIGINT FK UNIQUE | 1:1 with booking |
+| `mechanic_id` | BIGINT FK NULL → users | Assigned mechanic |
+| `assigned_by` | BIGINT FK NULL → users | Staff who assigned |
+| `assigned_at` | TIMESTAMP NULL | Assignment time |
+| `status` | VARCHAR | `pending`, `assigned`, `in_progress`, `paused`, `completed`, `cancelled` |
+| `priority` | VARCHAR | `low`, `medium`, `high` |
+| `progress_percent` | TINYINT UNSIGNED | 0–100 |
+| `estimated_completion_date` | DATE NULL | ETA |
+| `started_at` / `paused_at` / `completed_at` | TIMESTAMP NULL | Lifecycle timestamps |
+| `internal_notes` | TEXT NULL | Staff-only notes |
+| timestamps + soft deletes | | |
+
+**Indexes:** `job_number` UNIQUE, `booking_id` UNIQUE, (`mechanic_id`, `status`), (`status`, `priority`)
+
+---
+
+### Module 8: Mechanic Workflow
+
+#### Table: `service_stages`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `name` | VARCHAR | Stage display name |
+| `slug` | VARCHAR UNIQUE | Machine identifier |
+| `sort_order` | SMALLINT UNSIGNED | Pipeline order |
+| `is_active` | BOOLEAN | Active flag |
+| timestamps + soft deletes | | |
+
+**Seed example:** Received → Inspection → In Progress → Quality Check → Ready for Pickup
+
+---
+
+#### Table: `service_stage_progress`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `job_order_id` | BIGINT FK | Parent job |
+| `service_stage_id` | BIGINT FK | Stage definition |
+| `is_completed` | BOOLEAN | Stage done |
+| `is_current` | BOOLEAN | Active stage flag |
+| `completed_at` | TIMESTAMP NULL | Completion time |
+| `completed_by` | BIGINT FK NULL → users | Who completed |
+| timestamps | | |
+
+**Indexes:** UNIQUE(`job_order_id`, `service_stage_id`), (`job_order_id`, `is_current`)
+
+---
+
+#### Table: `service_updates`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `job_order_id` | BIGINT FK | Parent job |
+| `user_id` | BIGINT FK → users | Author (mechanic) |
+| `message` | TEXT | Update text |
+| `is_visible_to_customer` | BOOLEAN | Customer portal visibility |
+| timestamps | | |
+
+**Indexes:** (`job_order_id`, `created_at`)
+
+---
+
+#### Table: `service_update_photos`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `service_update_id` | BIGINT FK | Parent update |
+| `disk` / `file_path` | VARCHAR | Storage |
+| `caption` | VARCHAR NULL | Photo caption |
+| `sort_order` | SMALLINT UNSIGNED | Gallery order |
+| timestamps | | |
+
+---
+
+### Module 9: Customer Support Tickets
+
+#### Table: `support_tickets`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `ticket_number` | VARCHAR UNIQUE | `TKT-2026-000001` |
+| `user_id` | BIGINT FK → users | Customer |
+| `booking_id` | BIGINT FK NULL → bookings | Related booking |
+| `assigned_to` | BIGINT FK NULL → users | Staff assignee |
+| `subject` | VARCHAR | Ticket subject |
+| `message` | TEXT | Initial message |
+| `status` | VARCHAR | `open`, `in_progress`, `resolved`, `closed` |
+| `priority` | VARCHAR NULL | `low`, `medium`, `high` |
+| `resolved_at` | TIMESTAMP NULL | Resolution time |
+| `resolved_by` | BIGINT FK NULL → users | Resolver |
+| timestamps + soft deletes | | |
+
+**Indexes:** `ticket_number` UNIQUE, (`user_id`, `status`), (`assigned_to`, `status`), `status`
+
+---
+
+#### Table: `support_ticket_replies`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `support_ticket_id` | BIGINT FK | Parent ticket |
+| `user_id` | BIGINT FK → users | Reply author |
+| `message` | TEXT | Reply body |
+| `is_internal` | BOOLEAN | Staff-only reply |
+| timestamps | | |
+
+**Indexes:** (`support_ticket_id`, `created_at`)
+
+---
+
+#### Table: `support_ticket_attachments`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `attachable_type` / `attachable_id` | VARCHAR / BIGINT | Polymorphic (ticket or reply) |
+| `disk` / `file_path` | VARCHAR | Storage |
+| `original_name` / `mime_type` | VARCHAR NULL | File metadata |
+| `size_bytes` | BIGINT UNSIGNED NULL | File size |
+| timestamps + soft deletes | | |
+
+**Indexes:** (`attachable_type`, `attachable_id`) via `morphs()`
+
+---
+
+### Module 10: Reports & Analytics
+
+#### Table: `daily_metrics_snapshots`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `metric_date` | DATE UNIQUE | Snapshot date |
+| `total_bookings` | INT UNSIGNED | Daily booking count |
+| `completed_bookings` | INT UNSIGNED | Daily completions |
+| `total_revenue` | DECIMAL(14,2) | Daily verified revenue |
+| `new_customers` | INT UNSIGNED | New registrations |
+| `metadata` | JSON NULL | Extended metrics (service breakdown, trends) |
+| timestamps | | |
+
+**Indexes:** `metric_date` UNIQUE
+
+**Design note:** Pre-aggregated cache for dashboard charts. Populated by scheduled job from `bookings`, `payments`, `users`.
+
+---
+
+#### Table: `report_exports`
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `requested_by` | BIGINT FK → users | Requesting admin |
+| `report_type` | VARCHAR | `revenue`, `bookings`, `services` |
+| `parameters` | JSON NULL | Date range, filters |
+| `format` | VARCHAR | `pdf`, `csv`, `xlsx` |
+| `status` | VARCHAR | `pending`, `processing`, `completed`, `failed` |
+| `file_path` | VARCHAR NULL | Generated file path |
+| `error_message` | TEXT NULL | Failure reason |
+| `completed_at` | TIMESTAMP NULL | Completion time |
+| timestamps | | |
+
+**Indexes:** (`requested_by`, `status`), `report_type`
+
+---
+
+### Module 11: Notifications (Recommended NEW)
+
+#### Table: `notifications` (Laravel standard)
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | `UUID` | PK |
+| `type` | `VARCHAR(255)` | Notification class |
+| `notifiable_type` | `VARCHAR(255)` | Polymorphic type (`App\Models\User`) |
+| `notifiable_id` | `BIGINT UNSIGNED` | User ID |
+| `data` | `JSON` | Title, message, action URL, icon |
+| `read_at` | `TIMESTAMP NULL` | Read timestamp |
+| `created_at` / `updated_at` | `TIMESTAMP` | Audit |
+
+**Indexes:** (`notifiable_type`, `notifiable_id`), `read_at`
+
+**Notification types (application layer, not DB):**
+- Booking approved / rejected
+- Payment verified / rejected
+- Job assigned / completed
+- Service update posted
+- Support ticket reply
+- Report export ready
+
+---
+
+#### Table: `business_settings` (Recommended NEW)
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `key` | VARCHAR UNIQUE | Setting key |
+| `value` | TEXT | Setting value |
+| `type` | VARCHAR | `string`, `decimal`, `boolean`, `json` |
+| `group` | VARCHAR NULL | `payment`, `booking`, `general` |
+| `description` | VARCHAR NULL | Admin UI label |
+| timestamps | | |
+
+**Indexes:** `key` UNIQUE, `group`
+
+**Seed keys:**
+| Key | Example Value | Group |
+|---|---|---|
+| `reservation_fee` | `200.00` | booking |
+| `gcash_account_name` | AutoProject-D Custom Garage | payment |
+| `gcash_account_number` | 0912-345-6789 | payment |
+| `maya_account_name` | AutoProject-D Custom Garage | payment |
+| `maya_account_number` | 0917-888-9999 | payment |
+| `business_name` | AutoProject-D Custom Garage | general |
+| `business_phone` | +63 912 345 6789 | general |
+
+---
+
+#### Table: `notification_preferences` (Optional NEW)
+
+| Column | Data Type | Purpose |
+|---|---|---|
+| `id` | BIGINT PK | |
+| `user_id` | BIGINT FK UNIQUE → users | User |
+| `email_enabled` | BOOLEAN DEFAULT true | Email notifications |
+| `database_enabled` | BOOLEAN DEFAULT true | In-app notifications |
+| `booking_updates` | BOOLEAN DEFAULT true | Booking events |
+| `payment_updates` | BOOLEAN DEFAULT true | Payment events |
+| `job_updates` | BOOLEAN DEFAULT true | Job progress |
+| `support_updates` | BOOLEAN DEFAULT true | Ticket replies |
+| timestamps | | |
+
+---
+
+## 4. Relationship Map
+
+### Cardinality Reference
+
+```
+users
+ ├──1:1── customer_profiles
+ ├──N:1── roles
+ ├──1:N── vehicles
+ ├──1:N── bookings (as customer)
+ ├──1:N── payments (as payer)
+ ├──1:N── support_tickets (as customer)
+ ├──1:N── support_ticket_replies (as author)
+ ├──1:N── job_orders (as mechanic_id)
+ ├──1:N── job_orders (as assigned_by)
+ ├──1:N── bookings (as approved_by)
+ ├──1:N── payments (as verified_by)
+ ├──1:N── quotations (as prepared_by / approved_by)
+ ├──1:N── service_updates (as author)
+ ├──1:N── service_stage_progress (as completed_by)
+ ├──1:N── report_exports (as requested_by)
+ └──1:N── notifications (polymorphic notifiable)
+
+vehicles
+ └──N:1── users
+ └──1:N── bookings
+
+bookings
+ ├──N:1── users, vehicles
+ ├──1:N── booking_services ──N:1── services
+ ├──1:N── quotations ──1:N── quotation_line_items
+ ├──1:N── payments ──1:N── payment_proofs
+ ├──1:N── booking_status_logs
+ ├──1:N── support_tickets
+ └──1:1── job_orders
+
+job_orders
+ ├──1:1── bookings
+ ├──N:1── users (mechanic_id, assigned_by)
+ ├──1:N── service_stage_progress ──N:1── service_stages
+ └──1:N── service_updates ──1:N── service_update_photos
+
+roles
+ └──N:M── permissions (via role_permission)
+
+service_categories
+ └──1:N── services ──1:N── service_brands
+
+support_tickets
+ ├──1:N── support_ticket_replies
+ └──morph── support_ticket_attachments
+```
+
+### Referential Integrity Rules
+
+| Parent | Child | ON DELETE | Rationale |
+|---|---|---|---|
+| `users` | `bookings` | RESTRICT | Preserve booking history |
+| `bookings` | `booking_services` | CASCADE | Line items are dependent |
+| `bookings` | `quotations` | RESTRICT | Financial records preserved |
+| `bookings` | `payments` | RESTRICT | Financial records preserved |
+| `bookings` | `job_orders` | RESTRICT | Work history preserved |
+| `job_orders` | `service_updates` | CASCADE | Updates belong to job |
+| `support_tickets` | `replies` | CASCADE | Replies belong to ticket |
+| `roles` | `users` | RESTRICT | Cannot delete role with users |
+
+---
+
+## 5. Seeder Requirements
+
+### 5.1 Mandatory (All Environments)
+
+| Seeder | Tables Populated | Records | Purpose |
+|---|---|---|---|
+| `RolePermissionSeeder` | `roles`, `permissions`, `role_permission` | 4 roles, 37 permissions | RBAC foundation |
+| `BusinessSettingsSeeder` **(NEW)** | `business_settings` | ~7 settings | Fees, payment accounts, business info |
+| `ServiceCatalogSeeder` | `service_categories`, `services`, `service_brands` | 6 cat, 11+ services | Service catalog |
+| `AppointmentSlotSeeder` *(part of ServiceCatalogSeeder)* | `appointment_slot_configs` | Mon–Sat configs | Scheduling rules |
+| `ServiceStageSeeder` **(NEW)** | `service_stages` | 5 stages | Mechanic workflow pipeline |
+
+### 5.2 Demo / Development Only
+
+| Seeder | Tables | Purpose |
+|---|---|---|
+| `DatabaseSeeder` (users) | `users` | 4 portal demo accounts |
+| `CustomerProfileSeeder` **(NEW)** | `customer_profiles` | Addresses for demo customers |
+| `DemoVehicleSeeder` **(NEW)** | `vehicles` | Sample vehicles per customer |
+| `DemoBookingSeeder` **(NEW)** | `bookings`, `booking_services`, `booking_status_logs`, `quotations`, `quotation_line_items`, `payments` | Bookings across all statuses |
+| `DemoJobOrderSeeder` **(NEW)** | `job_orders`, `service_stage_progress`, `service_updates`, `service_update_photos` | Active mechanic jobs |
+| `DemoSupportTicketSeeder` **(NEW)** | `support_tickets`, `support_ticket_replies` | Open/resolved tickets |
+| `DailyMetricsSnapshotSeeder` **(NEW)** | `daily_metrics_snapshots` | 6 months chart data for reports |
+| `BusinessClosureSeeder` **(NEW)** | `business_closure_dates` | Sample holidays |
+
+### 5.3 Seeder Dependency Order
+
+```
+1. RolePermissionSeeder          (no dependencies)
+2. BusinessSettingsSeeder        (no dependencies)
+3. ServiceCatalogSeeder          (needs service_categories first)
+4. ServiceStageSeeder            (no dependencies)
+5. BusinessClosureSeeder         (optional)
+6. DatabaseSeeder → users        (needs roles)
+7. CustomerProfileSeeder         (needs users)
+8. DemoVehicleSeeder             (needs users)
+9. DemoBookingSeeder             (needs users, vehicles, services)
+10. DemoJobOrderSeeder           (needs bookings, users/mechanics, service_stages)
+11. DemoSupportTicketSeeder      (needs users, bookings optional)
+12. DailyMetricsSnapshotSeeder   (needs historical booking/payment data OR standalone)
+```
+
+### 5.4 What Must NOT Be Seeded in Production
+
+- Demo user passwords (`demo123`)
+- Fabricated revenue/metrics (unless staging environment)
+- Sample support ticket conversations with PII
+
+---
+
+## 6. Recommended Migration Order
+
+### Phase 0 — Already Implemented (000000–000116)
+
+Run in this exact order (FK dependencies respected):
+
+```
+GROUP 1 — Framework
+  000000  users, password_reset_tokens, sessions
+  000001  cache, cache_locks
+  000002  jobs, job_batches, failed_jobs
+
+GROUP 2 — Auth Extensions
+  000010  users: +status, soft_deletes
+  000011  customer_profiles
+
+GROUP 3 — Service Catalog (before bookings)
+  000020  service_categories
+  000021  services
+  000022  service_brands
+
+GROUP 4 — Scheduling
+  000030  appointment_slot_configs
+  000031  business_closure_dates
+
+GROUP 5 — Vehicles (before bookings)
+  000040  vehicles
+
+GROUP 6 — Bookings
+  000050  bookings
+  000051  booking_services
+  000110  booking_status_logs
+
+GROUP 7 — Cost Estimation
+  000060  quotations
+  000061  quotation_line_items
+
+GROUP 8 — Payments
+  000070  payments
+  000071  payment_proofs
+
+GROUP 9 — Job Orders & Workflow
+  000080  service_stages
+  000081  job_orders
+  000082  service_stage_progress
+  000090  service_updates
+  000091  service_update_photos
+
+GROUP 10 — Support
+  000100  support_tickets
+  000101  support_ticket_replies
+  000102  support_ticket_attachments
+
+GROUP 11 — Reports
+  000111  report_exports
+  000112  daily_metrics_snapshots
+
+GROUP 12 — RBAC (after users exist)
+  000113  roles
+  000114  permissions
+  000115  role_permission
+  000116  users: +role_id (migrates legacy role string, seeds RBAC if empty)
+```
+
+### Phase 1 — Production Additions (Recommended Next)
+
+```
+  000117  business_settings          ← before backend reads config from DB
+  000118  notifications              ← Laravel: php artisan notifications:table
+  000119  notification_preferences   ← optional, after users
+```
+
+### Phase 2 — Future Enhancements (Evaluate Later)
+
+| Migration | When Needed |
+|---|---|
+| `audit_logs` | If capstone requires cross-module audit beyond booking logs |
+| `quotation_adjustments` | If formal cost revision history is required separate from versioning |
+| `payment_verification_logs` | If payment verification needs immutable multi-step audit |
+
+---
+
+## 7. Design Principles Applied
+
+| Principle | Implementation |
+|---|---|
+| **Normalization** | 3NF — no redundant service/vehicle data in bookings except intentional snapshots (`customer_name`, `contact_number`) |
+| **Referential integrity** | All FKs defined with appropriate CASCADE/RESTRICT/NULL |
+| **Auditability** | `booking_status_logs` append-only; `payments.verified_by/at`; soft deletes on core entities |
+| **Financial safety** | Payments and quotations use RESTRICT on booking delete |
+| **Scalability** | `daily_metrics_snapshots` pre-aggregates heavy report queries |
+| **Flexibility** | `business_settings` key-value store avoids schema changes for config |
+| **Polymorphism** | Attachments and notifications use Laravel morph patterns |
+| **Versioning** | Quotations use `version` column — supports estimate revisions without data loss |
+
+---
+
+## 8. Recommended Next Step
+
+**Before any backend module wiring:**
+
+1. Add migration `000117_create_business_settings_table`
+2. Add migration `000118_create_notifications_table`
+3. Create `BusinessSettingsSeeder` and `ServiceStageSeeder`
+4. Run `php artisan migrate` + `php artisan db:seed`
+
+This establishes the two production gaps (centralized config + notifications) without altering the 34 existing tables or breaking any Blade UI. All subsequent backend implementation can then read fees, payment accounts, and workflow stages from the database instead of hardcoded Blade/service constants.
+
+---
+
+**Architecture verdict:** The existing schema is production-grade. The recommended additions are minimal, targeted, and complete the capstone system without redesign. Total effort should focus on **seeders + backend services**, not new entity modeling.

@@ -6,15 +6,28 @@
 <div 
     x-data="{
         isEditing: false,
-        profileData: {
-            fullName: '{{ auth()->user()->name }}',
-            email: '{{ auth()->user()->email }}',
-            phone: '{{ auth()->user()->phone ?? '+63 912 345 6789' }}',
-            address: '123 Main Street, Quezon City, Metro Manila'
-        },
+        profileData: @js($profileData),
         handleSubmit() {
-            this.isEditing = false;
-            showToast.success('Profile updated successfully!');
+            fetch('/customer/profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(this.profileData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.isEditing = false;
+                    showToast.success(data.message);
+                } else {
+                    showToast.error(data.error || 'Failed to update profile.');
+                }
+            })
+            .catch(err => {
+                showToast.error('An error occurred.');
+            });
         }
     }"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
@@ -165,15 +178,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <x-card class="text-center">
             <p class="mb-2 text-sm text-green-500 font-bold uppercase tracking-wider">Total Bookings</p>
-            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">8</p>
+            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $totalBookings }}</p>
         </x-card>
         <x-card class="text-center">
             <p class="mb-2 text-sm text-[#E63946] font-bold uppercase tracking-wider">Completed Services</p>
-            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">5</p>
+            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $completedServices }}</p>
         </x-card>
         <x-card class="text-center">
             <p class="mb-2 text-sm text-[#457B9D] font-bold uppercase tracking-wider">Member Since</p>
-            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">2024</p>
+            <p class="text-4xl font-extrabold text-gray-900 dark:text-white">{{ $memberSince }}</p>
         </x-card>
     </div>
 </div>

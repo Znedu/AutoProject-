@@ -6,42 +6,7 @@
 <div 
     x-data="{
         selectedPhoto: null,
-        trackingData: {
-            service: 'Paint Job',
-            vehicle: 'Toyota Supra 2021',
-            bookingId: 'BK-2026-0328',
-            currentStage: 2,
-            stages: [
-                { name: 'Booking Confirmed', date: 'March 28, 2026 - 2:00 PM', completed: true },
-                { name: 'Vehicle Received', date: 'March 29, 2026 - 9:00 AM', completed: true },
-                { name: 'Service Ongoing', date: 'In Progress', completed: false },
-                { name: 'Quality Inspection', date: 'Pending', completed: false },
-                { name: 'Completed', date: 'Pending', completed: false }
-            ],
-            notes: [
-                {
-                    date: 'March 30, 2026',
-                    time: '2:30 PM',
-                    message: 'Surface preparation completed. Starting primer application.',
-                    author: 'Mechanic: John Santos',
-                    photos: [
-                        { url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800', caption: 'Surface sanding completed' },
-                        { url: 'https://images.unsplash.com/photo-1632823469942-6c3f5b6c3c9e?w=800', caption: 'Primer application in progress' }
-                    ]
-                },
-                {
-                    date: 'March 29, 2026',
-                    time: '11:15 AM',
-                    message: 'Vehicle inspection completed. Beginning disassembly and masking.',
-                    author: 'Mechanic: John Santos',
-                    photos: [
-                        { url: 'https://images.unsplash.com/photo-1625047509168-a7026f36de04?w=800', caption: 'Vehicle inspection - front view' },
-                        { url: 'https://images.unsplash.com/photo-1627454820516-913e9e6c1d62?w=800', caption: 'Masking process started' },
-                        { url: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=800', caption: 'Parts disassembly' }
-                    ]
-                }
-            ]
-        }
+        trackingData: @js($trackingData)
     }"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
 >
@@ -200,7 +165,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-white/80 mb-1">Estimated Completion</p>
-                <p class="text-2xl font-extrabold">April 2, 2026</p>
+                <p class="text-2xl font-extrabold" x-text="trackingData.estimated_completion"></p>
             </div>
             <x-icon name="calendar" class="w-12 h-12 text-white/50" />
         </div>

@@ -18,8 +18,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RolePermissionSeeder::class,
-            ServiceCatalogSeeder::class,
+            RoleSeeder::class,
+            ServiceSeeder::class,
+            BookingStatusSeeder::class,
+            JobStatusSeeder::class,
+            TicketStatusSeeder::class,
+            AdminSeeder::class,
+            BusinessSettingsSeeder::class,
         ]);
 
         $roles = Role::query()->pluck('id', 'slug');
@@ -46,14 +51,6 @@ class DatabaseSeeder extends Seeder
                 'email' => 'mechanic@gmail.com',
                 'phone' => '+63 920 111 2222',
                 'role_id' => $roles[RoleSlug::Mechanic->value],
-                'status' => User::STATUS_ACTIVE,
-                'password' => 'demo123',
-            ],
-            [
-                'name' => 'Chief Admin',
-                'email' => 'admin@gmail.com',
-                'phone' => '+63 912 345 6789',
-                'role_id' => $roles[RoleSlug::Administrator->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
             ],

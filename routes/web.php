@@ -7,6 +7,29 @@ use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\ScheduleAvailabilityController;
 use Illuminate\Support\Facades\Route;
 
+// Import Admin Controllers
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+
+// Import Customer Controllers
+use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
+use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
+use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
+use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
+
+// Import Staff Controllers
+use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
+use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueController;
+use App\Http\Controllers\Staff\AssistanceController as StaffAssistanceController;
+
+// Import Mechanic Controllers
+use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardController;
+use App\Http\Controllers\Mechanic\JobController as MechanicJobController;
+use App\Http\Controllers\Mechanic\NoteController as MechanicNoteController;
+
 Route::get('/', function () {
     return view('landing');
 })->name('landing');
@@ -28,13 +51,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->middleware('role:admin')
         ->name('admin.')
         ->group(function () {
-            Route::get('/', function () {
-                return view('admin.dashboard');
-            })->name('dashboard');
+            Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-            Route::get('/users', function () {
-                return view('admin.users');
-            })->middleware('permission:users.manage')->name('users.index');
+            Route::get('/users', [AdminUserController::class, 'index'])
+                ->middleware('permission:users.manage')
+                ->name('users.index');
 
             Route::get('/approvals', [BookingApprovalController::class, 'index'])
                 ->middleware('permission:approvals.manage')
@@ -56,22 +77,20 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:approvals.manage')
                 ->name('bookings.verify-payment');
 
-            Route::get('/services', function () {
-                return view('admin.services');
-            })->middleware('permission:services.manage')->name('services.index');
+            Route::get('/services', [AdminServiceController::class, 'index'])
+                ->middleware('permission:services.manage')
+                ->name('services.index');
 
-            Route::get('/reports', function () {
-                return view('admin.reports');
-            })->middleware('permission:reports.view')->name('reports.index');
+            Route::get('/reports', [AdminReportController::class, 'index'])
+                ->middleware('permission:reports.view')
+                ->name('reports.index');
         });
 
     Route::prefix('customer')
         ->middleware('role:customer')
         ->name('customer.')
         ->group(function () {
-            Route::get('/', function () {
-                return view('customer.dashboard');
-            })->name('dashboard');
+            Route::get('/', [CustomerDashboardController::class, 'index'])->name('dashboard');
 
             Route::get('/book-service', [BookingController::class, 'create'])
                 ->middleware('permission:bookings.create')
@@ -93,54 +112,89 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:bookings.create')
                 ->name('schedule.availability');
 
-            Route::get('/track', function () {
-                return view('customer.track');
-            })->middleware('permission:tracking.view')->name('track');
+            Route::get('/track', [CustomerTrackController::class, 'index'])
+                ->middleware('permission:tracking.view')
+                ->name('track');
 
-            Route::get('/support', function () {
-                return view('customer.support');
-            })->middleware('permission:support.view')->name('support.index');
+            Route::get('/support', [CustomerSupportController::class, 'index'])
+                ->middleware('permission:support.view')
+                ->name('support.index');
 
-            Route::get('/profile', function () {
-                return view('customer.profile');
-            })->middleware('permission:profile.view')->name('profile');
+            Route::post('/support', [CustomerSupportController::class, 'store'])
+                ->middleware('permission:support.view');
 
-            Route::get('/payment/{bookingId}', function ($bookingId) {
-                return view('customer.payment', ['bookingId' => $bookingId]);
-            })->middleware('permission:payments.submit')->name('payment');
+            Route::post('/support/{ticket}/reply', [CustomerSupportController::class, 'storeReply'])
+                ->middleware('permission:support.view');
+
+            Route::get('/profile', [CustomerProfileController::class, 'index'])
+                ->middleware('permission:profile.view')
+                ->name('profile');
+
+            Route::post('/profile', [CustomerProfileController::class, 'update'])
+                ->middleware('permission:profile.view');
+
+            Route::get('/payment/{bookingId}', [CustomerPaymentController::class, 'show'])
+                ->middleware('permission:payments.submit')
+                ->name('payment');
         });
 
     Route::prefix('staff')
         ->middleware('role:staff')
         ->name('staff.')
         ->group(function () {
-            Route::get('/', function () {
-                return view('staff.dashboard');
-            })->name('dashboard');
+            Route::get('/', [StaffDashboardController::class, 'index'])->name('dashboard');
 
-            Route::get('/booking-queue', function () {
-                return view('staff.booking-queue');
-            })->middleware('permission:bookings.queue.view')->name('booking-queue');
+            Route::get('/booking-queue', [StaffBookingQueueController::class, 'index'])
+                ->middleware('permission:bookings.queue.view')
+                ->name('booking-queue');
 
-            Route::get('/assistance', function () {
-                return view('staff.assistance');
-            })->middleware('permission:support.view')->name('assistance');
+            Route::post('/bookings/{booking}/verify-payment', [StaffBookingQueueController::class, 'verifyPayment'])
+                ->middleware('permission:bookings.queue.view');
+
+            Route::post('/bookings/{booking}/approve', [StaffBookingQueueController::class, 'approve'])
+                ->middleware('permission:bookings.queue.view');
+
+            Route::post('/bookings/{booking}/reject', [StaffBookingQueueController::class, 'reject'])
+                ->middleware('permission:bookings.queue.view');
+
+            Route::post('/bookings/{booking}/schedule', [StaffBookingQueueController::class, 'schedule'])
+                ->middleware('permission:bookings.queue.view');
+
+            Route::get('/assistance', [StaffAssistanceController::class, 'index'])
+                ->middleware('permission:support.view')
+                ->name('assistance');
+
+            Route::post('/assistance/{ticket}/reply', [StaffAssistanceController::class, 'reply'])
+                ->middleware('permission:support.view');
+
+            Route::post('/assistance/{ticket}/resolve', [StaffAssistanceController::class, 'resolve'])
+                ->middleware('permission:support.view');
         });
 
     Route::prefix('mechanic')
         ->middleware('role:mechanic')
         ->name('mechanic.')
         ->group(function () {
-            Route::get('/', function () {
-                return view('mechanic.dashboard');
-            })->name('dashboard');
+            Route::get('/', [MechanicDashboardController::class, 'index'])->name('dashboard');
 
-            Route::get('/jobs', function () {
-                return view('mechanic.jobs');
-            })->middleware('permission:jobs.view')->name('jobs.index');
+            Route::get('/jobs', [MechanicJobController::class, 'index'])
+                ->middleware('permission:jobs.view')
+                ->name('jobs.index');
 
-            Route::get('/notes', function () {
-                return view('mechanic.notes');
-            })->middleware('permission:service-notes.view')->name('notes.index');
+            Route::post('/jobs/{job}/start', [MechanicJobController::class, 'start'])
+                ->middleware('permission:jobs.view');
+
+            Route::post('/jobs/{job}/pause', [MechanicJobController::class, 'pause'])
+                ->middleware('permission:jobs.view');
+
+            Route::post('/jobs/{job}/complete', [MechanicJobController::class, 'complete'])
+                ->middleware('permission:jobs.view');
+
+            Route::get('/notes', [MechanicNoteController::class, 'index'])
+                ->middleware('permission:service-notes.view')
+                ->name('notes.index');
+
+            Route::post('/notes', [MechanicNoteController::class, 'store'])
+                ->middleware('permission:service-notes.view');
         });
 });

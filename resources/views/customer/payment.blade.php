@@ -7,13 +7,7 @@
     x-data="{
         selectedPayment: 'gcash',
         uploadedFile: null,
-        bookingDetails: {
-            id: '{{ $bookingId ?? '12345' }}',
-            service: 'Engine Customization',
-            vehicle: 'Honda Civic 2020',
-            reservationFee: '₱5,000',
-            totalEstimate: '₱75,000'
-        },
+        bookingDetails: @js($bookingDetails),
         handleFileUpload(e) {
             if (e.target.files && e.target.files[0]) {
                 this.uploadedFile = e.target.files[0].name;
@@ -90,7 +84,7 @@
     <x-card class="bg-[#457B9D]/10 border border-[#457B9D]/20">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Payment Instructions</h2>
         <ol class="space-y-3 list-decimal list-inside text-gray-700 dark:text-gray-300 text-sm sm:text-base">
-            <li>Send ₱5,000 reservation fee to our <span class="font-bold capitalize text-[#E63946]" x-text="selectedPayment"></span> number: <strong>0912 345 6789</strong></li>
+            <li>Send <span class="font-bold" x-text="bookingDetails.reservationFee"></span> reservation fee to our <span class="font-bold capitalize text-[#E63946]" x-text="selectedPayment"></span> number: <strong x-text="selectedPayment === 'gcash' ? bookingDetails.gcashNumber : bookingDetails.mayaNumber"></strong></li>
             <li>Take a screenshot of your payment confirmation</li>
             <li>Upload the screenshot below</li>
             <li>Click "Confirm Payment" to complete the process</li>

@@ -7,13 +7,7 @@
     x-data="{
         showAddForm: false,
         newService: { name: '', description: '', minCost: '', maxCost: '', duration: '' },
-        services: [
-            { id: 1, name: 'Engine Customization', description: 'Performance engine modifications including turbo, ECU tuning, and internal upgrades', minCost: 50000, maxCost: 150000, duration: '5-7 days', status: 'Active' },
-            { id: 2, name: 'Body Kit Installation', description: 'Complete body kit installation with professional fitment and finishing', minCost: 30000, maxCost: 80000, duration: '3-5 days', status: 'Active' },
-            { id: 3, name: 'Paint Job', description: 'Professional automotive painting with premium materials and finish', minCost: 25000, maxCost: 100000, duration: '4-6 days', status: 'Active' },
-            { id: 4, name: 'Turbo Installation', description: 'Turbocharger installation with supporting modifications and tuning', minCost: 60000, maxCost: 180000, duration: '6-8 days', status: 'Active' },
-            { id: 5, name: 'Exhaust Fabrication', description: 'Custom exhaust system design and fabrication with quality materials', minCost: 15000, maxCost: 50000, duration: '2-3 days', status: 'Active' }
-        ],
+        services: @js($services),
         handleAddService() {
             const id = this.services.length + 1;
             this.services.push({

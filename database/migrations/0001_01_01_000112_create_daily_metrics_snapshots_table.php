@@ -1,35 +1,24 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
+/**
+ * Removed from approved schema.
+ *
+ * The daily_metrics_snapshots table was deemed over-engineered for the
+ * capstone. Admin dashboard queries bookings, payments, and users directly
+ * with indexed date columns. Pre-aggregation is a scaling concern that
+ * does not apply at this stage.
+ */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('daily_metrics_snapshots', function (Blueprint $table) {
-            $table->id();
-            $table->date('metric_date')->unique();
-            $table->unsignedInteger('total_bookings')->default(0);
-            $table->unsignedInteger('completed_bookings')->default(0);
-            $table->decimal('total_revenue', 14, 2)->default(0);
-            $table->unsignedInteger('new_customers')->default(0);
-            $table->json('metadata')->nullable();
-            $table->timestamps();
-
-            $table->index('metric_date');
-        });
+        // Intentionally empty — table removed from approved schema.
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('daily_metrics_snapshots');
+        // Nothing to reverse.
     }
 };

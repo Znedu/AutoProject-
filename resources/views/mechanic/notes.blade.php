@@ -7,54 +7,37 @@
     x-data="{
         showAddForm: false,
         formData: {
-            jobId: '',
+            jobId: new URLSearchParams(window.location.search).get('job_id') || '',
             note: ''
         },
-        jobs: [
-            { value: '', label: 'Select a job...' },
-            { value: '1', label: 'Paint Job - Toyota Supra 2021' },
-            { value: '2', label: 'Engine Customization - Honda Civic 2020' }
-        ],
-        notes: [
-            {
-                id: 1,
-                job: 'Paint Job - Toyota Supra 2021',
-                note: 'Surface preparation completed. Starting primer application tomorrow. All rust spots have been treated.',
-                date: 'March 30, 2026 - 3:45 PM',
-                mechanic: 'You'
-            },
-            {
-                id: 2,
-                job: 'Paint Job - Toyota Supra 2021',
-                note: 'Vehicle inspection completed. Beginning disassembly and masking. Minor dent on rear bumper needs attention.',
-                date: 'March 29, 2026 - 10:15 AM',
-                mechanic: 'You'
-            },
-            {
-                id: 3,
-                job: 'Turbo Installation - Subaru WRX 2022',
-                note: 'Turbo installation completed. Performed test runs. All systems functioning optimally. Customer notified.',
-                date: 'March 20, 2026 - 4:30 PM',
-                mechanic: 'You'
-            }
-        ],
+        jobs: @js($jobs),
+        notes: @js($notes),
 
         handleSubmit() {
             if (!this.formData.jobId || !this.formData.note.trim()) {
                 showToast.error('Please select a job and enter a note');
                 return;
             }
-            const selectedJob = this.jobs.find(j => j.value === this.formData.jobId);
-            this.notes.unshift({
-                id: this.notes.length + 1,
-                job: selectedJob ? selectedJob.label : '',
-                note: this.formData.note,
-                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-                mechanic: 'You'
-            });
-            showToast.success('Service note added successfully!');
-            this.formData = { jobId: '', note: '' };
-            this.showAddForm = false;
+            fetch('/mechanic/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(this.formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.notes.unshift(data.note);
+                    showToast.success('Service note added successfully!');
+                    this.formData = { jobId: '', note: '' };
+                    this.showAddForm = false;
+                } else {
+                    showToast.error('Failed to add note: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         }
     }"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
