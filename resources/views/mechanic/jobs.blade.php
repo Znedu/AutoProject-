@@ -6,68 +6,72 @@
 <div 
     x-data="{
         selectedFilter: 'all',
-        jobs: [
-            {
-                id: 1,
-                customer: 'Juan Dela Cruz',
-                contactNumber: '+63 912 345 6789',
-                service: 'Paint Job',
-                vehicle: 'Toyota Supra 2021',
-                plateNumber: 'XYZ 5678',
-                status: 'in-progress',
-                progress: 65,
-                startDate: 'March 29, 2026',
-                estimatedCompletion: 'April 2, 2026',
-                priority: 'High'
-            },
-            {
-                id: 2,
-                customer: 'Maria Santos',
-                contactNumber: '+63 917 888 9999',
-                service: 'Engine Customization',
-                vehicle: 'Honda Civic 2020',
-                plateNumber: 'ABC 1234',
-                status: 'pending',
-                progress: 0,
-                startDate: 'April 5, 2026',
-                estimatedCompletion: 'April 12, 2026',
-                priority: 'Medium'
-            },
-            {
-                id: 3,
-                customer: 'Pedro Rodriguez',
-                contactNumber: '+63 923 111 2222',
-                service: 'Turbo Installation',
-                vehicle: 'Subaru WRX 2022',
-                plateNumber: 'GHI 3456',
-                status: 'completed',
-                progress: 100,
-                startDate: 'March 18, 2026',
-                estimatedCompletion: 'March 20, 2026',
-                priority: 'High'
-            }
-        ],
+        jobs: @js($jobs),
 
         handleStartJob(job) {
-            job.status = 'in-progress';
-            job.progress = 5;
-            showToast.success('Job #' + job.id + ' started!');
+            fetch('/mechanic/jobs/' + job.id + '/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    job.status = 'in-progress';
+                    job.progress = 5;
+                    showToast.success('Job #' + job.id + ' started!');
+                } else {
+                    showToast.error('Failed to start job.');
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handlePauseJob(job) {
-            job.status = 'pending';
-            showToast.info('Job #' + job.id + ' paused!');
+            fetch('/mechanic/jobs/' + job.id + '/pause', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    job.status = 'pending';
+                    showToast.info('Job #' + job.id + ' paused!');
+                } else {
+                    showToast.error('Failed to pause job.');
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handleCompleteJob(job) {
-            job.status = 'completed';
-            job.progress = 100;
-            showToast.success('Job #' + job.id + ' marked as complete!');
+            fetch('/mechanic/jobs/' + job.id + '/complete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    job.status = 'completed';
+                    job.progress = 100;
+                    showToast.success('Job #' + job.id + ' marked as complete!');
+                } else {
+                    showToast.error('Failed to complete job.');
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handleUpdateProgress(jobId) {
-            // Simply opens the progress simulation or navigates
-            showToast.info('Opening progress editor for Job #' + jobId + '...');
+            window.location.href = '/mechanic/notes?job_id=' + jobId;
         },
 
         getFilteredJobs() {

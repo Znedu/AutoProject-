@@ -5,53 +5,10 @@
 @section('content')
 <div 
     x-data="{
-        verifiedPayments: [],
+        verifiedPayments: @js($verifiedPayments),
         selectedFilter: new URLSearchParams(window.location.search).get('id') ? 'pending' : 'all',
         selectedBookingId: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
-        bookings: [
-            {
-                id: 1,
-                customer: 'Carlos Reyes',
-                contact: '+63 915 222 3333',
-                service: 'Body Kit Installation',
-                vehicle: 'Mazda RX-7 2019',
-                plateNumber: 'DEF 9012',
-                preferredDate: 'April 8, 2026',
-                preferredTime: '10:00 AM',
-                status: 'pending',
-                estimatedCost: '₱55,000',
-                notes: 'Full body kit from reputable manufacturer',
-                reservationFee: {
-                    amount: 200,
-                    paid: true,
-                    paymentMethod: 'GCash',
-                    referenceNumber: 'GCASH-20260407-1234567890',
-                    paymentDate: 'April 7, 2026',
-                    paymentTime: '3:45 PM'
-                }
-            },
-            {
-                id: 2,
-                customer: 'Ana Garcia',
-                contact: '+63 920 444 5555',
-                service: 'Exhaust Fabrication',
-                vehicle: 'Nissan Skyline 2020',
-                plateNumber: 'JKL 7890',
-                preferredDate: 'April 10, 2026',
-                preferredTime: '2:00 PM',
-                status: 'pending',
-                estimatedCost: '₱32,000',
-                notes: 'Custom stainless steel exhaust system',
-                reservationFee: {
-                    amount: 200,
-                    paid: true,
-                    paymentMethod: 'Maya',
-                    referenceNumber: 'MAYA-20260408-9876543210',
-                    paymentDate: 'April 8, 2026',
-                    paymentTime: '10:20 AM'
-                }
-            }
-        ],
+        bookings: @js($bookings),
 
         init() {
             if (this.selectedBookingId) {
@@ -66,8 +23,23 @@
 
         handleVerifyPayment(id) {
             if (confirm('Have you verified that the reference number matches the payment received in AutoProject-D GCash/Maya account?')) {
-                this.verifiedPayments.push(id);
-                showToast.success('Payment verified! You can now approve this booking.');
+                fetch('/staff/bookings/' + id + '/verify-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.verifiedPayments.push(id);
+                        showToast.success('Payment verified! You can now approve this booking.');
+                    } else {
+                        showToast.error('Failed to verify payment: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
             }
         },
 
@@ -76,21 +48,69 @@
                 showToast.error('Please verify the reservation fee payment before approving the booking.');
                 return;
             }
-            booking.status = 'approved';
-            showToast.success('Booking #' + id + ' approved! Customer will be notified.');
+            fetch('/staff/bookings/' + id + '/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    booking.status = 'approved';
+                    showToast.success('Booking #' + id + ' approved! Customer will be notified.');
+                } else {
+                    showToast.error('Failed to approve booking: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handleReject(id, booking) {
             const reason = prompt('Please provide a reason for rejection:');
             if (reason) {
-                booking.status = 'rejected';
-                showToast.error('Booking #' + id + ' rejected. Reason: ' + reason);
+                fetch('/staff/bookings/' + id + '/reject', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ reason: reason })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        booking.status = 'rejected';
+                        showToast.error('Booking #' + id + ' rejected. Reason: ' + reason);
+                    } else {
+                        showToast.error('Failed to reject booking: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
             }
         },
 
         handleSchedule(id, booking) {
-            booking.status = 'scheduled';
-            showToast.info('Opening schedule editor for booking #' + id + '...');
+            if (confirm('Schedule service for preferred date ' + booking.preferredDate + ' at ' + booking.preferredTime + '?')) {
+                fetch('/staff/bookings/' + id + '/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        booking.status = 'scheduled';
+                        showToast.success('Booking #' + id + ' scheduled successfully!');
+                    } else {
+                        showToast.error('Failed to schedule booking: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
+            }
         },
 
         getFilteredBookings() {

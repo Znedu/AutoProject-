@@ -8,82 +8,59 @@
         selectedTicket: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
         replyMessage: '',
         selectedFilter: 'all',
-        tickets: [
-            {
-                id: 1,
-                customer: 'Juan Dela Cruz',
-                subject: 'Question about paint warranty',
-                message: 'I would like to know more about the warranty coverage for the paint job.',
-                status: 'open',
-                date: 'March 30, 2026',
-                replies: []
-            },
-            {
-                id: 2,
-                customer: 'Maria Santos',
-                subject: 'Reschedule booking request',
-                message: 'I need to reschedule my April 5 appointment to April 8. Is this possible?',
-                status: 'in-progress',
-                date: 'March 28, 2026',
-                replies: [
-                    {
-                        from: 'Staff',
-                        message: 'Hello Maria, we can accommodate your request. I will check the availability for April 8.',
-                        date: 'March 28, 2026 - 2:30 PM'
-                    },
-                    {
-                        from: 'Customer',
-                        message: 'Thank you! I appreciate your help.',
-                        date: 'March 28, 2026 - 3:15 PM'
-                    }
-                ]
-            },
-            {
-                id: 3,
-                customer: 'Pedro Lopez',
-                subject: 'Invoice inquiry',
-                message: 'Can I get a detailed breakdown of the service costs for my turbo installation?',
-                status: 'resolved',
-                date: 'March 25, 2026',
-                replies: [
-                    {
-                        from: 'Staff',
-                        message: 'Hello Pedro, I have attached the detailed invoice to your account. You can download it from your booking page.',
-                        date: 'March 25, 2026 - 11:00 AM'
-                    },
-                    {
-                        from: 'Customer',
-                        message: 'Perfect, thank you!',
-                        date: 'March 25, 2026 - 11:30 AM'
-                    }
-                ]
-            }
-        ],
+        tickets: @js($tickets),
 
         handleSendReply(ticketId) {
             if (!this.replyMessage.trim()) {
                 showToast.error('Please enter a reply message');
                 return;
             }
-            const ticket = this.tickets.find(t => t.id === ticketId);
-            if (ticket) {
-                ticket.replies.push({
-                    from: 'Staff',
-                    message: this.replyMessage,
-                    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                });
-                ticket.status = 'in-progress';
-                showToast.success('Reply sent to ticket #' + ticketId);
-                this.replyMessage = '';
-            }
+            fetch('/staff/assistance/' + ticketId + '/reply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: this.replyMessage })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const ticket = this.tickets.find(t => t.id === ticketId);
+                    if (ticket) {
+                        ticket.replies.push(data.reply);
+                        ticket.status = 'in-progress';
+                        showToast.success('Reply sent to ticket #' + ticketId);
+                        this.replyMessage = '';
+                    }
+                } else {
+                    showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         handleResolveTicket(ticketId) {
-            const ticket = this.tickets.find(t => t.id === ticketId);
-            if (ticket) {
-                ticket.status = 'resolved';
-                showToast.success('Ticket #' + ticketId + ' marked as resolved');
-            }
+            fetch('/staff/assistance/' + ticketId + '/resolve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const ticket = this.tickets.find(t => t.id === ticketId);
+                    if (ticket) {
+                        ticket.status = 'resolved';
+                        showToast.success('Ticket #' + ticketId + ' marked as resolved');
+                    }
+                } else {
+                    showToast.error('Failed to resolve ticket: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => showToast.error('An error occurred.'));
         },
 
         getFilteredTickets() {

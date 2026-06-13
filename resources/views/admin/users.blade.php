@@ -7,13 +7,7 @@
     x-data="{
         searchQuery: '',
         selectedRole: 'all',
-        users: [
-            { id: 1, name: 'Juan Dela Cruz', email: 'juan.delacruz@email.com', phone: '+63 912 345 6789', role: 'Customer', status: 'Active', joinDate: 'Jan 15, 2024' },
-            { id: 2, name: 'Maria Santos', email: 'maria.santos@email.com', phone: '+63 917 888 9999', role: 'Customer', status: 'Active', joinDate: 'Feb 20, 2024' },
-            { id: 3, name: 'John Mechanic', email: 'john.m@autoproject.com', phone: '+63 920 111 2222', role: 'Mechanic', status: 'Active', joinDate: 'Jan 5, 2023' },
-            { id: 4, name: 'Sarah Staff', email: 'sarah.s@autoproject.com', phone: '+63 923 333 4444', role: 'Staff', status: 'Active', joinDate: 'Mar 10, 2023' },
-            { id: 5, name: 'Pedro Rodriguez', email: 'pedro.r@email.com', phone: '+63 915 555 6666', role: 'Customer', status: 'Inactive', joinDate: 'Dec 1, 2023' }
-        ],
+        users: @js($users),
         filteredUsers() {
             return this.users.filter(user => {
                 const matchesSearch = user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||

@@ -3,86 +3,7 @@
 @section('title', 'Customer Dashboard | AutoProject+')
 
 @section('content')
-@php
-    $serviceCategories = [
-        [
-            'id' => 'exterior',
-            'name' => 'Exterior Customization',
-            'icon' => 'Paintbrush',
-            'color' => '#E63946',
-        ],
-        [
-            'id' => 'performance',
-            'name' => 'Performance Upgrades',
-            'icon' => 'Gauge',
-            'color' => '#457B9D',
-        ],
-        [
-            'id' => 'interior',
-            'name' => 'Interior Customization',
-            'icon' => 'Armchair',
-            'color' => '#F77F00',
-        ],
-        [
-            'id' => 'engine',
-            'name' => 'Engine Maintenance',
-            'icon' => 'Settings',
-            'color' => '#1F2937',
-        ],
-        [
-            'id' => 'cooling',
-            'name' => 'Cooling System Maintenance',
-            'icon' => 'Wind',
-            'color' => '#06AED5',
-        ],
-        [
-            'id' => 'brake',
-            'name' => 'Brake System Maintenance',
-            'icon' => 'Disc',
-            'color' => '#D62828',
-        ],
-    ];
 
-    $services = [
-        ['category' => 'exterior', 'estimatedPrice' => ['min' => 25000, 'max' => 100000]],
-        ['category' => 'exterior', 'estimatedPrice' => ['min' => 30000, 'max' => 80000]],
-        ['category' => 'exterior', 'estimatedPrice' => ['min' => 35000, 'max' => 150000]],
-        ['category' => 'performance', 'estimatedPrice' => ['min' => 60000, 'max' => 200000]],
-        ['category' => 'performance', 'estimatedPrice' => ['min' => 15000, 'max' => 50000]],
-        ['category' => 'performance', 'estimatedPrice' => ['min' => 20000, 'max' => 80000]],
-        ['category' => 'interior', 'estimatedPrice' => ['min' => 15000, 'max' => 60000]],
-        ['category' => 'interior', 'estimatedPrice' => ['min' => 5000, 'max' => 25000]],
-        ['category' => 'interior', 'estimatedPrice' => ['min' => 10000, 'max' => 80000]],
-        ['category' => 'engine', 'estimatedPrice' => ['min' => 800, 'max' => 3000]],
-        ['category' => 'engine', 'estimatedPrice' => ['min' => 1500, 'max' => 6000]],
-        ['category' => 'engine', 'estimatedPrice' => ['min' => 3000, 'max' => 12000]],
-        ['category' => 'cooling', 'estimatedPrice' => ['min' => 1500, 'max' => 4000]],
-        ['category' => 'cooling', 'estimatedPrice' => ['min' => 1000, 'max' => 3000]],
-        ['category' => 'brake', 'estimatedPrice' => ['min' => 3000, 'max' => 12000]],
-        ['category' => 'brake', 'estimatedPrice' => ['min' => 2000, 'max' => 8000]],
-        ['category' => 'brake', 'estimatedPrice' => ['min' => 1500, 'max' => 4000]],
-    ];
-
-    $upcomingBookings = [
-        [
-            'id' => 1,
-            'service' => 'Engine Customization',
-            'vehicle' => 'Honda Civic 2020',
-            'date' => 'April 5, 2026',
-            'status' => 'confirmed',
-        ],
-    ];
-
-    $activeServices = [
-        [
-            'id' => 1,
-            'service' => 'Paint Job',
-            'vehicle' => 'Toyota Supra 2021',
-            'progress' => 65,
-            'status' => 'Service Ongoing',
-        ],
-    ];
-@endphp
 
 <div class="space-y-8 animate-fade-in">
     {{-- Header --}}
@@ -93,22 +14,22 @@
 
     {{-- Stats --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <x-stat-card title="Upcoming Bookings" value="1" color="blue">
+        <x-stat-card title="Upcoming Bookings" value="{{ $upcomingCount }}" color="blue">
             <x-slot name="icon">
                 <x-icon name="calendar" class="w-6 h-6" />
             </x-slot>
         </x-stat-card>
-        <x-stat-card title="Active Services" value="1" color="red">
+        <x-stat-card title="Active Services" value="{{ $activeCount }}" color="red">
             <x-slot name="icon">
                 <x-icon name="wrench" class="w-6 h-6" />
             </x-slot>
         </x-stat-card>
-        <x-stat-card title="Completed Services" value="5" color="green">
+        <x-stat-card title="Completed Services" value="{{ $completedCount }}" color="green">
             <x-slot name="icon">
                 <x-icon name="check-square" class="w-6 h-6" />
             </x-slot>
         </x-stat-card>
-        <x-stat-card title="Support Messages" value="2" color="charcoal">
+        <x-stat-card title="Support Messages" value="{{ $supportCount }}" color="charcoal">
             <x-slot name="icon">
                 <x-icon name="message-square" class="w-6 h-6" />
             </x-slot>
@@ -145,15 +66,6 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($serviceCategories as $category)
-                @php
-                    $categoryServices = array_filter($services, function($s) use ($category) {
-                        return $s['category'] === $category['id'];
-                    });
-                    $pricesMin = array_map(function($s) { return $s['estimatedPrice']['min']; }, $categoryServices);
-                    $pricesMax = array_map(function($s) { return $s['estimatedPrice']['max']; }, $categoryServices);
-                    $minPrice = !empty($pricesMin) ? min($pricesMin) : 0;
-                    $maxPrice = !empty($pricesMax) ? max($pricesMax) : 0;
-                @endphp
                 <a href="{{ url('/customer/book-service') }}" class="block">
                     <div 
                         class="rounded-xl border border-gray-300 dark:border-gray-700/50 hover:border-[#E63946] hover:shadow-xl hover:shadow-[#E63946]/10 transition-all duration-300 group cursor-pointer h-full bg-gray-50 dark:bg-[#0B0B0B]/40 backdrop-blur-sm p-4"
@@ -171,10 +83,10 @@
                                     {{ $category['name'] }}
                                 </h3>
                                 <p class="text-sm text-gray-600 dark:text-gray-300 mb-2 font-medium">
-                                    {{ count($categoryServices) }} services available
+                                    {{ $category['services_count'] }} services available
                                 </p>
                                 <p class="text-base font-bold text-[#E63946]">
-                                    ₱{{ number_format($minPrice) }} - ₱{{ number_format($maxPrice) }}
+                                    ₱{{ number_format($category['min_price']) }} - ₱{{ number_format($category['max_price']) }}
                                 </p>
                             </div>
                         </div>

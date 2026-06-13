@@ -1,41 +1,23 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
+/**
+ * Removed from approved schema.
+ *
+ * The report_exports table was deemed over-engineered for the capstone.
+ * Admin Reports uses inline Chart.js charts; exports are handled as
+ * synchronous controller streams (CSV/PDF) with no database table needed.
+ */
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('report_exports', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('requested_by')
-                ->constrained('users')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
-            $table->string('report_type');
-            $table->json('parameters')->nullable();
-            $table->string('format');
-            $table->string('status')->default('pending');
-            $table->string('file_path')->nullable();
-            $table->text('error_message')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamps();
-
-            $table->index(['requested_by', 'status']);
-            $table->index('report_type');
-        });
+        // Intentionally empty — table removed from approved schema.
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('report_exports');
+        // Nothing to reverse.
     }
 };

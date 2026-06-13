@@ -14,7 +14,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-stat-card
             title="Total Bookings"
-            value="248"
+            value="{{ $totalBookings }}"
             color="blue"
             :trend="['value' => '+12% from last month', 'isPositive' => true]"
         >
@@ -25,7 +25,7 @@
 
         <x-stat-card
             title="Active Services"
-            value="18"
+            value="{{ $activeServicesCount }}"
             color="red"
             :trend="['value' => '+5 this week', 'isPositive' => true]"
         >
@@ -36,7 +36,7 @@
 
         <x-stat-card
             title="Completed Jobs"
-            value="196"
+            value="{{ $completedJobsCount }}"
             color="green"
             :trend="['value' => '+18% completion rate', 'isPositive' => true]"
         >
@@ -47,7 +47,7 @@
 
         <x-stat-card
             title="Monthly Revenue"
-            value="₱410K"
+            value="₱{{ number_format($totalRevenue) }}"
             color="charcoal"
             :trend="['value' => '+8% from last month', 'isPositive' => true]"
         >
@@ -68,10 +68,10 @@
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                            labels: @js($chartMonths),
                             datasets: [{
                                 label: 'Services Completed',
-                                data: [45, 52, 61, 48, 73, 68],
+                                data: @js($servicesData),
                                 backgroundColor: '#E63946',
                                 borderRadius: 8,
                                 borderSkipped: false,
@@ -111,10 +111,10 @@
                     new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                            labels: @js($chartMonths),
                             datasets: [{
                                 label: 'Revenue (₱)',
-                                data: [285000, 320000, 380000, 295000, 450000, 410000],
+                                data: @js($revenueData),
                                 borderColor: '#457B9D',
                                 backgroundColor: 'transparent',
                                 borderWidth: 3,
@@ -171,9 +171,9 @@
                     new Chart(ctx, {
                         type: 'pie',
                         data: {
-                            labels: ['Engine Customization', 'Paint Job', 'Body Kit', 'Turbo Install', 'Exhaust'],
+                            labels: @js($serviceLabels),
                             datasets: [{
-                                data: [30, 25, 20, 15, 10],
+                                data: @js($serviceCounts),
                                 backgroundColor: ['#E63946', '#457B9D', '#1F2937', '#F59E0B', '#10B981'],
                                 borderWidth: 2,
                                 borderColor: document.documentElement.classList.contains('dark') ? '#151515' : '#ffffff'
@@ -204,13 +204,6 @@
         <x-card>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Recent Booking Requests</h2>
             <div class="space-y-4">
-                @php
-                    $recentBookings = [
-                        ['id' => 'bk-1', 'customer' => 'Carlos Reyes', 'service' => 'Body Kit Installation', 'date' => 'April 8, 2026', 'status' => 'pending'],
-                        ['id' => 'bk-2', 'customer' => 'Ana Garcia', 'service' => 'Exhaust Fabrication', 'date' => 'April 10, 2026', 'status' => 'pending'],
-                        ['id' => 'bk-3', 'customer' => 'Juan Dela Cruz', 'service' => 'Engine Customization', 'date' => 'April 5, 2026', 'status' => 'approved'],
-                    ];
-                @endphp
                 @foreach ($recentBookings as $booking)
                     <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10 last:border-0">
                         <div class="flex-1">
@@ -238,7 +231,7 @@
                 <x-icon name="users" class="w-8 h-8" />
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Customers</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">342</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $totalCustomers }}</p>
         </x-card>
 
         <x-card class="text-center hover:scale-[1.02] transition-transform duration-300">
@@ -246,7 +239,7 @@
                 <x-icon name="wrench" class="w-8 h-8" />
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Mechanics</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">8</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $activeMechanics }}</p>
         </x-card>
 
         <x-card class="text-center hover:scale-[1.02] transition-transform duration-300">
@@ -254,7 +247,7 @@
                 <x-icon name="calendar" class="w-8 h-8" />
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Today's Appointments</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">6</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $todayAppointments }}</p>
         </x-card>
 
         <x-card class="text-center hover:scale-[1.02] transition-transform duration-300">
@@ -262,7 +255,7 @@
                 <x-icon name="check-square" class="w-8 h-8" />
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Completion Rate</p>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">94%</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $completionRate }}%</p>
         </x-card>
     </div>
 </div>

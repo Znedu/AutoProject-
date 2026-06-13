@@ -13,66 +13,72 @@
             subject: new URLSearchParams(window.location.search).get('subject') || '',
             message: ''
         },
-        tickets: [
-            { id: 1, subject: 'Question about paint warranty', message: 'I would like to know more about the warranty coverage for the paint job.', status: 'open', date: 'March 30, 2026', replies: 0 },
-            { id: 2, subject: 'Reschedule booking request', message: 'I need to reschedule my April 5 appointment to April 8.', status: 'in-progress', date: 'March 28, 2026', replies: 2 },
-            { id: 3, subject: 'Invoice inquiry', message: 'Can I get a detailed breakdown of the service costs?', status: 'resolved', date: 'March 25, 2026', replies: 3 }
-        ],
-        ticketReplies: {
-            2: [
-                { id: 1, author: 'Customer Support', role: 'staff', message: 'Thank you for contacting us. We can help you reschedule your appointment. What date works best for you?', date: 'March 28, 2026', time: '2:30 PM' },
-                { id: 2, author: 'You', role: 'customer', message: 'April 8 at 10:00 AM would be perfect. Is that available?', date: 'March 28, 2026', time: '3:15 PM' }
-            ],
-            3: [
-                { id: 1, author: 'Billing Team', role: 'staff', message: 'Here is the breakdown: Parts - ₱35,000, Labor - ₱15,000, Materials - ₱5,000. Total: ₱55,000', date: 'March 25, 2026', time: '11:00 AM' },
-                { id: 2, author: 'You', role: 'customer', message: 'Thank you for the detailed breakdown!', date: 'March 25, 2026', time: '2:00 PM' },
-                { id: 3, author: 'Billing Team', role: 'staff', message: 'You\'re welcome! Feel free to reach out if you have any other questions.', date: 'March 25, 2026', time: '2:15 PM' }
-            ]
-        },
+        tickets: @js($tickets),
+        ticketReplies: @js($ticketReplies),
 
         handleSubmitTicket() {
-            const nextId = this.tickets.length + 1;
-            this.tickets.push({
-                id: nextId,
-                subject: this.formData.subject,
-                message: this.formData.message,
-                status: 'open',
-                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                replies: 0
+            fetch('/customer/support', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    subject: this.formData.subject,
+                    message: this.formData.message
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.tickets.unshift(data.ticket);
+                    showToast.success('Support ticket created successfully!');
+                    this.formData = { subject: '', message: '' };
+                    this.showCreateForm = false;
+                    if (history.pushState) {
+                        history.pushState(null, '', window.location.pathname);
+                    }
+                } else {
+                    showToast.error('Failed to create ticket: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                showToast.error('An error occurred.');
             });
-            showToast.success('Support ticket created successfully!');
-            this.formData = { subject: '', message: '' };
-            this.showCreateForm = false;
-            if (history.pushState) {
-                history.pushState(null, '', window.location.pathname);
-            }
         },
 
         handleSubmitReply() {
             if (!this.viewingTicket || !this.replyMessage.trim()) return;
-            const currentReplies = this.ticketReplies[this.viewingTicket] || [];
-            const nextId = currentReplies.length + 1;
-            const newReply = {
-                id: nextId,
-                author: 'You',
-                role: 'customer',
-                message: this.replyMessage,
-                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-            };
-            
-            if (!this.ticketReplies[this.viewingTicket]) {
-                this.ticketReplies[this.viewingTicket] = [];
-            }
-            this.ticketReplies[this.viewingTicket].push(newReply);
-            
-            const ticket = this.tickets.find(t => t.id === this.viewingTicket);
-            if (ticket) {
-                ticket.replies++;
-            }
-            
-            this.replyMessage = '';
-            showToast.success('Reply sent successfully!');
+            fetch('/customer/support/' + this.viewingTicket + '/reply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    message: this.replyMessage
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (!this.ticketReplies[this.viewingTicket]) {
+                        this.ticketReplies[this.viewingTicket] = [];
+                    }
+                    this.ticketReplies[this.viewingTicket].push(data.reply);
+                    const ticket = this.tickets.find(t => t.id === this.viewingTicket);
+                    if (ticket) {
+                        ticket.replies++;
+                    }
+                    this.replyMessage = '';
+                    showToast.success('Reply sent successfully!');
+                } else {
+                    showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                showToast.error('An error occurred.');
+            });
         },
 
         getFilteredTickets() {

@@ -30,7 +30,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-white">
         <x-card class="bg-gradient-to-br from-[#E63946] to-[#D62839] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Total Revenue</p>
-            <p class="text-3xl font-bold">₱2.14M</p>
+            <p class="text-3xl font-bold">₱{{ number_format($totalRevenue) }}</p>
             <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
                 <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
                 <span>+18% vs last period</span>
@@ -39,7 +39,7 @@
 
         <x-card class="bg-gradient-to-br from-[#457B9D] to-[#5A8FB0] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Total Bookings</p>
-            <p class="text-3xl font-bold">248</p>
+            <p class="text-3xl font-bold">{{ $totalBookings }}</p>
             <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
                 <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
                 <span>+12% vs last period</span>
@@ -48,7 +48,7 @@
 
         <x-card class="bg-gradient-to-br from-green-500 to-green-600 border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Completion Rate</p>
-            <p class="text-3xl font-bold">94%</p>
+            <p class="text-3xl font-bold">{{ $completionRate }}%</p>
             <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
                 <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
                 <span>+3% vs last period</span>
@@ -57,7 +57,7 @@
 
         <x-card class="bg-gradient-to-br from-[#1F2937] to-[#374151] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Avg. Service Value</p>
-            <p class="text-3xl font-bold">₱8,630</p>
+            <p class="text-3xl font-bold">₱{{ number_format($avgServiceValue) }}</p>
             <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
                 <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
                 <span>+5% vs last period</span>
@@ -91,11 +91,11 @@
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        labels: @js($months),
                         datasets: [
                             {
                                 label: 'Revenue (₱)',
-                                data: [285000, 320000, 380000, 295000, 450000, 410000],
+                                data: @js($revenueData),
                                 borderColor: '#E63946',
                                 backgroundColor: gradRevenue,
                                 borderWidth: 3,
@@ -105,7 +105,7 @@
                             },
                             {
                                 label: 'Bookings',
-                                data: [45, 52, 61, 48, 73, 68],
+                                data: @js($bookingsData),
                                 borderColor: '#457B9D',
                                 backgroundColor: gradBookings,
                                 borderWidth: 3,
@@ -191,10 +191,10 @@
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: ['Engine Custom.', 'Paint Job', 'Body Kit', 'Turbo Install', 'Exhaust'],
+                            labels: @js($servicePopularityLabels),
                             datasets: [{
                                 label: 'Bookings Completed',
-                                data: [45, 38, 32, 24, 29],
+                                data: @js($servicePopularityCounts),
                                 backgroundColor: '#E63946',
                                 borderRadius: 8,
                                 borderSkipped: false
@@ -244,7 +244,7 @@
                         data: {
                             labels: ['Completed', 'In Progress', 'Pending', 'Cancelled'],
                             datasets: [{
-                                data: [196, 18, 22, 12],
+                                data: @js($statusCounts),
                                 backgroundColor: ['#10B981', '#457B9D', '#F59E0B', '#EF4444'],
                                 borderWidth: 2,
                                 borderColor: document.documentElement.classList.contains('dark') ? '#151515' : '#ffffff'
@@ -288,11 +288,11 @@
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        labels: @js($months),
                         datasets: [
                             {
                                 label: 'New Customers',
-                                data: [28, 35, 42, 31, 48, 45],
+                                data: @js($newCustomersData),
                                 borderColor: '#E63946',
                                 backgroundColor: 'transparent',
                                 borderWidth: 3,
@@ -301,7 +301,7 @@
                             },
                             {
                                 label: 'Returning Customers',
-                                data: [17, 17, 19, 17, 25, 23],
+                                data: @js($returningCustomersData),
                                 borderColor: '#457B9D',
                                 backgroundColor: 'transparent',
                                 borderWidth: 3,
@@ -359,16 +359,7 @@
                     </x-table-row>
                 </x-table-header>
                 <x-table-body>
-                    @php
-                        $servicePopularity = [
-                            ['name' => 'Engine Custom.', 'bookings' => 45, 'revenue' => 3375000, 'trend' => '+14%'],
-                            ['name' => 'Paint Job', 'bookings' => 38, 'revenue' => 1900000, 'trend' => '+18%'],
-                            ['name' => 'Body Kit', 'bookings' => 32, 'revenue' => 1600000, 'trend' => '+9%'],
-                            ['name' => 'Turbo Install', 'bookings' => 24, 'revenue' => 2880000, 'trend' => '+22%'],
-                            ['name' => 'Exhaust', 'bookings' => 29, 'revenue' => 870000, 'trend' => '+12%'],
-                        ];
-                    @endphp
-                    @foreach ($servicePopularity as $service)
+                    @foreach ($servicePerformance as $service)
                         <x-table-row>
                             <x-table-cell>
                                 <span class="font-semibold text-gray-900 dark:text-white">{{ $service['name'] }}</span>
