@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\Auth\DashboardRedirectService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,8 +13,9 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return $this->redirectBasedOnRole(Auth::user());
+            return redirect(DashboardRedirectService::pathFor(Auth::user()));
         }
+
         return view('login');
     }
 
@@ -23,14 +26,27 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-            return $this->redirectBasedOnRole(Auth::user());
+        if (! Auth::attempt($credentials)) {
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        $user = Auth::user();
+
+        if (! $user instanceof User || ! $user->isActive()) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'Your account has been deactivated. Please contact support.',
+            ])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+
+        return redirect()
+            ->intended(DashboardRedirectService::pathFor($user))
+            ->with('success', 'Welcome back, '.$user->name.'!');
     }
 
     public function logout(Request $request)
@@ -40,20 +56,5 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login')->with('success', 'Logged out successfully.');
-    }
-
-    protected function redirectBasedOnRole($user)
-    {
-        switch ($user->role) {
-            case 'admin':
-                return redirect()->intended('/admin')->with('success', 'Welcome back, ' . $user->name . '!');
-            case 'staff':
-                return redirect()->intended('/staff')->with('success', 'Welcome back, ' . $user->name . '!');
-            case 'mechanic':
-                return redirect()->intended('/mechanic')->with('success', 'Welcome back, ' . $user->name . '!');
-            case 'customer':
-            default:
-                return redirect()->intended('/customer')->with('success', 'Welcome back, ' . $user->name . '!');
-        }
     }
 }

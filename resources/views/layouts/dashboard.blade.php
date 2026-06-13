@@ -36,7 +36,7 @@
 
     @php
         // Dynamically resolve the user's role: prop > authentication > default
-        $resolvedRole = $role ?? auth()->user()->role ?? 'customer';
+        $resolvedRole = $role ?? auth()->user()?->roleSlug() ?? 'customer';
 
         $menuItems = [
             'customer' => [
@@ -61,6 +61,7 @@
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/admin'],
                 ['icon' => 'users', 'label' => 'User Management', 'path' => '/admin/users'],
                 ['icon' => 'check-square', 'label' => 'Booking Approval', 'path' => '/admin/approvals'],
+                ['icon' => 'clipboard-list', 'label' => 'Booking History', 'path' => '/admin/bookings/history'],
                 ['icon' => 'settings', 'label' => 'Service Management', 'path' => '/admin/services'],
                 ['icon' => 'bar-chart-3', 'label' => 'Reports', 'path' => '/admin/reports'],
             ],
