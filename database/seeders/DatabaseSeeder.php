@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\RoleSlug;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,44 +17,52 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            RolePermissionSeeder::class,
+            ServiceCatalogSeeder::class,
+        ]);
 
-        // Seed Demo Users
+        $roles = Role::query()->pluck('id', 'slug');
+
         $users = [
             [
                 'name' => 'Carlos Customer',
                 'email' => 'customer@gmail.com',
                 'phone' => '+63 915 222 3333',
-                'role' => 'customer',
-                'password' => bcrypt('demo123'),
+                'role_id' => $roles[RoleSlug::Customer->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
             ],
             [
                 'name' => 'Sarah Staff',
                 'email' => 'staff@gmail.com',
                 'phone' => '+63 923 333 4444',
-                'role' => 'staff',
-                'password' => bcrypt('demo123'),
+                'role_id' => $roles[RoleSlug::Staff->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
             ],
             [
                 'name' => 'John Mechanic',
                 'email' => 'mechanic@gmail.com',
                 'phone' => '+63 920 111 2222',
-                'role' => 'mechanic',
-                'password' => bcrypt('demo123'),
+                'role_id' => $roles[RoleSlug::Mechanic->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
             ],
             [
                 'name' => 'Chief Admin',
                 'email' => 'admin@gmail.com',
                 'phone' => '+63 912 345 6789',
-                'role' => 'admin',
-                'password' => bcrypt('demo123'),
+                'role_id' => $roles[RoleSlug::Administrator->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
             ],
         ];
 
         foreach ($users as $userData) {
             User::updateOrCreate(
                 ['email' => $userData['email']],
-                $userData
+                $userData,
             );
         }
     }

@@ -4,161 +4,57 @@
 
 @section('content')
 @php
-$serviceCategories = [
-    [
-        'id' => 'exterior',
-        'name' => 'Exterior Customization',
-        'icon' => 'Paintbrush',
-        'color' => '#E63946',
-    ],
-    [
-        'id' => 'performance',
-        'name' => 'Performance Upgrades',
-        'icon' => 'Gauge',
-        'color' => '#457B9D',
-    ],
-    [
-        'id' => 'interior',
-        'name' => 'Interior Customization',
-        'icon' => 'Armchair',
-        'color' => '#F77F00',
-    ],
-    [
-        'id' => 'engine',
-        'name' => 'Engine Maintenance',
-        'icon' => 'Settings',
-        'color' => '#1F2937',
-    ],
-    [
-        'id' => 'cooling',
-        'name' => 'Cooling System Maintenance',
-        'icon' => 'Wind',
-        'color' => '#06AED5',
-    ],
-    [
-        'id' => 'brake',
-        'name' => 'Brake System Maintenance',
-        'icon' => 'Disc',
-        'color' => '#D62828',
-    ],
-];
+    $servicesPayload = $services->map(fn ($service) => [
+        'id' => $service->id,
+        'name' => $service->name,
+        'category' => $service->category->slug,
+        'estimatedPrice' => ['min' => (float) $service->min_cost, 'max' => (float) $service->max_cost],
+        'description' => $service->description,
+        'brands' => $service->brands->pluck('name')->values(),
+    ])->values();
 
-$services = [
-    [
-        'id' => 'ext-001',
-        'name' => 'Full Body Paint / Repaint',
-        'category' => 'exterior',
-        'estimatedPrice' => ['min' => 25000, 'max' => 100000],
-        'description' => 'Complete vehicle paint job with premium quality automotive paint',
-        'brands' => ['Anzhal', 'Nippon Paint', 'Boysen', 'Davies', 'Glasurit', 'Sikkens'],
-    ],
-    [
-        'id' => 'ext-002',
-        'name' => 'Custom Wrap Installation',
-        'category' => 'exterior',
-        'estimatedPrice' => ['min' => 30000, 'max' => 80000],
-        'description' => 'Professional vinyl wrap application with various design options',
-        'brands' => ['3M (Series 2080)', 'Avery Dennison', 'TeckWrap', 'Oracal'],
-    ],
-    [
-        'id' => 'ext-003',
-        'name' => 'Body Kit Installation',
-        'category' => 'exterior',
-        'estimatedPrice' => ['min' => 35000, 'max' => 150000],
-        'description' => 'Installation of custom body kits including front/rear bumpers and side skirts',
-        'brands' => ['Modellista', 'Mugen', 'TRD', 'Varis', 'Liberty Walk', 'Rocket Bunny (Pandes)', 'Amuse'],
-    ],
-    [
-        'id' => 'perf-001',
-        'name' => 'Turbocharger Installation',
-        'category' => 'performance',
-        'estimatedPrice' => ['min' => 60000, 'max' => 200000],
-        'description' => 'Complete turbo kit installation with tuning and supporting mods',
-        'brands' => ['HKS', 'Garrett', 'GReddy', 'BorgWarner'],
-    ],
-    [
-        'id' => 'perf-002',
-        'name' => 'Intercooler Installation',
-        'category' => 'performance',
-        'estimatedPrice' => ['min' => 15000, 'max' => 50000],
-        'description' => 'Front-mount intercooler installation for improved cooling',
-        'brands' => ['HKS', 'Garrett', 'GReddy', 'Mishimoto'],
-    ],
-    [
-        'id' => 'int-001',
-        'name' => 'Custom Seat Upholstery',
-        'category' => 'interior',
-        'estimatedPrice' => ['min' => 15000, 'max' => 60000],
-        'description' => 'Premium leather or fabric seat re-upholstery',
-        'brands' => ['Seatmate', 'MG Square (Local)'],
-    ],
-    [
-        'id' => 'eng-001',
-        'name' => 'Engine Oil Change',
-        'category' => 'engine',
-        'estimatedPrice' => ['min' => 800, 'max' => 3000],
-        'description' => 'Complete engine oil and filter replacement',
-        'brands' => ['Motul', 'Shell Helix', 'Petron Blaze', 'Castrol', 'Mobil 1', 'Pertua'],
-    ],
-    [
-        'id' => 'cool-001',
-        'name' => 'Radiator Flush',
-        'category' => 'cooling',
-        'estimatedPrice' => ['min' => 1500, 'max' => 4000],
-        'description' => 'Complete radiator flush and cleaning',
-        'brands' => ['Prestone', 'Peak', 'Wynn\'s'],
-    ],
-    [
-        'id' => 'brake-001',
-        'name' => 'Brake Pad Replacement',
-        'category' => 'brake',
-        'estimatedPrice' => ['min' => 3000, 'max' => 12000],
-        'description' => 'Front or rear brake pad replacement',
-        'brands' => ['Akebono', 'Bendix', 'Ferodo', 'Brembo (OE replacement)'],
-    ],
-];
+    $categoriesPayload = $serviceCategories->map(fn ($category) => [
+        'id' => $category->slug,
+        'name' => $category->name,
+        'icon' => $category->icon,
+        'color' => $category->color,
+    ])->values();
 @endphp
 
 <div 
     x-data="{
         currentStep: 1,
         formData: {
-            customerName: '{{ auth()->user()->name }}',
-            contactNumber: '{{ auth()->user()->phone ?? '' }}',
-            vehicleMake: '',
-            vehicleModel: '',
-            vehicleYear: '',
-            plateNumber: '',
-            preferredDate: '',
-            preferredTime: '',
-            notes: ''
+            customerName: @js(old('customer_name', $user->name)),
+            contactNumber: @js(old('contact_number', $user->phone ?? '')),
+            vehicleMake: @js(old('vehicle_make', '')),
+            vehicleModel: @js(old('vehicle_model', '')),
+            vehicleYear: @js(old('vehicle_year', '')),
+            plateNumber: @js(old('plate_number', '')),
+            preferredDate: @js(old('preferred_date', '')),
+            preferredTime: @js(old('preferred_time', '')),
+            notes: @js(old('notes', ''))
         },
-        selectedServices: [],
-        selectedBrands: {},
-        expandedCategories: ['exterior', 'performance'],
-        paymentMethod: '',
-        referenceNumber: '',
+        selectedServices: @js(array_map('intval', old('service_ids', []))),
+        selectedBrands: @js(old('brands', [])),
+        expandedCategories: @js($categoriesPayload->take(2)->pluck('id')),
+        paymentMethod: @js(old('payment_method', '')),
+        referenceNumber: @js(old('reference_number', '')),
         agreedToTerms: false,
         showTerms: false,
-        selectedTimeSlot: '',
-        
-        services: {{ json_encode($services) }},
-        serviceCategories: {{ json_encode($serviceCategories) }},
-        
+        selectedTimeSlot: @js(old('preferred_time', '')),
+        slotAvailability: {},
+
+        services: @js($servicesPayload),
+        serviceCategories: @js($categoriesPayload),
+
         timeSlots: [
             '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
             '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'
         ],
-        
-        bookedAppointments: {
-            '2026-04-10': ['09:00 AM', '10:00 AM', '02:00 PM'],
-            '2026-04-11': ['08:00 AM', '11:00 AM', '03:00 PM', '04:00 PM'],
-            '2026-04-12': ['10:00 AM', '01:00 PM'],
-            '2026-04-14': ['09:00 AM', '12:00 PM', '02:00 PM', '05:00 PM'],
-            '2026-04-15': ['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM']
-        },
 
         toggleService(id) {
+            id = Number(id);
             if (this.selectedServices.includes(id)) {
                 this.selectedServices = this.selectedServices.filter(x => x !== id);
                 delete this.selectedBrands[id];
@@ -197,19 +93,27 @@ $services = [
             };
         },
 
+        async fetchAvailability(date) {
+            if (!date) return;
+            const response = await fetch(`{{ route('customer.schedule.availability') }}?date=${date}`);
+            this.slotAvailability[date] = await response.json();
+        },
+
         getDateAvailability(date) {
-            let booked = this.bookedAppointments[date] || [];
-            let available = this.timeSlots.filter(s => !booked.includes(s));
+            const data = this.slotAvailability[date];
+            if (!data) {
+                return { isFullyBooked: false, availableSlots: this.timeSlots, bookedSlots: [] };
+            }
             return {
-                isFullyBooked: available.length === 0,
-                availableSlots: available,
-                bookedSlots: booked
+                isFullyBooked: data.is_fully_booked,
+                availableSlots: data.available_slots,
+                bookedSlots: data.booked_slots
             };
         },
 
         isSunday(dateStr) {
             if (!dateStr) return false;
-            let date = new Date(dateStr);
+            let date = new Date(dateStr + 'T00:00:00');
             return date.getDay() === 0;
         },
 
@@ -222,11 +126,12 @@ $services = [
             window.scrollTo(0, 0);
         },
 
-        handleProceedToPayment() {
+        async handleProceedToPayment() {
             if (this.isSunday(this.formData.preferredDate)) {
                 showToast.error('We are closed on Sundays. Please select a weekday (Monday-Saturday).');
                 return;
             }
+            await this.fetchAvailability(this.formData.preferredDate);
             let avail = this.getDateAvailability(this.formData.preferredDate);
             if (avail.isFullyBooked) {
                 showToast.error('Selected date is fully booked. Please choose another date.');
@@ -253,12 +158,80 @@ $services = [
                 showToast.error('Please agree to the terms and conditions');
                 return;
             }
-            showToast.success('Booking submitted successfully! Admin will verify your payment and confirm your booking.');
-            window.location.href = '{{ url('/customer/bookings') }}';
+
+            const form = document.getElementById('booking-submit-form');
+            const fields = {
+                customer_name: this.formData.customerName,
+                contact_number: this.formData.contactNumber,
+                vehicle_make: this.formData.vehicleMake,
+                vehicle_model: this.formData.vehicleModel,
+                vehicle_year: this.formData.vehicleYear,
+                plate_number: this.formData.plateNumber,
+                preferred_date: this.formData.preferredDate,
+                preferred_time: this.selectedTimeSlot,
+                notes: this.formData.notes,
+                payment_method: this.paymentMethod,
+                reference_number: this.referenceNumber,
+            };
+
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = form.querySelector(`[name='${name}']`);
+                if (input) input.value = value ?? '';
+            });
+
+            form.querySelectorAll('[data-dynamic-input]').forEach(el => el.remove());
+
+            this.selectedServices.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'service_ids[]';
+                input.value = id;
+                input.setAttribute('data-dynamic-input', 'true');
+                form.appendChild(input);
+            });
+
+            Object.entries(this.selectedBrands).forEach(([serviceId, brand]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `brands[${serviceId}]`;
+                input.value = brand;
+                input.setAttribute('data-dynamic-input', 'true');
+                form.appendChild(input);
+            });
+
+            const terms = form.querySelector('[name=agreed_to_terms]');
+            if (terms) terms.checked = this.agreedToTerms;
+
+            form.submit();
         }
     }"
     class="max-w-7xl mx-auto space-y-6 animate-fade-in"
 >
+    @if ($errors->any())
+        <x-card class="border-red-500/30 bg-red-50 dark:bg-red-950/20">
+            <ul class="list-disc list-inside text-sm text-red-600 dark:text-red-400 space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </x-card>
+    @endif
+
+    <form id="booking-submit-form" method="POST" action="{{ route('customer.bookings.store') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="customer_name" />
+        <input type="hidden" name="contact_number" />
+        <input type="hidden" name="vehicle_make" />
+        <input type="hidden" name="vehicle_model" />
+        <input type="hidden" name="vehicle_year" />
+        <input type="hidden" name="plate_number" />
+        <input type="hidden" name="preferred_date" />
+        <input type="hidden" name="preferred_time" />
+        <input type="hidden" name="notes" />
+        <input type="hidden" name="payment_method" />
+        <input type="hidden" name="reference_number" />
+        <input type="checkbox" name="agreed_to_terms" value="1" />
+    </form>
     {{-- Progress Indicator --}}
     <div class="flex items-center justify-center gap-3 mb-6">
         <div class="flex items-center gap-2">
@@ -556,7 +529,7 @@ $services = [
                             type="date"
                             x-model="formData.preferredDate"
                             min="{{ date('Y-m-d') }}"
-                            @change="selectedTimeSlot = ''; formData.preferredTime = ''"
+                            @change="selectedTimeSlot = ''; formData.preferredTime = ''; fetchAvailability(formData.preferredDate)"
                             required
                         />
 

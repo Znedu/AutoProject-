@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\RoleSlug;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -28,6 +30,11 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'phone' => fake()->phoneNumber(),
+            'role_id' => fn () => Role::query()
+                ->where('slug', RoleSlug::Customer->value)
+                ->value('id'),
+            'status' => User::STATUS_ACTIVE,
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
@@ -40,6 +47,33 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->forRole(RoleSlug::Administrator);
+    }
+
+    public function staff(): static
+    {
+        return $this->forRole(RoleSlug::Staff);
+    }
+
+    public function mechanic(): static
+    {
+        return $this->forRole(RoleSlug::Mechanic);
+    }
+
+    public function customer(): static
+    {
+        return $this->forRole(RoleSlug::Customer);
+    }
+
+    public function forRole(RoleSlug $role): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::query()->where('slug', $role->value)->value('id'),
         ]);
     }
 }
