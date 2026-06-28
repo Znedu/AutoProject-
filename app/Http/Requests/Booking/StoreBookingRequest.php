@@ -41,6 +41,7 @@ class StoreBookingRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'payment_method' => ['required', Rule::in([Payment::METHOD_GCASH, Payment::METHOD_MAYA])],
             'reference_number' => ['required', 'string', 'max:50'],
+            'payment_screenshot' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:5120'],
             'agreed_to_terms' => ['accepted'],
         ];
     }
@@ -53,6 +54,10 @@ class StoreBookingRequest extends FormRequest
         return [
             'service_ids.required' => 'Please select at least one service.',
             'agreed_to_terms.accepted' => 'You must agree to the terms and conditions.',
+            'payment_screenshot.required' => 'Please upload a screenshot of your payment proof.',
+            'payment_screenshot.image' => 'The payment proof must be an image file.',
+            'payment_screenshot.mimes' => 'The payment proof must be a PNG, JPG, or JPEG file.',
+            'payment_screenshot.max' => 'The payment proof may not be larger than 5MB.',
         ];
     }
 
@@ -82,6 +87,7 @@ class StoreBookingRequest extends FormRequest
             'notes' => $validated['notes'] ?? null,
             'payment_method' => $validated['payment_method'],
             'reference_number' => $validated['reference_number'],
+            'payment_screenshot' => $this->file('payment_screenshot'),
         ];
     }
 }

@@ -29,7 +29,7 @@ class PaymentProof extends Model
     protected function url(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->file_path
-            ? Storage::disk($this->disk)->url($this->file_path)
+            ? asset('storage/' . $this->file_path)
             : null);
     }
 

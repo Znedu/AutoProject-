@@ -15,7 +15,7 @@
         'cancelled' => 'Cancelled',
     ];
 
-    $filters = ['all', 'pending', 'confirmed', 'in_progress', 'completed'];
+    $filters = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 @endphp
 
 <div class="space-y-6 animate-fade-in">
@@ -135,10 +135,10 @@
                             </x-button>
                         </a>
 
-                        @if ($booking->status === \App\Models\Booking::STATUS_APPROVED)
-                            <a href="{{ url('/customer/payment/'.$booking->id) }}">
-                                <x-button variant="accent" size="sm" class="whitespace-nowrap bg-green-600 hover:bg-green-700 text-white w-full border-green-600">
-                                    Pay Now
+                        @if ($payment)
+                            <a href="{{ route('customer.payment', $booking->id) }}">
+                                <x-button variant="secondary" size="sm" class="whitespace-nowrap w-full">
+                                    Payment Details
                                 </x-button>
                             </a>
                         @endif

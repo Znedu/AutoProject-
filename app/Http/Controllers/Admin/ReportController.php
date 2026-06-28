@@ -54,7 +54,8 @@ class ReportController extends Controller
                 ->count();
 
             // Returning customers (placeholder / calculation: bookings > 1 in this month)
-            $returningCount = Booking::whereYear('created_at', $date->year)
+            $returningCount = Booking::select('user_id')
+                ->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
                 ->groupBy('user_id')
                 ->havingRaw('count(*) > 1')
