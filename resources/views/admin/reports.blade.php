@@ -371,7 +371,7 @@
                                 <span class="text-gray-600 dark:text-gray-400">₱{{ number_format($service['revenue']) }}</span>
                             </x-table-cell>
                             <x-table-cell>
-                                <span class="text-gray-600 dark:text-gray-400">₱{{ number_format(round($service['revenue'] / $service['bookings'])) }}</span>
+                                <span class="text-gray-600 dark:text-gray-400">₱{{ number_format($service['avg']) }}</span>
                             </x-table-cell>
                             <x-table-cell>
                                 <span class="text-green-500 font-semibold flex items-center gap-1">

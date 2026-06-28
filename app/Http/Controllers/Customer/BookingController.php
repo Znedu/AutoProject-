@@ -85,6 +85,8 @@ class BookingController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        return back()->with('success', 'Booking cancelled successfully.');
+        return redirect()
+            ->route('customer.bookings.index', ['status' => 'cancelled'])
+            ->with('success', 'Booking cancelled successfully.');
     }
 }

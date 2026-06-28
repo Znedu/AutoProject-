@@ -136,6 +136,9 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/payment/{bookingId}', [CustomerPaymentController::class, 'show'])
                 ->middleware('permission:payments.submit')
                 ->name('payment');
+            Route::post('/payment/{bookingId}', [CustomerPaymentController::class, 'submit'])
+                ->middleware('permission:payments.submit')
+                ->name('payment.submit');
         });
 
     Route::prefix('staff')

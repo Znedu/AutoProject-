@@ -38,6 +38,7 @@ class BookingCreatorService
      *     notes?: string|null,
      *     payment_method: string,
      *     reference_number: string,
+     *     payment_screenshot?: \Illuminate\Http\UploadedFile|null,
      * }  $data
      */
     public function create(User $customer, array $data): Booking
@@ -83,7 +84,7 @@ class BookingCreatorService
 
             $this->quotationBuilder->createInitialEstimate($booking, $services, $brandPreferences);
 
-            Payment::create([
+            $payment = Payment::create([
                 'payment_number' => $this->paymentNumberGenerator->generate(),
                 'booking_id' => $booking->id,
                 'user_id' => $customer->id,
@@ -95,6 +96,18 @@ class BookingCreatorService
                 'status' => Payment::STATUS_SUBMITTED,
                 'paid_at' => now(),
             ]);
+
+            if (isset($data['payment_screenshot']) && $data['payment_screenshot'] instanceof \Illuminate\Http\UploadedFile) {
+                $file = $data['payment_screenshot'];
+                $path = $file->store('payment_proofs', 'public');
+                $payment->proofs()->create([
+                    'disk' => 'public',
+                    'file_path' => $path,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'size_bytes' => $file->getSize(),
+                ]);
+            }
 
             $this->statusLogger->log($booking, null, Booking::STATUS_PENDING, $customer, 'Booking submitted by customer.');
 

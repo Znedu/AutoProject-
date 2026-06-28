@@ -19,6 +19,10 @@
         'icon' => $category->icon,
         'color' => $category->color,
     ])->values();
+
+    $fee = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
+    $gcashNumber = \App\Models\BusinessSetting::getValue('gcash_account_number', '0912-345-6789');
+    $mayaNumber = \App\Models\BusinessSetting::getValue('maya_account_number', '0917-888-9999');
 @endphp
 
 <div 
@@ -40,6 +44,16 @@
         expandedCategories: @js($categoriesPayload->take(2)->pluck('id')),
         paymentMethod: @js(old('payment_method', '')),
         referenceNumber: @js(old('reference_number', '')),
+        uploadedFile: null,
+        gcashNumber: @js($gcashNumber),
+        mayaNumber: @js($mayaNumber),
+        reservationFee: @js('₱' . number_format($fee, 2)),
+        handleFileUpload(e) {
+            if (e.target.files && e.target.files[0]) {
+                this.uploadedFile = e.target.files[0].name;
+                document.getElementById('hidden-payment-screenshot').files = e.target.files;
+            }
+        },
         agreedToTerms: false,
         showTerms: false,
         selectedTimeSlot: @js(old('preferred_time', '')),
@@ -154,6 +168,10 @@
                 showToast.error('Please enter payment reference number');
                 return;
             }
+            if (!this.uploadedFile) {
+                showToast.error('Please upload payment screenshot');
+                return;
+            }
             if (!this.agreedToTerms) {
                 showToast.error('Please agree to the terms and conditions');
                 return;
@@ -217,7 +235,7 @@
         </x-card>
     @endif
 
-    <form id="booking-submit-form" method="POST" action="{{ route('customer.bookings.store') }}" class="hidden">
+    <form id="booking-submit-form" method="POST" action="{{ route('customer.bookings.store') }}" enctype="multipart/form-data" class="hidden">
         @csrf
         <input type="hidden" name="customer_name" />
         <input type="hidden" name="contact_number" />
@@ -230,6 +248,7 @@
         <input type="hidden" name="notes" />
         <input type="hidden" name="payment_method" />
         <input type="hidden" name="reference_number" />
+        <input type="file" name="payment_screenshot" id="hidden-payment-screenshot" class="hidden" />
         <input type="checkbox" name="agreed_to_terms" value="1" />
     </form>
     {{-- Progress Indicator --}}
@@ -650,13 +669,40 @@
     {{-- STEP 3: Payment & Terms --}}
     <div x-show="currentStep === 3" class="space-y-6">
         <form @submit.prevent="handleSubmit()" class="space-y-6">
+            {{-- Booking Summary --}}
+            <x-card>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Booking Summary</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Services</span>
+                        <span class="font-bold text-gray-900 dark:text-white text-right" x-text="selectedServices.map(id => services.find(s => s.id === id)?.name).join(', ')"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Vehicle</span>
+                        <span class="font-bold text-gray-900 dark:text-white" x-text="`${formData.vehicleMake} ${formData.vehicleModel} ${formData.vehicleYear}`"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Plate Number</span>
+                        <span class="font-bold text-gray-900 dark:text-white" x-text="formData.plateNumber"></span>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-200 dark:border-white/10 pt-3">
+                        <span class="text-gray-600 dark:text-gray-400">Total Estimate</span>
+                        <span class="font-bold text-gray-900 dark:text-white" x-text="getEstimatedCost()?.display"></span>
+                    </div>
+                    <div class="flex justify-between items-center bg-[#E63946]/10 p-4 rounded-xl">
+                        <span class="font-extrabold text-gray-900 dark:text-white">Reservation Fee (Required)</span>
+                        <span class="text-2xl font-black text-[#E63946]" x-text="reservationFee"></span>
+                    </div>
+                </div>
+            </x-card>
+
             <x-card class="bg-blue-50 dark:bg-blue-950/30 border-l-4 border-[#457B9D]">
                 <div class="flex gap-3">
                     <x-icon name="info" class="text-[#457B9D] flex-shrink-0 w-6 h-6" />
                     <div class="text-sm">
-                        <p class="font-bold mb-1 text-gray-900 dark:text-white">Reservation Fee Required: ₱200</p>
+                        <p class="font-bold mb-1 text-gray-900 dark:text-white">Reservation Fee Required: <span x-text="reservationFee"></span></p>
                         <p class="text-gray-700 dark:text-gray-300">
-                            A non-refundable reservation fee of ₱200 is required to secure your appointment. This fee ensures your commitment to arrive at the scheduled date and time.
+                            A non-refundable reservation fee of <span x-text="reservationFee"></span> is required to secure your appointment. This fee ensures your commitment to arrive at the scheduled date and time.
                         </p>
                     </div>
                 </div>
@@ -665,7 +711,7 @@
             <x-card class="border-2 border-[#457B9D]">
                 <div class="flex items-center gap-2 mb-4">
                     <x-icon name="shield" class="text-[#457B9D] w-6 h-6" />
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Reservation Fee Payment - ₱200</h2>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Reservation Fee Payment - <span x-text="reservationFee"></span></h2>
                 </div>
 
                 <div class="space-y-6">
@@ -704,7 +750,7 @@
                         <div x-show="paymentMethod === 'gcash'" class="bg-white dark:bg-[#0B0B0B] rounded-xl p-6 border-2 border-[#457B9D]">
                             <div class="text-center space-y-4">
                                 <div class="inline-block bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg">
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Scan QR Code to Pay ₱200</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Scan QR Code to Pay <span x-text="reservationFee"></span></p>
                                 </div>
                                 <div class="flex justify-center">
                                     <div class="bg-white p-4 rounded-2xl shadow-lg">
@@ -716,13 +762,14 @@
                                     <ol class="text-xs text-gray-600 dark:text-gray-400 space-y-1 text-left list-decimal list-inside">
                                         <li>Open your GCash app</li>
                                         <li>Scan the QR code above</li>
-                                        <li>Confirm payment of ₱200</li>
+                                        <li>Confirm payment of <span x-text="reservationFee"></span></li>
                                         <li>Take a screenshot of your receipt</li>
                                         <li>Enter your reference number below</li>
                                     </ol>
                                 </div>
                                 <p class="text-xs text-gray-600 dark:text-gray-400">
-                                    <strong>Account Name:</strong> AutoProject-D Custom Garage
+                                    <strong>Account Name:</strong> AutoProject-D Custom Garage <br>
+                                    <strong>GCash Number:</strong> <span x-text="gcashNumber"></span>
                                 </p>
                             </div>
                         </div>
@@ -731,10 +778,10 @@
                         <div x-show="paymentMethod === 'maya'" class="bg-white dark:bg-[#0B0B0B] rounded-xl p-6 border-2 border-[#457B9D]">
                             <div class="text-center space-y-4">
                                 <div class="inline-block bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg">
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Send ₱200 to Maya Account</p>
+                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Send <span x-text="reservationFee"></span> to Maya Account</p>
                                 </div>
                                 <div class="bg-gray-50 dark:bg-[#151515] rounded-xl p-4">
-                                    <p class="text-lg font-extrabold text-gray-900 dark:text-white mb-2">0917-888-9999</p>
+                                    <p class="text-lg font-extrabold text-gray-900 dark:text-white mb-2" x-text="mayaNumber"></p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Account Name: AutoProject-D Custom Garage</p>
                                 </div>
                                 <div class="bg-gray-50 dark:bg-[#151515] rounded-xl p-4">
@@ -743,7 +790,7 @@
                                         <li>Open your Maya app</li>
                                         <li>Select "Send Money"</li>
                                         <li>Enter the mobile number above</li>
-                                        <li>Send ₱200</li>
+                                        <li>Send <span x-text="reservationFee"></span></li>
                                         <li>Take a screenshot of your receipt</li>
                                         <li>Enter your reference number below</li>
                                     </ol>
@@ -758,6 +805,34 @@
                             required
                             helperText="Enter the reference number from your payment receipt"
                         />
+
+                        {{-- Upload Payment Screenshot --}}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Upload Payment Screenshot <span class="text-red-500">*</span>
+                            </label>
+                            <label class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl cursor-pointer hover:border-[#E63946] transition-colors bg-gray-50 dark:bg-white/5">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                    <x-icon name="check-square" class="w-12 h-12 text-gray-400 mb-3" />
+                                    <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <span class="font-bold">Click to upload</span> or drag and drop
+                                    </p>
+                                    <p class="text-xs text-gray-500 mb-2">PNG, JPG or JPEG (MAX. 5MB)</p>
+                                    <template x-if="uploadedFile">
+                                        <div class="mt-2 flex items-center gap-2 text-green-600 justify-center">
+                                            <x-icon name="check-square" class="w-5 h-5 text-green-600" />
+                                            <span class="font-bold" x-text="uploadedFile"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <input
+                                    type="file"
+                                    class="hidden"
+                                    accept="image/*"
+                                    @change="handleFileUpload"
+                                />
+                            </label>
+                        </div>
                     </div>
                 </div>
             </x-card>
