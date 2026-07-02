@@ -9,9 +9,17 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Booking Approval</h1>
             <p class="text-gray-600 dark:text-gray-400">Review and approve customer booking requests.</p>
         </div>
-        <a href="{{ route('admin.bookings.history') }}">
-            <x-button variant="secondary">Booking History</x-button>
-        </a>
+        <div class="flex gap-3">
+            <a href="{{ route('admin.jobs.index') }}">
+                <x-button variant="primary">
+                    <x-icon name="wrench" class="w-4 h-4 mr-2" />
+                    Job Assignment
+                </x-button>
+            </a>
+            <a href="{{ route('admin.bookings.history') }}">
+                <x-button variant="secondary">Booking History</x-button>
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">

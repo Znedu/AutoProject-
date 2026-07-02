@@ -29,6 +29,11 @@ class ServiceUpdate extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function photos(): HasMany
     {
         return $this->hasMany(ServiceUpdatePhoto::class);

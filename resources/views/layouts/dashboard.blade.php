@@ -61,6 +61,7 @@
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/admin'],
                 ['icon' => 'users', 'label' => 'User Management', 'path' => '/admin/users'],
                 ['icon' => 'check-square', 'label' => 'Booking Approval', 'path' => '/admin/approvals'],
+                ['icon' => 'wrench', 'label' => 'Job Assignment', 'path' => '/admin/jobs'],
                 ['icon' => 'clipboard-list', 'label' => 'Booking History', 'path' => '/admin/bookings/history'],
                 ['icon' => 'settings', 'label' => 'Service Management', 'path' => '/admin/services'],
                 ['icon' => 'bar-chart-3', 'label' => 'Reports', 'path' => '/admin/reports'],
@@ -184,5 +185,6 @@
     <!-- Toast Notifications -->
     <x-toast />
 
+    @stack('scripts')
 </body>
 </html>

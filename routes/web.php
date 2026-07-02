@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\JobController as AdminJobController;
 
 // Import Customer Controllers
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
@@ -81,6 +82,14 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:services.manage')
                 ->name('services.index');
 
+            Route::get('/jobs', [AdminJobController::class, 'index'])
+                ->middleware('permission:approvals.manage')
+                ->name('jobs.index');
+
+            Route::post('/jobs/{job}/assign', [AdminJobController::class, 'assign'])
+                ->middleware('permission:approvals.manage')
+                ->name('jobs.assign');
+
             Route::get('/reports', [AdminReportController::class, 'index'])
                 ->middleware('permission:reports.view')
                 ->name('reports.index');
@@ -115,6 +124,11 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/track', [CustomerTrackController::class, 'index'])
                 ->middleware('permission:tracking.view')
                 ->name('track');
+
+            Route::get('/track/refresh', [CustomerTrackController::class, 'refresh'])
+                ->middleware('permission:tracking.view')
+                ->name('track.refresh');
+
 
             Route::get('/support', [CustomerSupportController::class, 'index'])
                 ->middleware('permission:support.view')

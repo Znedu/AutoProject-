@@ -12,17 +12,22 @@ class JobController extends Controller
     public function index()
     {
         $jobs = JobOrder::forMechanic(auth()->id())
-            ->with(['booking.services', 'booking.vehicle', 'booking.user'])
+            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress'])
             ->get()
             ->map(function ($job) {
                 $booking = $job->booking;
                 $vehicle = $booking?->vehicle;
                 $user = $booking?->user;
                 
+                // Find the active service stage ID
+                $currentStageId = $job->stageProgress->where('is_current', true)->first()?->service_stage_id;
+
                 // Map DB status to prototype UI status filters (e.g. paused -> pending)
                 $uiStatus = $job->status;
                 if ($uiStatus === JobOrder::STATUS_PAUSED || $uiStatus === JobOrder::STATUS_ASSIGNED) {
                     $uiStatus = 'pending';
+                } elseif ($uiStatus === JobOrder::STATUS_IN_PROGRESS) {
+                    $uiStatus = 'in-progress';
                 }
 
                 return [
@@ -37,11 +42,15 @@ class JobController extends Controller
                     'startDate' => $job->started_at ? $job->started_at->format('F d, Y') : 'Not Started',
                     'estimatedCompletion' => $job->estimated_completion_date ? $job->estimated_completion_date->format('F d, Y') : 'TBD',
                     'priority' => ucfirst($job->priority),
+                    'currentStageId' => $currentStageId,
                 ];
             });
 
+        $stages = \App\Models\ServiceStage::orderBy('sort_order')->get();
+
         return view('mechanic.jobs', [
             'jobs' => $jobs,
+            'stages' => $stages,
         ]);
     }
 
@@ -52,13 +61,14 @@ class JobController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $newProgress = max($job->progress_percent, 5);
         $job->update([
-            'status' => JobOrder::STATUS_IN_PROGRESS,
-            'started_at' => now(),
-            'progress_percent' => max($job->progress_percent, 5),
+            'status'           => JobOrder::STATUS_IN_PROGRESS,
+            'started_at'       => now(),
+            'progress_percent' => $newProgress,
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'progress' => $newProgress]);
     }
 
     public function pause(JobOrder $job)
