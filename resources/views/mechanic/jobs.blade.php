@@ -134,6 +134,57 @@
                             Update Progress
                         </x-button>
                     </div>
+
+                    {{-- Service Updates History Accordion --}}
+                    <div x-data="{ open: false }" class="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+                        <button
+                            @click="open = !open"
+                            class="flex items-center justify-between w-full text-left text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-[#E63946] transition-colors"
+                        >
+                            <span class="flex items-center gap-2">
+                                <x-icon name="clipboard-list" class="w-4 h-4" />
+                                <span>Service Updates Log (<span x-text="job.serviceUpdates ? job.serviceUpdates.length : 0"></span>)</span>
+                            </span>
+                            <svg
+                                class="w-4 h-4 transform transition-transform"
+                                :class="open ? 'rotate-180' : ''"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-collapse class="mt-3 space-y-3">
+                            <template x-if="!job.serviceUpdates || job.serviceUpdates.length === 0">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 py-1">No updates posted for this job yet.</p>
+                            </template>
+                            <div class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                                <template x-for="update in job.serviceUpdates" :key="update.id">
+                                    <div class="p-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-xl space-y-2">
+                                        <div class="flex justify-between items-center text-xs text-gray-500">
+                                            <span x-text="update.date"></span>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300" x-text="update.mechanic"></span>
+                                        </div>
+                                        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed" x-text="update.message"></p>
+                                        
+                                        {{-- Photo Gallery --}}
+                                        <template x-if="update.photos && update.photos.length > 0">
+                                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                                <template x-for="photo in update.photos">
+                                                    <div class="relative cursor-pointer group" @click="openLightbox(photo.url)">
+                                                        <img :src="photo.url" class="w-10 h-10 object-cover rounded-lg border border-gray-200 dark:border-white/10 transition-transform duration-200 hover:scale-105" />
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </x-card>
         </template>
@@ -290,6 +341,34 @@
         </div>
     </div>
 
+    {{-- Photo Lightbox --}}
+    <div
+        x-show="lightboxPhoto"
+        x-transition:enter="ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+        style="display:none;"
+        @click="closeLightbox()"
+        @keydown.escape.window="closeLightbox()"
+    >
+        <button
+            class="absolute top-4 right-4 text-white hover:text-gray-300 cursor-pointer transition-colors"
+            @click="closeLightbox()"
+        >
+            <x-icon name="x" class="w-8 h-8" />
+        </button>
+        <img
+            :src="lightboxPhoto"
+            alt="Full size preview"
+            class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            @click.stop
+        />
+    </div>
+
 </div>
 @endsection
 
@@ -302,6 +381,7 @@
             stages: @json($stages),
             showUpdateModal: false,
             selectedJobId: null,
+            lightboxPhoto: null,
             updateNote: '',
             updateStageId: '',
             updateProgress: 0,
@@ -309,6 +389,16 @@
             rawPhotos: [],
 
             init() {
+            },
+
+            openLightbox(url) {
+                this.lightboxPhoto = url;
+                document.body.classList.add('overflow-hidden');
+            },
+
+            closeLightbox() {
+                this.lightboxPhoto = null;
+                document.body.classList.remove('overflow-hidden');
             },
 
             getFilteredJobs() {
@@ -456,6 +546,11 @@
                             } else {
                                 job.status = 'in-progress';
                             }
+                            // Append new note dynamically to local list
+                            if (!job.serviceUpdates) {
+                                job.serviceUpdates = [];
+                            }
+                            job.serviceUpdates.unshift(data.note);
                         }
 
                         this.closeModal();

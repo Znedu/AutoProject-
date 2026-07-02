@@ -28,7 +28,7 @@ class DashboardController extends Controller
         // Current Assigned Jobs
         $assignedJobs = JobOrder::forMechanic($userId)
             ->assigned()
-            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress'])
+            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress', 'serviceUpdates.photos', 'serviceUpdates.user'])
             ->get()
             ->map(function ($job) {
                 $booking = $job->booking;
@@ -44,6 +44,22 @@ class DashboardController extends Controller
                     $uiStatus = 'in-progress';
                 }
 
+                // Map service updates
+                $serviceUpdates = $job->serviceUpdates->map(function ($update) {
+                    $photos = $update->photos->map(fn ($p) => [
+                        'url'     => $p->url ?? '/storage/' . $p->file_path,
+                        'caption' => $p->caption ?? ''
+                    ])->values()->toArray();
+
+                    return [
+                        'id'       => $update->id,
+                        'message'  => $update->message,
+                        'date'     => $update->created_at->format('M d, Y - g:i A'),
+                        'mechanic' => $update->user?->name ?? 'Mechanic',
+                        'photos'   => $photos
+                    ];
+                })->values()->toArray();
+
                 return [
                     'id' => $job->id,
                     'customer' => $booking?->customer_name ?? ($booking->user?->name ?? 'Unknown'),
@@ -53,6 +69,7 @@ class DashboardController extends Controller
                     'priority' => ucfirst($job->priority),
                     'progress' => (int) $job->progress_percent,
                     'currentStageId' => $currentStageId,
+                    'serviceUpdates' => $serviceUpdates,
                 ];
             });
 

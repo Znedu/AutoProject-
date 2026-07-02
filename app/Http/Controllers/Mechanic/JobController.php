@@ -12,7 +12,7 @@ class JobController extends Controller
     public function index()
     {
         $jobs = JobOrder::forMechanic(auth()->id())
-            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress'])
+            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress', 'serviceUpdates.photos', 'serviceUpdates.user'])
             ->get()
             ->map(function ($job) {
                 $booking = $job->booking;
@@ -30,6 +30,22 @@ class JobController extends Controller
                     $uiStatus = 'in-progress';
                 }
 
+                // Map service updates
+                $serviceUpdates = $job->serviceUpdates->map(function ($update) {
+                    $photos = $update->photos->map(fn ($p) => [
+                        'url'     => $p->url ?? '/storage/' . $p->file_path,
+                        'caption' => $p->caption ?? ''
+                    ])->values()->toArray();
+
+                    return [
+                        'id'       => $update->id,
+                        'message'  => $update->message,
+                        'date'     => $update->created_at->format('M d, Y - g:i A'),
+                        'mechanic' => $update->user?->name ?? 'Mechanic',
+                        'photos'   => $photos
+                    ];
+                })->values()->toArray();
+
                 return [
                     'id' => $job->id,
                     'customer' => $booking?->customer_name ?? ($user?->name ?? 'Unknown'),
@@ -43,6 +59,7 @@ class JobController extends Controller
                     'estimatedCompletion' => $job->estimated_completion_date ? $job->estimated_completion_date->format('F d, Y') : 'TBD',
                     'priority' => ucfirst($job->priority),
                     'currentStageId' => $currentStageId,
+                    'serviceUpdates' => $serviceUpdates,
                 ];
             });
 
