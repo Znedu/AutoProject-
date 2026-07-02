@@ -3,112 +3,8 @@
 @section('title', 'Mechanic Dashboard | AutoProject+')
 
 @section('content')
-<div 
-    x-data="{
-        showUpdateModal: false,
-        selectedJobId: null,
-        updateNote: '',
-        selectedPhotos: [],
-        assignedJobs: @js($assignedJobs),
-
-        handleStartJob(job) {
-            fetch('/mechanic/jobs/' + job.id + '/start', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    job.status = 'in-progress';
-                    showToast.success('Job #' + job.id + ' started!');
-                } else {
-                    showToast.error('Failed to start job.');
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        },
-
-        handlePauseJob(job) {
-            fetch('/mechanic/jobs/' + job.id + '/pause', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    job.status = 'pending';
-                    showToast.info('Job #' + job.id + ' paused!');
-                } else {
-                    showToast.error('Failed to pause job.');
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        },
-
-        handleUpdateProgress(jobId) {
-            this.selectedJobId = jobId;
-            this.showUpdateModal = true;
-        },
-
-        handlePhotoUpload(e) {
-            const files = Array.from(e.target.files || []);
-            if (files.length + this.selectedPhotos.length > 5) {
-                showToast.error('Maximum 5 photos allowed per update');
-                return;
-            }
-            files.forEach(file => {
-                this.selectedPhotos.push({
-                    name: file.name,
-                    url: URL.createObjectURL(file)
-                });
-            });
-        },
-
-        removePhoto(index) {
-            this.selectedPhotos = this.selectedPhotos.filter((_, i) => i !== index);
-        },
-
-        handleSubmitUpdate() {
-            if (!this.updateNote.trim()) {
-                showToast.error('Please add a note');
-                return;
-            }
-            fetch('/mechanic/notes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    jobId: this.selectedJobId,
-                    note: this.updateNote
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast.success('Progress update note saved successfully! Customer will be notified.');
-                    this.closeModal();
-                } else {
-                    showToast.error('Failed to save progress update: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        },
-
-        closeModal() {
-            this.showUpdateModal = false;
-            this.updateNote = '';
-            this.selectedPhotos = [];
-            this.selectedJobId = null;
-        }
-    }"
+<div
+    x-data="mechanicDashboard()"
     class="space-y-8 animate-fade-in"
 >
     {{-- Header --}}
@@ -179,7 +75,7 @@
                                 <x-status-badge ::status="job.status">
                                     <span x-text="job.status === 'in-progress' ? 'In Progress' : 'Pending Start'"></span>
                                 </x-status-badge>
-                                <span 
+                                <span
                                     class="px-2 py-1 rounded text-xs font-semibold"
                                     :class="job.priority === 'High' ? 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300' : 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300'"
                                     x-text="job.priority + ' Priority'"
@@ -211,48 +107,63 @@
     <x-card>
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
         <div class="space-y-4">
-            <div class="flex items-start gap-3 pb-3 border-b border-gray-200 dark:border-white/10">
-                <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                <div>
-                    <p class="text-gray-900 dark:text-white font-medium">Completed: Turbo Installation</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Subaru WRX 2022 - 2 hours ago</p>
+            @forelse ($recentActivities as $activity)
+                <div class="flex items-start gap-3 pb-3 border-b border-gray-200 dark:border-white/10 last:border-b-0 last:pb-0">
+                    <div class="w-2 h-2 bg-[#E63946] rounded-full mt-2"></div>
+                    <div>
+                        <p class="text-gray-900 dark:text-white font-medium">{{ $activity['message'] }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $activity['job'] }} - {{ $activity['time'] }}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-start gap-3 pb-3 border-b border-gray-200 dark:border-white/10">
-                <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div>
-                    <p class="text-gray-900 dark:text-white font-medium">Updated progress: Paint Job</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Toyota Supra 2021 - 3 hours ago</p>
+            @empty
+                <div class="text-center py-6 text-gray-600 dark:text-gray-400">
+                    No recent activity recorded.
                 </div>
-            </div>
-            <div class="flex items-start gap-3">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                <div>
-                    <p class="text-gray-900 dark:text-white font-medium">Started: Paint Job</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Toyota Supra 2021 - 1 day ago</p>
-                </div>
-            </div>
+            @endforelse
         </div>
     </x-card>
 
     {{-- Update Progress Modal --}}
-    <div 
-        x-show="showUpdateModal" 
-        x-cloak 
-        class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    <div
+        x-show="showUpdateModal"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+        style="display:none;"
+        @keydown.escape.window="closeModal()"
     >
-        <x-card class="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Update Progress</h2>
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeModal()"></div>
+
+        {{-- Modal Panel --}}
+        <div
+            x-show="showUpdateModal"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+            class="relative bg-white dark:bg-[#151515] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl w-full sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
+            @click.stop
+        >
+            {{-- Modal Header --}}
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-[#151515] z-10">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Update Progress</h2>
                 <button
                     @click="closeModal()"
-                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
                 >
-                    <x-icon name="chevron-right" class="w-6 h-6 transform rotate-90" />
+                    <x-icon name="close" class="w-6 h-6" />
                 </button>
             </div>
 
-            <div class="space-y-4">
+            {{-- Modal Body --}}
+            <div class="px-6 py-5 space-y-4">
                 {{-- Note Input --}}
                 <x-textarea
                     label="Progress Update Note *"
@@ -262,35 +173,55 @@
                     helperText="This note will be visible to the customer"
                 />
 
+                {{-- Stage Selector & Progress Bar Controls --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                            Active Service Stage
+                        </label>
+                        <select
+                            x-model="updateStageId"
+                            @change="updateProgressFromStage()"
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#151515] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E63946] transition-all text-sm"
+                        >
+                            <option value="">Select stage...</option>
+                            <template x-for="stage in stages" :key="stage.id">
+                                <option :value="stage.id" x-text="stage.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                            Progress Percentage
+                        </label>
+                        <div class="flex items-center h-[42px] px-4 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-white">
+                            <span class="font-bold text-[#E63946]" x-text="updateProgress + '%'"></span>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Photo Upload --}}
                 <div>
                     <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-white">
-                        Progress Photos (Optional - Max 5)
+                        Progress Photos <span class="font-normal text-gray-500 dark:text-gray-400">(Optional — max 5)</span>
                     </label>
 
-                    {{-- Upload Panel --}}
-                    <div class="border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl p-6 text-center bg-white/5 hover:border-[#E63946] transition-colors duration-300">
+                    <label
+                        class="flex items-center gap-3 px-4 py-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-[#E63946] dark:hover:border-[#E63946] cursor-pointer transition-colors group"
+                    >
+                        <x-icon name="camera" class="w-8 h-8 text-gray-400 group-hover:text-[#E63946] transition-colors flex-shrink-0" />
+                        <div>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-[#E63946] transition-colors">Click to upload photos</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">JPG, PNG up to 10MB each</p>
+                        </div>
                         <input
                             type="file"
-                            id="photo-upload"
                             accept="image/*"
                             multiple
-                            @change="handlePhotoUpload"
-                            class="hidden"
+                            class="sr-only"
+                            @change="handlePhotoUpload($event)"
                         />
-                        <label
-                            for="photo-upload"
-                            class="cursor-pointer inline-flex flex-col items-center"
-                        >
-                            <x-icon name="message-square" class="text-gray-400 dark:text-gray-500 mb-2 w-10 h-10" />
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Click to upload photos
-                            </span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                JPG, PNG up to 10MB each
-                            </span>
-                        </label>
-                    </div>
+                    </label>
 
                     {{-- Photo Preview Gallery --}}
                     <template x-if="selectedPhotos.length > 0">
@@ -307,9 +238,9 @@
                                     <button
                                         type="button"
                                         @click="removePhoto(index)"
-                                        class="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors cursor-pointer"
+                                        class="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        <x-icon name="chevron-right" class="w-4 h-4 transform rotate-45" />
+                                        &times;
                                     </button>
                                     <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate" x-text="photo.name"></p>
                                 </div>
@@ -326,26 +257,186 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Modal Action Buttons --}}
-                <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
-                    <x-button
-                        variant="accent"
-                        @click="handleSubmitUpdate()"
-                        class="bg-green-600 hover:bg-green-700 border-green-600 text-white"
-                    >
-                        Send Update
-                    </x-button>
-                    <x-button
-                        variant="outline"
-                        @click="closeModal()"
-                        class="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                    >
-                        Cancel
-                    </x-button>
-                </div>
             </div>
-        </x-card>
+
+            {{-- Modal Footer --}}
+            <div class="px-6 py-4 bg-gray-50 dark:bg-black/20 border-t border-gray-200 dark:border-white/10 flex gap-3">
+                <x-button
+                    variant="accent"
+                    @click="handleSubmitUpdate()"
+                    class="bg-green-600 hover:bg-green-700 border-green-600 text-white"
+                >
+                    Send Update
+                </x-button>
+                <x-button
+                    variant="outline"
+                    @click="closeModal()"
+                    class="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                    Cancel
+                </x-button>
+            </div>
+        </div>
     </div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function mechanicDashboard() {
+        return {
+            assignedJobs: @json($assignedJobs),
+            stages: @json($stages),
+            showUpdateModal: false,
+            selectedJobId: null,
+            updateNote: '',
+            updateStageId: '',
+            updateProgress: 0,
+            selectedPhotos: [],
+            rawPhotos: [],
+
+            init() {
+            },
+
+            handleStartJob(job) {
+                fetch('/mechanic/jobs/' + job.id + '/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        job.status = 'in-progress';
+                        job.progress = data.progress ?? Math.max(job.progress || 0, 5);
+                        showToast.success('Job #' + job.id + ' started!');
+                    } else {
+                        showToast.error('Failed to start job.');
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            handlePauseJob(job) {
+                fetch('/mechanic/jobs/' + job.id + '/pause', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        job.status = 'pending';
+                        showToast.info('Job #' + job.id + ' paused!');
+                    } else {
+                        showToast.error('Failed to pause job.');
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            handleUpdateProgress(jobId) {
+                this.selectedJobId = jobId;
+                
+                // Pre-fill local fields if job exists in assignedJobs list
+                const job = this.assignedJobs.find(j => j.id === jobId);
+                if (job) {
+                    this.updateProgress = job.progress || 0;
+                    this.updateStageId = job.currentStageId || '';
+                }
+
+                this.showUpdateModal = true;
+            },
+
+            updateProgressFromStage() {
+                if (!this.updateStageId) return;
+                const stageId = parseInt(this.updateStageId);
+                const index = this.stages.findIndex(s => s.id === stageId);
+                if (index !== -1) {
+                    this.updateProgress = Math.round(((index + 1) / this.stages.length) * 100);
+                }
+            },
+
+            handlePhotoUpload(e) {
+                const files = Array.from(e.target.files || []);
+                if (files.length + this.selectedPhotos.length > 5) {
+                    showToast.error('Maximum 5 photos allowed per update');
+                    return;
+                }
+                files.forEach(file => {
+                    this.rawPhotos.push(file);
+                    this.selectedPhotos.push({ name: file.name, url: URL.createObjectURL(file) });
+                });
+            },
+
+            removePhoto(index) {
+                this.selectedPhotos = this.selectedPhotos.filter((_, i) => i !== index);
+                this.rawPhotos      = this.rawPhotos.filter((_, i) => i !== index);
+            },
+
+            handleSubmitUpdate() {
+                if (!this.updateNote.trim()) {
+                    showToast.error('Please add a note');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('jobId', this.selectedJobId);
+                formData.append('note', this.updateNote);
+                formData.append('progress', this.updateProgress);
+                formData.append('stage_id', this.updateStageId);
+
+                this.rawPhotos.forEach(file => {
+                    formData.append('photos[]', file);
+                });
+
+                fetch('/mechanic/notes', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast.success('Progress update note saved successfully! Customer will be notified.');
+                        
+                        // Dynamically update the local state of the job status/progress
+                        const job = this.assignedJobs.find(j => j.id === this.selectedJobId);
+                        if (job) {
+                            job.progress = this.updateProgress;
+                            job.currentStageId = parseInt(this.updateStageId);
+                            if (this.updateProgress >= 100) {
+                                job.status = 'completed';
+                            } else {
+                                job.status = 'in-progress';
+                            }
+                        }
+
+                        this.closeModal();
+                    } else {
+                        showToast.error('Failed to save progress update: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            closeModal() {
+                this.showUpdateModal = false;
+                this.updateNote = '';
+                this.selectedPhotos = [];
+                this.rawPhotos = [];
+                this.selectedJobId = null;
+                this.updateStageId = '';
+                this.updateProgress = 0;
+            }
+        };
+    }
+</script>
+@endpush

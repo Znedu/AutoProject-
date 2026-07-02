@@ -122,7 +122,7 @@
                     </div>
 
                     <div class="flex lg:flex-col gap-2 justify-end">
-                        <a href="{{ route('customer.track') }}">
+                        <a href="{{ route('customer.track', ['booking_id' => $booking->id]) }}">
                             <x-button variant="secondary" size="sm" class="whitespace-nowrap w-full">
                                 Track Status
                             </x-button>

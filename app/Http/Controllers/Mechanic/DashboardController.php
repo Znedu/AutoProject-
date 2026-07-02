@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Mechanic;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\JobOrder;
+use App\Models\ServiceUpdate;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -27,15 +28,20 @@ class DashboardController extends Controller
         // Current Assigned Jobs
         $assignedJobs = JobOrder::forMechanic($userId)
             ->assigned()
-            ->with(['booking.services', 'booking.vehicle', 'booking.user'])
+            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress'])
             ->get()
             ->map(function ($job) {
                 $booking = $job->booking;
                 $vehicle = $booking?->vehicle;
                 
+                // Find the active service stage ID
+                $currentStageId = $job->stageProgress->where('is_current', true)->first()?->service_stage_id;
+
                 $uiStatus = $job->status;
                 if ($uiStatus === JobOrder::STATUS_PAUSED || $uiStatus === JobOrder::STATUS_ASSIGNED) {
                     $uiStatus = 'pending';
+                } elseif ($uiStatus === JobOrder::STATUS_IN_PROGRESS) {
+                    $uiStatus = 'in-progress';
                 }
 
                 return [
@@ -45,8 +51,31 @@ class DashboardController extends Controller
                     'vehicle' => $vehicle ? "{$vehicle->make} {$vehicle->model} {$vehicle->year}" : 'Unknown',
                     'status' => $uiStatus,
                     'priority' => ucfirst($job->priority),
+                    'progress' => (int) $job->progress_percent,
+                    'currentStageId' => $currentStageId,
                 ];
             });
+
+        // Recent Activity (based on updates submitted by the mechanic)
+        $recentActivities = ServiceUpdate::where('user_id', $userId)
+            ->with(['jobOrder.booking.services', 'jobOrder.booking.vehicle'])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($update) {
+                $job = $update->jobOrder;
+                $booking = $job?->booking;
+                $serviceName = $booking?->services->first()?->name ?? 'Custom Service';
+                $vehicleLabel = $booking?->vehicle ? "{$booking->vehicle->make} {$booking->vehicle->model}" : 'Vehicle';
+                
+                return [
+                    'message' => $update->message,
+                    'job' => "{$serviceName} - {$vehicleLabel}",
+                    'time' => $update->created_at->diffForHumans(),
+                ];
+            });
+
+        $stages = \App\Models\ServiceStage::orderBy('sort_order')->get();
 
         return view('mechanic.dashboard', [
             'assignedJobsCount' => $assignedJobsCount,
@@ -54,6 +83,9 @@ class DashboardController extends Controller
             'completedTodayCount' => $completedTodayCount,
             'pendingStartCount' => $pendingStartCount,
             'assignedJobs' => $assignedJobs,
+            'stages' => $stages,
+            'recentActivities' => $recentActivities,
         ]);
     }
 }
+

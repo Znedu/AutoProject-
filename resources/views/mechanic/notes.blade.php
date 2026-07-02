@@ -3,43 +3,8 @@
 @section('title', 'Service Notes | AutoProject+')
 
 @section('content')
-<div 
-    x-data="{
-        showAddForm: false,
-        formData: {
-            jobId: new URLSearchParams(window.location.search).get('job_id') || '',
-            note: ''
-        },
-        jobs: @js($jobs),
-        notes: @js($notes),
-
-        handleSubmit() {
-            if (!this.formData.jobId || !this.formData.note.trim()) {
-                showToast.error('Please select a job and enter a note');
-                return;
-            }
-            fetch('/mechanic/notes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(this.formData)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    this.notes.unshift(data.note);
-                    showToast.success('Service note added successfully!');
-                    this.formData = { jobId: '', note: '' };
-                    this.showAddForm = false;
-                } else {
-                    showToast.error('Failed to add note: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        }
-    }"
+<div
+    x-data="mechanicNotes()"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
 >
     {{-- Header --}}
@@ -61,8 +26,8 @@
             <form @submit.prevent="handleSubmit()" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Select Job <span class="text-red-500">*</span></label>
-                    <select 
-                        x-model="formData.jobId" 
+                    <select
+                        x-model="formData.jobId"
                         required
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#151515] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E63946] transition-all"
                     >
@@ -89,6 +54,16 @@
     {{-- Notes History --}}
     <div>
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Notes History</h2>
+
+        {{-- Empty state --}}
+        <template x-if="notes.length === 0">
+            <x-card>
+                <div class="text-center py-8">
+                    <p class="text-gray-500 dark:text-gray-400">No service notes yet. Add your first note above.</p>
+                </div>
+            </x-card>
+        </template>
+
         <div class="space-y-4">
             <template x-for="note in notes" :key="note.id">
                 <x-card>
@@ -126,3 +101,56 @@
     </x-card>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function mechanicNotes() {
+        return {
+            showAddForm: false,
+            jobs: @json($jobs),
+            notes: @json($notes),
+            formData: {
+                jobId: '',
+                note: ''
+            },
+
+            init() {
+                // Pre-select job_id from query string if present
+                const params = new URLSearchParams(window.location.search);
+                const jobId  = params.get('job_id');
+                if (jobId) {
+                    this.formData.jobId = jobId;
+                    this.showAddForm    = true;
+                }
+            },
+
+            handleSubmit() {
+                if (!this.formData.jobId || !this.formData.note.trim()) {
+                    showToast.error('Please select a job and enter a note');
+                    return;
+                }
+                fetch('/mechanic/notes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(this.formData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.notes.unshift(data.note);
+                        showToast.success('Service note added successfully!');
+                        this.formData    = { jobId: '', note: '' };
+                        this.showAddForm = false;
+                    } else {
+                        showToast.error('Failed to add note: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            }
+        };
+    }
+</script>
+@endpush
