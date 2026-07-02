@@ -40,7 +40,7 @@ class NoteController extends Controller
         $notes = ServiceUpdate::whereHas('jobOrder', function ($q) use ($userId) {
                 $q->where('mechanic_id', $userId);
             })
-            ->with(['jobOrder.booking.services', 'jobOrder.booking.vehicle', 'user'])
+            ->with(['jobOrder.booking.services', 'jobOrder.booking.vehicle', 'user', 'photos'])
             ->latest()
             ->get()
             ->map(function ($update) use ($userId) {
@@ -48,12 +48,18 @@ class NoteController extends Controller
                 $serviceName = $booking?->services->first()?->name ?? 'Custom Service';
                 $vehicleName = $booking?->vehicle ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}" : 'Unknown';
 
+                $photos = $update->photos->map(fn ($photo) => [
+                    'url'     => $photo->url ?? '/storage/' . $photo->file_path,
+                    'caption' => $photo->caption ?? '',
+                ])->values()->toArray();
+
                 return [
-                    'id' => $update->id,
-                    'job' => "{$serviceName} - {$vehicleName}",
-                    'note' => $update->message,
-                    'date' => $update->created_at->format('F d, Y - g:i A'),
+                    'id'      => $update->id,
+                    'job'     => "{$serviceName} - {$vehicleName}",
+                    'note'    => $update->message,
+                    'date'    => $update->created_at->format('F d, Y - g:i A'),
                     'mechanic' => $update->user_id === $userId ? 'You' : ($update->user?->name ?? 'Mechanic'),
+                    'photos'  => $photos,
                 ];
             });
 
@@ -180,14 +186,19 @@ class NoteController extends Controller
         $serviceName = $booking?->services->first()?->name ?? 'Custom Service';
         $vehicleName = $booking?->vehicle ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}" : 'Unknown';
 
+        $photos = $update->photos->map(fn ($p) => [
+            'url'     => $p->url ?? '/storage/' . $p->file_path,
+            'caption' => $p->caption ?? ''
+        ])->values()->toArray();
+
         return response()->json([
             'success' => true,
             'note' => [
-                'id' => $update->id,
-                'job' => "{$serviceName} - {$vehicleName}",
-                'note' => $update->message,
-                'date' => $update->created_at->format('F d, Y - g:i A'),
+                'id'       => $update->id,
+                'message'  => $update->message,
+                'date'     => $update->created_at->format('M d, Y - g:i A'),
                 'mechanic' => 'You',
+                'photos'   => $photos
             ]
         ]);
     }
