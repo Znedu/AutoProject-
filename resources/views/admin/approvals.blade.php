@@ -83,7 +83,7 @@
                         <div class="flex-1">
                             <div class="flex flex-wrap items-center gap-3 mb-3">
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $serviceNames }}</h3>
-                                <x-status-badge status="pending">Awaiting Approval</x-status-badge>
+                                <x-status-badge :status="$booking->status">{{ $booking->badge_label }}</x-status-badge>
                             </div>
                             <p class="text-sm text-gray-600 dark:text-gray-400">
                                 Submitted: {{ $booking->created_at->format('F j, Y') }} • Booking ID: {{ $booking->booking_number }}
