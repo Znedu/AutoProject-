@@ -48,6 +48,7 @@ class Booking extends Model
         'customer_name',
         'contact_number',
         'notes',
+        'is_walk_in',
         'terms_accepted_at',
         'rejection_reason',
         'cancellation_reason',
@@ -164,9 +165,15 @@ class Booking extends Model
         return $query->whereDate('scheduled_date', $date);
     }
 
+    public function scopeWalkIns(Builder $query): Builder
+    {
+        return $query->where('is_walk_in', true);
+    }
+
     protected function casts(): array
     {
         return [
+            'is_walk_in' => 'boolean',
             'preferred_date' => 'date',
             'preferred_time' => 'datetime:H:i',
             'scheduled_date' => 'date',

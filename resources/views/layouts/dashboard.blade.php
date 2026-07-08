@@ -36,7 +36,16 @@
 
     @php
         // Dynamically resolve the user's role: prop > authentication > default
-        $resolvedRole = $role ?? auth()->user()?->roleSlug() ?? 'customer';
+        $currentUser = auth()->user();
+        $resolvedRole = $role ?? $currentUser?->roleSlug() ?? 'customer';
+        $displayRole = match ($resolvedRole) {
+            'admin' => 'Admin',
+            'staff' => 'Staff',
+            'mechanic' => 'Mechanic',
+            'customer' => 'Customer',
+            default => ucfirst((string) $resolvedRole),
+        };
+        $displayName = $currentUser?->name ?? 'Guest';
 
         $menuItems = [
             'customer' => [
@@ -53,9 +62,13 @@
                 ['icon' => 'clipboard-list', 'label' => 'Service Notes', 'path' => '/mechanic/notes'],
             ],
             'staff' => [
-                ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/staff'],
-                ['icon' => 'clipboard-list', 'label' => 'Booking Queue', 'path' => '/staff/booking-queue'],
-                ['icon' => 'message-square', 'label' => 'Customer Assistance', 'path' => '/staff/assistance'],
+                ['icon' => 'layout-dashboard', 'label' => 'Dashboard',           'path' => '/staff'],
+                ['icon' => 'clipboard-list',   'label' => 'Booking Queue',        'path' => '/staff/booking-queue'],
+                ['icon' => 'user-plus',         'label' => 'Walk-In Booking',      'path' => '/staff/walk-in-booking'],
+                ['icon' => 'calendar',          'label' => 'Schedule',             'path' => '/staff/schedule'],
+                ['icon' => 'users',             'label' => 'Customers',            'path' => '/staff/customers'],
+                ['icon' => 'wrench',            'label' => 'Job Orders',           'path' => '/staff/jobs'],
+                ['icon' => 'message-square',    'label' => 'Customer Assistance',  'path' => '/staff/assistance'],
             ],
             'admin' => [
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/admin'],
@@ -116,6 +129,20 @@
                     {{ $resolvedRole }} Portal
                 </p>
             </div>
+
+            @if ($currentUser)
+                <div class="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#E63946] text-sm font-semibold text-white">
+                            {{ $currentUser->initials }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $displayName }}</p>
+                            <p class="truncate text-xs text-gray-600 dark:text-white/60">{{ $displayRole }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- Role-Specific Navigation Menu -->
             <nav class="space-y-1 flex-1">

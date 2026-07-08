@@ -13,16 +13,16 @@
     {{-- Stats Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-stat-card
-            title="Pending Bookings"
-            value="{{ $pendingBookingsCount }}"
-            icon="clock"
-            color="red"
-        />
-        <x-stat-card
-            title="Scheduled Today"
-            value="{{ $scheduledTodayCount }}"
+            title="Today's Bookings"
+            value="{{ $todayBookingsCount }}"
             icon="calendar"
             color="blue"
+        />
+        <x-stat-card
+            title="Walk-In Bookings"
+            value="{{ $walkInCount }}"
+            icon="user-plus"
+            color="green"
         />
         <x-stat-card
             title="Open Tickets"
@@ -34,7 +34,7 @@
             title="Resolved Today"
             value="{{ $resolvedTodayCount }}"
             icon="check-square"
-            color="green"
+            color="red"
         />
     </div>
 
@@ -42,13 +42,23 @@
     <x-card>
         <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
         <div class="flex flex-wrap gap-4">
-            <a href="{{ url('/staff/booking-queue') }}">
+            <a href="{{ url('/staff/walk-in-booking') }}">
                 <x-button variant="accent">
+                    New Walk-In Booking
+                </x-button>
+            </a>
+            <a href="{{ url('/staff/booking-queue') }}">
+                <x-button variant="secondary">
                     View Booking Queue
                 </x-button>
             </a>
-            <a href="{{ url('/staff/assistance') }}">
+            <a href="{{ url('/staff/schedule') }}">
                 <x-button variant="secondary">
+                    View Schedule
+                </x-button>
+            </a>
+            <a href="{{ url('/staff/assistance') }}">
+                <x-button variant="ghost">
                     Customer Assistance
                 </x-button>
             </a>
@@ -58,7 +68,7 @@
     {{-- Pending Bookings Approval --}}
     <x-card>
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Pending Bookings Approval</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Pending Bookings</h2>
             <a href="{{ url('/staff/booking-queue') }}">
                 <x-button variant="ghost" size="sm">View All</x-button>
             </a>

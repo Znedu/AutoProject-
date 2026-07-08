@@ -4,74 +4,7 @@
 
 @section('content')
 <div 
-    x-data="{
-        selectedTicket: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
-        replyMessage: '',
-        selectedFilter: 'all',
-        tickets: @js($tickets),
-
-        handleSendReply(ticketId) {
-            if (!this.replyMessage.trim()) {
-                showToast.error('Please enter a reply message');
-                return;
-            }
-            fetch('/staff/assistance/' + ticketId + '/reply', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ message: this.replyMessage })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const ticket = this.tickets.find(t => t.id === ticketId);
-                    if (ticket) {
-                        ticket.replies.push(data.reply);
-                        ticket.status = 'in-progress';
-                        showToast.success('Reply sent to ticket #' + ticketId);
-                        this.replyMessage = '';
-                    }
-                } else {
-                    showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        },
-
-        handleResolveTicket(ticketId) {
-            fetch('/staff/assistance/' + ticketId + '/resolve', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const ticket = this.tickets.find(t => t.id === ticketId);
-                    if (ticket) {
-                        ticket.status = 'resolved';
-                        showToast.success('Ticket #' + ticketId + ' marked as resolved');
-                    }
-                } else {
-                    showToast.error('Failed to resolve ticket: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => showToast.error('An error occurred.'));
-        },
-
-        getFilteredTickets() {
-            if (this.selectedFilter === 'all') return this.tickets;
-            return this.tickets.filter(t => t.status === this.selectedFilter);
-        },
-
-        getSelectedTicketData() {
-            return this.tickets.find(t => t.id === this.selectedTicket);
-        }
-    }"
+    x-data="customerAssistance()"
     class="space-y-6 animate-fade-in"
 >
     {{-- Header --}}
@@ -83,13 +16,13 @@
     {{-- Filters --}}
     <x-card>
         <div class="flex flex-wrap gap-2">
-            <template x-for="filter in ['all', 'open', 'in-progress', 'resolved']" :key="filter">
+            <template x-for="filter in ['all', 'open', 'in_progress', 'resolved', 'closed']" :key="filter">
                 <x-button
                     ::variant="selectedFilter === filter ? 'primary' : 'ghost'"
                     size="sm"
                     @click="selectedFilter = filter"
                     class="capitalize"
-                    x-text="filter === 'all' ? 'All Tickets' : (filter === 'in-progress' ? 'In Progress' : filter)"
+                    x-text="filter === 'all' ? 'All Tickets' : (filter === 'in_progress' ? 'In Progress' : filter)"
                 ></x-button>
             </template>
         </div>
@@ -116,7 +49,7 @@
                             <div class="flex items-start justify-between gap-2">
                                 <h3 class="font-bold text-gray-900 dark:text-white text-sm truncate" x-text="ticket.subject"></h3>
                                 <x-status-badge ::status="ticket.status">
-                                    <span x-text="ticket.status === 'open' ? 'Open' : (ticket.status === 'in-progress' ? 'In Progress' : 'Resolved')"></span>
+                                    <span x-text="ticket.status === 'open' ? 'Open' : (ticket.status === 'in-progress' ? 'In Progress' : (ticket.status === 'resolved' ? 'Resolved' : 'Closed'))"></span>
                                 </x-status-badge>
                             </div>
                             <p class="text-xs text-gray-600 dark:text-gray-400" x-text="ticket.customer"></p>
@@ -140,9 +73,19 @@
                                     Ticket #<span x-text="getSelectedTicketData().id"></span> • <span x-text="getSelectedTicketData().customer"></span> • <span x-text="getSelectedTicketData().date"></span>
                                 </p>
                             </div>
-                            <x-status-badge ::status="getSelectedTicketData().status">
-                                <span x-text="getSelectedTicketData().status === 'open' ? 'Open' : (getSelectedTicketData().status === 'in-progress' ? 'In Progress' : 'Resolved')"></span>
-                            </x-status-badge>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500 font-semibold uppercase">Status:</span>
+                                <select 
+                                    ::value="getSelectedTicketData().status" 
+                                    @change="handleUpdateStatus(getSelectedTicketData().id, $event.target.value)"
+                                    class="px-2 py-1 bg-white dark:bg-white/5 border border-gray-300 dark:border-white/10 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none"
+                                >
+                                    <option value="open">Open</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="resolved">Resolved</option>
+                                    <option value="closed">Closed</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-[#0B0B0B] rounded-xl p-4 border border-gray-200 dark:border-white/5">
                             <p class="text-gray-800 dark:text-gray-200" x-text="getSelectedTicketData().message"></p>
@@ -173,7 +116,7 @@
                     </template>
 
                     {{-- Reply Form --}}
-                    <template x-if="getSelectedTicketData().status !== 'resolved'">
+                    <template x-if="getSelectedTicketData().status !== 'resolved' && getSelectedTicketData().status !== 'closed'">
                         <x-card>
                             <h3 class="font-bold text-gray-900 dark:text-white mb-4">Send Reply</h3>
                             <div class="space-y-4">
@@ -200,16 +143,16 @@
                         </x-card>
                     </template>
 
-                    {{-- Resolved Banner --}}
-                    <template x-if="getSelectedTicketData().status === 'resolved'">
+                    {{-- Resolved / Closed Banner --}}
+                    <template x-if="getSelectedTicketData().status === 'resolved' || getSelectedTicketData().status === 'closed'">
                         <x-card class="bg-green-50 dark:bg-green-950/20 border-2 border-green-500">
                             <div class="flex items-center gap-3">
                                 <div class="p-2 bg-green-500 rounded-full text-white">
                                     <x-icon name="check-square" class="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <p class="font-bold text-green-800 dark:text-green-300">This ticket has been resolved</p>
-                                    <p class="text-sm text-green-600 dark:text-green-400">The customer has been notified.</p>
+                                    <p class="font-bold text-green-800 dark:text-green-300" x-text="getSelectedTicketData().status === 'resolved' ? 'This ticket has been resolved' : 'This ticket has been closed'"></p>
+                                    <p class="text-sm text-green-600 dark:text-green-400">You can change the status dropdown above if you need to reopen this ticket.</p>
                                 </div>
                             </div>
                         </x-card>
@@ -229,3 +172,102 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function customerAssistance() {
+        return {
+            selectedTicket: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
+            replyMessage: '',
+            selectedFilter: 'all',
+            tickets: @json($tickets),
+
+            handleSendReply(ticketId) {
+                if (!this.replyMessage.trim()) {
+                    showToast.error('Please enter a reply message');
+                    return;
+                }
+                fetch('/staff/assistance/' + ticketId + '/reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ message: this.replyMessage })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const ticket = this.tickets.find(t => t.id === ticketId);
+                        if (ticket) {
+                            ticket.replies.push(data.reply);
+                            ticket.status = 'in_progress';
+                            showToast.success('Reply sent to ticket #' + ticketId);
+                            this.replyMessage = '';
+                        }
+                    } else {
+                        showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
+            },
+
+            handleResolveTicket(ticketId) {
+                fetch('/staff/assistance/' + ticketId + '/resolve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const ticket = this.tickets.find(t => t.id === ticketId);
+                        if (ticket) {
+                            ticket.status = 'resolved';
+                            showToast.success('Ticket #' + ticketId + ' marked as resolved');
+                        }
+                    } else {
+                        showToast.error('Failed to resolve ticket: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
+            },
+
+            handleUpdateStatus(ticketId, newStatus) {
+                fetch('/staff/assistance/' + ticketId + '/status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const ticket = this.tickets.find(t => t.id === ticketId);
+                        if (ticket) {
+                            ticket.status = data.status;
+                            showToast.success('Ticket #' + ticketId + ' status updated to ' + newStatus);
+                        }
+                    } else {
+                        showToast.error('Failed to update status: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast.error('An error occurred.'));
+            },
+
+            getFilteredTickets() {
+                if (this.selectedFilter === 'all') return this.tickets;
+                return this.tickets.filter(t => t.status === this.selectedFilter);
+            },
+
+            getSelectedTicketData() {
+                return this.tickets.find(t => t.id === this.selectedTicket);
+            }
+        };
+    }
+</script>
+@endpush
