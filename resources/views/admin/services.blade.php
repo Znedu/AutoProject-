@@ -4,42 +4,7 @@
 
 @section('content')
 <div
-    x-data="{
-        showAddForm: false,
-        newService: { name: '', description: '', minCost: '', maxCost: '', duration: '' },
-        services: @js($services),
-        handleAddService() {
-            const id = this.services.length + 1;
-            this.services.push({
-                id: id,
-                name: this.newService.name,
-                description: this.newService.description,
-                minCost: Number(this.newService.minCost),
-                maxCost: Number(this.newService.maxCost),
-                duration: this.newService.duration,
-                status: 'Active'
-            });
-            showToast.success('Service added successfully!');
-            this.showAddForm = false;
-            this.newService = { name: '', description: '', minCost: '', maxCost: '', duration: '' };
-        },
-        handleEdit(id) {
-            showToast.info('Edit service ' + id);
-        },
-        handleToggleStatus(id) {
-            const svc = this.services.find(s => s.id === id);
-            if (svc) {
-                svc.status = svc.status === 'Active' ? 'Inactive' : 'Active';
-                showToast.success('Service status updated!');
-            }
-        },
-        handleDelete(id) {
-            if (confirm('Are you sure you want to delete this service?')) {
-                this.services = this.services.filter(s => s.id !== id);
-                showToast.success('Service deleted successfully!');
-            }
-        }
-    }"
+    x-data="adminServiceManagement()"
     class="space-y-6"
 >
     {{-- Header --}}
@@ -203,3 +168,50 @@
     </x-card>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function adminServiceManagement() {
+        return {
+            showAddForm: false,
+            newService: { name: '', description: '', minCost: '', maxCost: '', duration: '' },
+            services: @json($services),
+
+            handleAddService() {
+                const id = this.services.length + 1;
+                this.services.push({
+                    id: id,
+                    name: this.newService.name,
+                    description: this.newService.description,
+                    minCost: Number(this.newService.minCost),
+                    maxCost: Number(this.newService.maxCost),
+                    duration: this.newService.duration,
+                    status: 'Active'
+                });
+                showToast.success('Service added successfully!');
+                this.showAddForm = false;
+                this.newService = { name: '', description: '', minCost: '', maxCost: '', duration: '' };
+            },
+
+            handleEdit(id) {
+                showToast.info('Edit service ' + id);
+            },
+
+            handleToggleStatus(id) {
+                const svc = this.services.find(s => s.id === id);
+                if (svc) {
+                    svc.status = svc.status === 'Active' ? 'Inactive' : 'Active';
+                    showToast.success('Service status updated!');
+                }
+            },
+
+            handleDelete(id) {
+                if (confirm('Are you sure you want to delete this service?')) {
+                    this.services = this.services.filter(s => s.id !== id);
+                    showToast.success('Service deleted successfully!');
+                }
+            }
+        };
+    }
+</script>
+@endpush

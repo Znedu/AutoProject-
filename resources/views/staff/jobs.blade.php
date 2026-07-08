@@ -3,11 +3,8 @@
 @section('title', 'Job Orders | Staff | AutoProject+')
 
 @section('content')
-<div 
-    x-data="{
-        selectedFilter: '{{ $selectedFilter }}',
-        jobs: @js($jobs)
-    }"
+<div
+    x-data="staffJobMonitor()"
     class="space-y-6 animate-fade-in"
 >
     {{-- Header --}}
@@ -159,3 +156,14 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function staffJobMonitor() {
+        return {
+            selectedFilter: @json($selectedFilter),
+            jobs: @json($jobs)
+        };
+    }
+</script>
+@endpush

@@ -3,89 +3,8 @@
 @section('title', 'Support Tickets | AutoProject+')
 
 @section('content')
-<div 
-    x-data="{
-        showCreateForm: new URLSearchParams(window.location.search).has('subject'),
-        selectedFilter: 'all',
-        viewingTicket: null,
-        replyMessage: '',
-        formData: {
-            subject: new URLSearchParams(window.location.search).get('subject') || '',
-            message: ''
-        },
-        tickets: @js($tickets),
-        ticketReplies: @js($ticketReplies),
-
-        handleSubmitTicket() {
-            fetch('/customer/support', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    subject: this.formData.subject,
-                    message: this.formData.message
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    this.tickets.unshift(data.ticket);
-                    showToast.success('Support ticket created successfully!');
-                    this.formData = { subject: '', message: '' };
-                    this.showCreateForm = false;
-                    if (history.pushState) {
-                        history.pushState(null, '', window.location.pathname);
-                    }
-                } else {
-                    showToast.error('Failed to create ticket: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => {
-                showToast.error('An error occurred.');
-            });
-        },
-
-        handleSubmitReply() {
-            if (!this.viewingTicket || !this.replyMessage.trim()) return;
-            fetch('/customer/support/' + this.viewingTicket + '/reply', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    message: this.replyMessage
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (!this.ticketReplies[this.viewingTicket]) {
-                        this.ticketReplies[this.viewingTicket] = [];
-                    }
-                    this.ticketReplies[this.viewingTicket].push(data.reply);
-                    const ticket = this.tickets.find(t => t.id === this.viewingTicket);
-                    if (ticket) {
-                        ticket.replies++;
-                    }
-                    this.replyMessage = '';
-                    showToast.success('Reply sent successfully!');
-                } else {
-                    showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => {
-                showToast.error('An error occurred.');
-            });
-        },
-
-        getFilteredTickets() {
-            if (this.selectedFilter === 'all') return this.tickets;
-            return this.tickets.filter(t => t.status === this.selectedFilter);
-        }
-    }"
+<div
+    x-data="customerSupport()"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
 >
     {{-- Ticket Details Overlay/View --}}
@@ -101,7 +20,7 @@
                 $currentTicketData = "tickets.find(t => t.id === viewingTicket)";
                 $repliesData = "ticketReplies[viewingTicket] || []";
             @endphp
-            
+
             {{-- Ticket Header Card --}}
             <x-card>
                 <div class="flex items-start justify-between gap-4 mb-4">
@@ -137,7 +56,7 @@
                 <template x-for="reply in ({{ $repliesData }})" :key="reply.id">
                     <x-card>
                         <div class="flex items-start gap-4">
-                            <div 
+                            <div
                                 class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
                                 :class="reply.role === 'staff' ? 'bg-[#E63946]' : 'bg-gray-400 dark:bg-gray-600'"
                             >
@@ -243,7 +162,7 @@
                 </x-card>
             </div>
 
-            {{-- Filter Filters --}}
+            {{-- Filters --}}
             <x-card>
                 <div class="flex flex-wrap gap-2">
                     <template x-for="filter in ['all', 'open', 'in-progress', 'resolved']" :key="filter">
@@ -258,7 +177,7 @@
                 </div>
             </x-card>
 
-            {{-- Tickets Grid/List --}}
+            {{-- Tickets List --}}
             <div class="space-y-4">
                 <template x-if="getFilteredTickets().length === 0">
                     <x-card>
@@ -303,3 +222,84 @@
     </template>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function customerSupport() {
+        return {
+            showCreateForm: new URLSearchParams(window.location.search).has('subject'),
+            selectedFilter: 'all',
+            viewingTicket: null,
+            replyMessage: '',
+            formData: {
+                subject: new URLSearchParams(window.location.search).get('subject') || '',
+                message: ''
+            },
+            tickets: @json($tickets),
+            ticketReplies: @json($ticketReplies),
+
+            handleSubmitTicket() {
+                fetch('/customer/support', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        subject: this.formData.subject,
+                        message: this.formData.message
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.tickets.unshift(data.ticket);
+                        showToast.success('Support ticket created successfully!');
+                        this.formData = { subject: '', message: '' };
+                        this.showCreateForm = false;
+                        if (history.pushState) {
+                            history.pushState(null, '', window.location.pathname);
+                        }
+                    } else {
+                        showToast.error('Failed to create ticket: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            handleSubmitReply() {
+                if (!this.viewingTicket || !this.replyMessage.trim()) return;
+                fetch('/customer/support/' + this.viewingTicket + '/reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ message: this.replyMessage })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (!this.ticketReplies[this.viewingTicket]) {
+                            this.ticketReplies[this.viewingTicket] = [];
+                        }
+                        this.ticketReplies[this.viewingTicket].push(data.reply);
+                        const ticket = this.tickets.find(t => t.id === this.viewingTicket);
+                        if (ticket) ticket.replies++;
+                        this.replyMessage = '';
+                        showToast.success('Reply sent successfully!');
+                    } else {
+                        showToast.error('Failed to send reply: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            getFilteredTickets() {
+                if (this.selectedFilter === 'all') return this.tickets;
+                return this.tickets.filter(t => t.status === this.selectedFilter);
+            }
+        };
+    }
+</script>
+@endpush

@@ -34,17 +34,7 @@
             method="POST" 
             action="{{ route('customer.payment.submit', $bookingId) }}" 
             enctype="multipart/form-data"
-            x-data="{
-                isEditing: {{ $errors->any() ? 'true' : 'false' }},
-                referenceNumber: '{{ addslashes($payment->reference_number) }}',
-                selectedPayment: '{{ $payment->method }}',
-                uploadedFile: null,
-                handleFileUpload(e) {
-                    if (e.target.files && e.target.files[0]) {
-                        this.uploadedFile = e.target.files[0].name;
-                    }
-                }
-            }"
+            x-data="paymentEditForm()"
             class="space-y-6"
         >
             @csrf
@@ -256,25 +246,8 @@
         </form>
     @else
         {{-- FALLBACK PAYMENT SUBMISSION FORM --}}
-        <div 
-            x-data="{
-                selectedPayment: 'gcash',
-                uploadedFile: null,
-                bookingDetails: @js($bookingDetails),
-                handleFileUpload(e) {
-                    if (e.target.files && e.target.files[0]) {
-                        this.uploadedFile = e.target.files[0].name;
-                    }
-                },
-                handleConfirmPayment() {
-                    if (!this.uploadedFile) {
-                        showToast.error('Please upload payment screenshot');
-                        return;
-                    }
-                    showToast.success('Payment submitted successfully! Your booking is now confirmed.');
-                    window.location.href = '{{ url('/customer/track') }}';
-                }
-            }"
+        <div
+            x-data="paymentSubmitForm()"
             class="space-y-6"
         >
             <div>
@@ -396,3 +369,44 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    @if ($hasPayment)
+    function paymentEditForm() {
+        return {
+            isEditing: @json($errors->any()),
+            referenceNumber: @json($payment->reference_number ?? ''),
+            selectedPayment: @json($payment->method ?? 'gcash'),
+            uploadedFile: null,
+            handleFileUpload(e) {
+                if (e.target.files && e.target.files[0]) {
+                    this.uploadedFile = e.target.files[0].name;
+                }
+            }
+        };
+    }
+    @else
+    function paymentSubmitForm() {
+        return {
+            selectedPayment: 'gcash',
+            uploadedFile: null,
+            bookingDetails: @json($bookingDetails),
+            handleFileUpload(e) {
+                if (e.target.files && e.target.files[0]) {
+                    this.uploadedFile = e.target.files[0].name;
+                }
+            },
+            handleConfirmPayment() {
+                if (!this.uploadedFile) {
+                    showToast.error('Please upload payment screenshot');
+                    return;
+                }
+                showToast.success('Payment submitted successfully! Your booking is now confirmed.');
+                window.location.href = '{{ url('/customer/track') }}';
+            }
+        };
+    }
+    @endif
+</script>
+@endpush

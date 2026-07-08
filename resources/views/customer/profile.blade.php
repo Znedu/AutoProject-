@@ -3,33 +3,8 @@
 @section('title', 'My Profile | AutoProject+')
 
 @section('content')
-<div 
-    x-data="{
-        isEditing: false,
-        profileData: @js($profileData),
-        handleSubmit() {
-            fetch('/customer/profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(this.profileData)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    this.isEditing = false;
-                    showToast.success(data.message);
-                } else {
-                    showToast.error(data.error || 'Failed to update profile.');
-                }
-            })
-            .catch(err => {
-                showToast.error('An error occurred.');
-            });
-        }
-    }"
+<div
+    x-data="customerProfile()"
     class="max-w-4xl mx-auto space-y-6 animate-fade-in"
 >
     {{-- Header --}}
@@ -73,11 +48,7 @@
                     </div>
                     <div class="flex-1">
                         <template x-if="isEditing">
-                            <x-input
-                                label="Full Name"
-                                x-model="profileData.fullName"
-                                required
-                            />
+                            <x-input label="Full Name" x-model="profileData.fullName" required />
                         </template>
                         <template x-if="!isEditing">
                             <div>
@@ -95,12 +66,7 @@
                     </div>
                     <div class="flex-1">
                         <template x-if="isEditing">
-                            <x-input
-                                label="Email Address"
-                                type="email"
-                                x-model="profileData.email"
-                                required
-                            />
+                            <x-input label="Email Address" type="email" x-model="profileData.email" required />
                         </template>
                         <template x-if="!isEditing">
                             <div>
@@ -118,12 +84,7 @@
                     </div>
                     <div class="flex-1">
                         <template x-if="isEditing">
-                            <x-input
-                                label="Phone Number"
-                                type="tel"
-                                x-model="profileData.phone"
-                                required
-                            />
+                            <x-input label="Phone Number" type="tel" x-model="profileData.phone" required />
                         </template>
                         <template x-if="!isEditing">
                             <div>
@@ -141,11 +102,7 @@
                     </div>
                     <div class="flex-1">
                         <template x-if="isEditing">
-                            <x-input
-                                label="Address"
-                                x-model="profileData.address"
-                                required
-                            />
+                            <x-input label="Address" x-model="profileData.address" required />
                         </template>
                         <template x-if="!isEditing">
                             <div>
@@ -159,11 +116,7 @@
 
             <template x-if="isEditing">
                 <div class="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-white/10">
-                    <x-button
-                        type="button"
-                        variant="outline"
-                        @click="isEditing = false"
-                    >
+                    <x-button type="button" variant="outline" @click="isEditing = false">
                         Cancel
                     </x-button>
                     <x-button type="submit" variant="accent" class="text-white bg-green-600 border-green-600 hover:bg-green-700">
@@ -191,3 +144,35 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function customerProfile() {
+        return {
+            isEditing: false,
+            profileData: @json($profileData),
+
+            handleSubmit() {
+                fetch('/customer/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(this.profileData)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.isEditing = false;
+                        showToast.success(data.message);
+                    } else {
+                        showToast.error(data.error || 'Failed to update profile.');
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            }
+        };
+    }
+</script>
+@endpush
