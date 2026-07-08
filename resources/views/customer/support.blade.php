@@ -33,7 +33,7 @@
                         </div>
                     </div>
                     <x-status-badge ::status="({{ $currentTicketData }}).status">
-                        <span x-text="({{ $currentTicketData }}).status === 'open' ? 'Open' : (({{ $currentTicketData }}).status === 'in-progress' ? 'In Progress' : 'Resolved')"></span>
+                        <span x-text="({{ $currentTicketData }}).status === 'open' ? 'Open' : (({{ $currentTicketData }}).status === 'in_progress' ? 'In Progress' : (({{ $currentTicketData }}).status === 'resolved' ? 'Resolved' : 'Closed'))"></span>
                     </x-status-badge>
                 </div>
 
@@ -77,7 +77,7 @@
             </div>
 
             {{-- Reply Form --}}
-            <template x-if="({{ $currentTicketData }}).status !== 'resolved'">
+            <template x-if="({{ $currentTicketData }}).status !== 'resolved' && ({{ $currentTicketData }}).status !== 'closed'">
                 <x-card>
                     <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Add Reply</h3>
                     <form @submit.prevent="handleSubmitReply()" class="space-y-4">
@@ -100,10 +100,27 @@
             </template>
 
             <template x-if="({{ $currentTicketData }}).status === 'resolved'">
-                <x-card>
-                    <div class="text-center py-6">
-                        <p class="text-gray-600 dark:text-gray-400">This ticket has been resolved and is now closed.</p>
+                <x-card class="bg-green-50 dark:bg-green-950/20 border-2 border-green-500">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <p class="font-bold text-green-800 dark:text-green-300">This ticket has been resolved.</p>
+                            <p class="text-sm text-green-600 dark:text-green-400">If your issue is solved, you can close this ticket. If you need further help, you may reopen it.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <x-button variant="accent" @click="handleReopenTicket(viewingTicket)" class="bg-[#E63946] border-[#E63946] hover:bg-[#c1323e]">
+                                Reopen Ticket
+                            </x-button>
+                            <x-button variant="outline" @click="handleCloseTicket(viewingTicket)" class="text-white bg-red-600 border-red-600 hover:bg-red-700">
+                                Close Ticket
+                            </x-button>
+                        </div>
                     </div>
+                </x-card>
+            </template>
+
+            <template x-if="({{ $currentTicketData }}).status === 'closed'">
+                <x-card class="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-center py-6">
+                    <p class="text-gray-600 dark:text-gray-400 font-medium">This ticket is closed.</p>
                 </x-card>
             </template>
         </div>
@@ -165,13 +182,13 @@
             {{-- Filters --}}
             <x-card>
                 <div class="flex flex-wrap gap-2">
-                    <template x-for="filter in ['all', 'open', 'in-progress', 'resolved']" :key="filter">
+                    <template x-for="filter in ['all', 'open', 'in_progress', 'resolved']" :key="filter">
                         <x-button
                             ::variant="selectedFilter === filter ? 'primary' : 'ghost'"
                             size="sm"
                             @click="selectedFilter = filter"
                             class="capitalize"
-                            x-text="filter === 'all' ? 'All Tickets' : (filter === 'in-progress' ? 'In Progress' : filter)"
+                            x-text="filter === 'all' ? 'All Tickets' : (filter === 'in_progress' ? 'In Progress' : filter)"
                         ></x-button>
                     </template>
                 </div>
@@ -203,7 +220,7 @@
                                     </div>
                                 </div>
                                 <x-status-badge ::status="ticket.status">
-                                    <span x-text="ticket.status === 'open' ? 'Open' : (ticket.status === 'in-progress' ? 'In Progress' : 'Resolved')"></span>
+                                    <span x-text="ticket.status === 'open' ? 'Open' : (ticket.status === 'in_progress' ? 'In Progress' : (ticket.status === 'resolved' ? 'Resolved' : 'Closed'))"></span>
                                 </x-status-badge>
                             </div>
                             <div>
@@ -298,6 +315,48 @@
             getFilteredTickets() {
                 if (this.selectedFilter === 'all') return this.tickets;
                 return this.tickets.filter(t => t.status === this.selectedFilter);
+            },
+
+            handleReopenTicket(ticketId) {
+                fetch('/customer/support/' + ticketId + '/reopen', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const ticket = this.tickets.find(t => t.id === ticketId);
+                        if (ticket) ticket.status = data.status;
+                        showToast.success('Ticket reopened successfully!');
+                    } else {
+                        showToast.error('Failed to reopen ticket.');
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
+            },
+
+            handleCloseTicket(ticketId) {
+                fetch('/customer/support/' + ticketId + '/close', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const ticket = this.tickets.find(t => t.id === ticketId);
+                        if (ticket) ticket.status = data.status;
+                        showToast.info('Ticket closed.');
+                    } else {
+                        showToast.error('Failed to close ticket.');
+                    }
+                })
+                .catch(() => showToast.error('An error occurred.'));
             }
         };
     }

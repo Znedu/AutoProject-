@@ -144,6 +144,14 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/support/{ticket}/reply', [CustomerSupportController::class, 'storeReply'])
                 ->middleware('permission:support.view');
 
+            Route::post('/support/{ticket}/reopen', [CustomerSupportController::class, 'reopen'])
+                ->middleware('permission:support.view')
+                ->name('support.reopen');
+
+            Route::post('/support/{ticket}/close', [CustomerSupportController::class, 'close'])
+                ->middleware('permission:support.view')
+                ->name('support.close');
+
             Route::get('/profile', [CustomerProfileController::class, 'index'])
                 ->middleware('permission:profile.view')
                 ->name('profile');
