@@ -25,6 +25,10 @@ use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueController;
 use App\Http\Controllers\Staff\AssistanceController as StaffAssistanceController;
+use App\Http\Controllers\Staff\WalkInBookingController as StaffWalkInBookingController;
+use App\Http\Controllers\Staff\ScheduleController as StaffScheduleController;
+use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
+use App\Http\Controllers\Staff\JobController as StaffJobController;
 
 // Import Mechanic Controllers
 use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardController;
@@ -161,22 +165,51 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->group(function () {
             Route::get('/', [StaffDashboardController::class, 'index'])->name('dashboard');
 
+            // Booking Queue — view and schedule only (no approve/reject/verify-payment)
             Route::get('/booking-queue', [StaffBookingQueueController::class, 'index'])
                 ->middleware('permission:bookings.queue.view')
                 ->name('booking-queue');
 
-            Route::post('/bookings/{booking}/verify-payment', [StaffBookingQueueController::class, 'verifyPayment'])
-                ->middleware('permission:bookings.queue.view');
-
-            Route::post('/bookings/{booking}/approve', [StaffBookingQueueController::class, 'approve'])
-                ->middleware('permission:bookings.queue.view');
-
-            Route::post('/bookings/{booking}/reject', [StaffBookingQueueController::class, 'reject'])
-                ->middleware('permission:bookings.queue.view');
-
             Route::post('/bookings/{booking}/schedule', [StaffBookingQueueController::class, 'schedule'])
-                ->middleware('permission:bookings.queue.view');
+                ->middleware('permission:bookings.schedule');
 
+            // Walk-In Booking
+            Route::get('/walk-in-booking', [StaffWalkInBookingController::class, 'create'])
+                ->middleware('permission:walk-in.create')
+                ->name('walk-in-booking');
+
+            Route::post('/walk-in-booking', [StaffWalkInBookingController::class, 'store'])
+                ->middleware('permission:walk-in.create')
+                ->name('walk-in-booking.store');
+
+            Route::get('/customers/search', [StaffWalkInBookingController::class, 'searchCustomers'])
+                ->middleware('permission:customers.view')
+                ->name('customers.search');
+
+            Route::get('/customers/{user}/vehicles', [StaffWalkInBookingController::class, 'getCustomerVehicles'])
+                ->middleware('permission:customers.view')
+                ->name('customers.vehicles');
+
+            // Schedule Calendar
+            Route::get('/schedule', [StaffScheduleController::class, 'index'])
+                ->middleware('permission:bookings.queue.view')
+                ->name('schedule');
+
+            // Customer Management (read-only)
+            Route::get('/customers', [StaffCustomerController::class, 'index'])
+                ->middleware('permission:customers.view')
+                ->name('customers.index');
+
+            Route::get('/customers/{user}', [StaffCustomerController::class, 'show'])
+                ->middleware('permission:customers.view')
+                ->name('customers.show');
+
+            // Job Order Monitoring (read-only)
+            Route::get('/jobs', [StaffJobController::class, 'index'])
+                ->middleware('permission:jobs.view')
+                ->name('jobs.index');
+
+            // Customer Assistance / Support Tickets
             Route::get('/assistance', [StaffAssistanceController::class, 'index'])
                 ->middleware('permission:support.view')
                 ->name('assistance');
@@ -185,6 +218,9 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:support.view');
 
             Route::post('/assistance/{ticket}/resolve', [StaffAssistanceController::class, 'resolve'])
+                ->middleware('permission:support.view');
+
+            Route::post('/assistance/{ticket}/status', [StaffAssistanceController::class, 'updateStatus'])
                 ->middleware('permission:support.view');
         });
 

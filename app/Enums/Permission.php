@@ -20,10 +20,9 @@ enum Permission: string
     // Staff operations
     case ViewStaffDashboard = 'staff.dashboard.view';
     case BookingQueueView = 'bookings.queue.view';
-    case BookingsVerifyPayment = 'bookings.verify-payment';
-    case BookingsApprove = 'bookings.approve';
-    case BookingsReject = 'bookings.reject';
     case BookingsSchedule = 'bookings.schedule';
+    case WalkInCreate = 'walk-in.create';
+    case CustomersView = 'customers.view';
     case SupportAssign = 'support.assign';
     case SupportResolve = 'support.resolve';
 
@@ -63,10 +62,9 @@ enum Permission: string
 
             self::ViewStaffDashboard,
             self::BookingQueueView,
-            self::BookingsVerifyPayment,
-            self::BookingsApprove,
-            self::BookingsReject,
             self::BookingsSchedule,
+            self::WalkInCreate,
+            self::CustomersView,
             self::SupportAssign,
             self::SupportResolve => 'staff',
 
@@ -111,10 +109,11 @@ enum Permission: string
             RoleSlug::Staff => [
                 self::ViewStaffDashboard,
                 self::BookingQueueView,
-                self::BookingsVerifyPayment,
-                self::BookingsApprove,
-                self::BookingsReject,
                 self::BookingsSchedule,
+                self::BookingsCreate,
+                self::WalkInCreate,
+                self::CustomersView,
+                self::JobsView,
                 self::SupportView,
                 self::SupportReply,
                 self::SupportAssign,
