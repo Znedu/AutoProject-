@@ -110,4 +110,38 @@ class SupportController extends Controller
             ]
         ]);
     }
+
+    public function reopen(SupportTicket $ticket)
+    {
+        if ($ticket->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $ticket->update([
+            'status' => SupportTicket::STATUS_OPEN,
+            'resolved_at' => null,
+            'resolved_by' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => SupportTicket::STATUS_OPEN,
+        ]);
+    }
+
+    public function close(SupportTicket $ticket)
+    {
+        if ($ticket->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $ticket->update([
+            'status' => SupportTicket::STATUS_CLOSED,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => SupportTicket::STATUS_CLOSED,
+        ]);
+    }
 }
