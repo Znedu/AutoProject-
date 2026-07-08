@@ -4,32 +4,7 @@
 
 @section('content')
 <div
-    x-data="{
-        searchQuery: '',
-        selectedRole: 'all',
-        users: @js($users),
-        filteredUsers() {
-            return this.users.filter(user => {
-                const matchesSearch = user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    user.email.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    user.phone.includes(this.searchQuery);
-                const matchesRole = this.selectedRole === 'all' || user.role.toLowerCase() === this.selectedRole.toLowerCase();
-                return matchesSearch && matchesRole;
-            });
-        },
-        countRole(role) {
-            return this.users.filter(u => u.role.toLowerCase() === role.toLowerCase()).length;
-        },
-        handleDelete(id) {
-            if (confirm('Are you sure you want to delete this user?')) {
-                this.users = this.users.filter(u => u.id !== id);
-                showToast.success('User ' + id + ' deleted');
-            }
-        },
-        handleEdit(id) {
-            showToast.info('Edit user ' + id);
-        }
-    }"
+    x-data="adminUserManagement()"
     class="space-y-6"
 >
     {{-- Header --}}
@@ -174,3 +149,41 @@
     </x-card>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function adminUserManagement() {
+        return {
+            searchQuery: '',
+            selectedRole: 'all',
+            users: @json($users),
+
+            filteredUsers() {
+                return this.users.filter(user => {
+                    const matchesSearch =
+                        user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                        user.email.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                        user.phone.includes(this.searchQuery);
+                    const matchesRole = this.selectedRole === 'all' || user.role.toLowerCase() === this.selectedRole.toLowerCase();
+                    return matchesSearch && matchesRole;
+                });
+            },
+
+            countRole(role) {
+                return this.users.filter(u => u.role.toLowerCase() === role.toLowerCase()).length;
+            },
+
+            handleDelete(id) {
+                if (confirm('Are you sure you want to delete this user?')) {
+                    this.users = this.users.filter(u => u.id !== id);
+                    showToast.success('User ' + id + ' deleted');
+                }
+            },
+
+            handleEdit(id) {
+                showToast.info('Edit user ' + id);
+            }
+        };
+    }
+</script>
+@endpush
