@@ -114,6 +114,22 @@ class Booking extends Model
         return Attribute::get(fn (): string => str($this->status)->replace('_', ' ')->title()->toString());
     }
 
+    protected function badgeLabel(): Attribute
+    {
+        return Attribute::get(fn (): string => match ($this->status) {
+            self::STATUS_PENDING => 'Awaiting Approval',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_WAITING_PAYMENT => 'Waiting Payment',
+            self::STATUS_CONFIRMED => 'Confirmed',
+            self::STATUS_SCHEDULED => 'Scheduled',
+            self::STATUS_IN_PROGRESS => 'In Progress',
+            self::STATUS_COMPLETED => 'Completed',
+            self::STATUS_CANCELLED => 'Cancelled',
+            default => $this->display_status,
+        });
+    }
+
     protected function isCancellable(): Attribute
     {
         return Attribute::get(fn (): bool => $this->status === self::STATUS_PENDING);
