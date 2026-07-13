@@ -23,6 +23,12 @@ class Booking extends Model
 
     public const STATUS_WAITING_PAYMENT = 'waiting_payment';
 
+    /** Booking created & payment submitted; awaiting admin verification. */
+    public const STATUS_PENDING_PAYMENT_VERIFICATION = 'pending_payment_verification';
+
+    /** Admin rejected the payment; customer must resubmit proof. */
+    public const STATUS_PAYMENT_REQUIRES_RESUBMISSION = 'payment_requires_resubmission';
+
     public const STATUS_CONFIRMED = 'confirmed';
 
     public const STATUS_SCHEDULED = 'scheduled';
@@ -56,6 +62,7 @@ class Booking extends Model
         'approved_by',
         'approved_at',
         'completed_at',
+        'payment_attempts',
     ];
 
     public function user(): BelongsTo
@@ -118,22 +125,28 @@ class Booking extends Model
     protected function badgeLabel(): Attribute
     {
         return Attribute::get(fn (): string => match ($this->status) {
-            self::STATUS_PENDING => 'Awaiting Approval',
-            self::STATUS_APPROVED => 'Approved',
-            self::STATUS_REJECTED => 'Rejected',
-            self::STATUS_WAITING_PAYMENT => 'Waiting Payment',
-            self::STATUS_CONFIRMED => 'Confirmed',
-            self::STATUS_SCHEDULED => 'Scheduled',
-            self::STATUS_IN_PROGRESS => 'In Progress',
-            self::STATUS_COMPLETED => 'Completed',
-            self::STATUS_CANCELLED => 'Cancelled',
-            default => $this->display_status,
+            self::STATUS_PENDING                       => 'Awaiting Approval',
+            self::STATUS_APPROVED                      => 'Approved',
+            self::STATUS_REJECTED                      => 'Rejected',
+            self::STATUS_WAITING_PAYMENT               => 'Waiting Payment',
+            self::STATUS_PENDING_PAYMENT_VERIFICATION  => 'Pending Verification',
+            self::STATUS_PAYMENT_REQUIRES_RESUBMISSION => 'Payment Rejected',
+            self::STATUS_CONFIRMED                     => 'Confirmed',
+            self::STATUS_SCHEDULED                     => 'Scheduled',
+            self::STATUS_IN_PROGRESS                   => 'In Progress',
+            self::STATUS_COMPLETED                     => 'Completed',
+            self::STATUS_CANCELLED                     => 'Cancelled',
+            default                                    => $this->display_status,
         });
     }
 
     protected function isCancellable(): Attribute
     {
-        return Attribute::get(fn (): bool => $this->status === self::STATUS_PENDING);
+        return Attribute::get(fn (): bool => in_array($this->status, [
+            self::STATUS_PENDING,
+            self::STATUS_PENDING_PAYMENT_VERIFICATION,
+            self::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
+        ]));
     }
 
     public function scopeForUser(Builder $query, int $userId): Builder
@@ -158,6 +171,16 @@ class Booking extends Model
             self::STATUS_CANCELLED,
             self::STATUS_REJECTED,
         ]);
+    }
+
+    public function scopePendingPaymentVerification(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PENDING_PAYMENT_VERIFICATION);
+    }
+
+    public function scopePaymentRequiresResubmission(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_PAYMENT_REQUIRES_RESUBMISSION);
     }
 
     public function scopeScheduledOn(Builder $query, string $date): Builder

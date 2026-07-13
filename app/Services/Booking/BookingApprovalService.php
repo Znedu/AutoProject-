@@ -78,7 +78,7 @@ class BookingApprovalService
         });
     }
 
-    protected function createJobOrderForBooking(Booking $booking, User $admin): void
+    public function createJobOrderForBooking(Booking $booking, User $admin): void
     {
         // Don't create duplicate JobOrders if somehow one already exists
         if ($booking->jobOrder()->exists()) {

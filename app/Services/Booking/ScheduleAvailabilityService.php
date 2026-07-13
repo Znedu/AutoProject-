@@ -27,6 +27,8 @@ class ScheduleAvailabilityService
      */
     public const OCCUPYING_STATUSES = [
         Booking::STATUS_PENDING,
+        Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
+        Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
         Booking::STATUS_APPROVED,
         Booking::STATUS_WAITING_PAYMENT,
         Booking::STATUS_CONFIRMED,

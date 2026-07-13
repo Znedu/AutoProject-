@@ -64,7 +64,7 @@ class BookingCreatorService
                 'booking_number' => $this->bookingNumberGenerator->generate(),
                 'user_id' => $customer->id,
                 'vehicle_id' => $vehicle->id,
-                'status' => Booking::STATUS_PENDING,
+                'status' => Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
                 'preferred_date' => $data['preferred_date'],
                 'preferred_time' => $normalizedTime,
                 'customer_name' => $data['customer_name'],
@@ -109,7 +109,7 @@ class BookingCreatorService
                 ]);
             }
 
-            $this->statusLogger->log($booking, null, Booking::STATUS_PENDING, $customer, 'Booking submitted by customer.');
+            $this->statusLogger->log($booking, null, Booking::STATUS_PENDING_PAYMENT_VERIFICATION, $customer, 'Booking submitted by customer with payment proof.');
 
             return $booking->load([
                 'vehicle',

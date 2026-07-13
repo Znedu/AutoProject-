@@ -83,6 +83,15 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:approvals.manage')
                 ->name('bookings.verify-payment');
 
+            // New payment verification workflow (single-step: verify + confirm)
+            Route::post('/bookings/{booking}/confirm-payment', [BookingApprovalController::class, 'confirmPayment'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.confirm-payment');
+
+            Route::post('/bookings/{booking}/reject-payment', [BookingApprovalController::class, 'rejectPayment'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.reject-payment');
+
             Route::get('/services', [AdminServiceController::class, 'index'])
                 ->middleware('permission:services.manage')
                 ->name('services.index');
@@ -186,6 +195,10 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/payment/{bookingId}', [CustomerPaymentController::class, 'submit'])
                 ->middleware('permission:payments.submit')
                 ->name('payment.submit');
+
+            Route::post('/payment/{bookingId}/resubmit', [CustomerPaymentController::class, 'resubmit'])
+                ->middleware('permission:payments.submit')
+                ->name('payment.resubmit');
 
             // Vehicle Management
             Route::get('/vehicles', [CustomerVehicleController::class, 'index'])

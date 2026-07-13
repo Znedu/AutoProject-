@@ -116,7 +116,7 @@
                             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $booking['date'] }}</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <x-status-badge status="{{ $booking['status'] }}">Confirmed</x-status-badge>
+                            <x-status-badge status="{{ $booking['status'] }}">{{ $booking['status_label'] }}</x-status-badge>
                             <a href="{{ url('/customer/track') }}">
                                 <x-button size="sm" variant="outline">View Details</x-button>
                             </a>
