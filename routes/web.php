@@ -86,6 +86,26 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:services.manage')
                 ->name('services.index');
 
+            Route::post('/services', [AdminServiceController::class, 'store'])
+                ->middleware('permission:services.manage')
+                ->name('services.store');
+
+            Route::post('/services/categories', [AdminServiceController::class, 'storeCategory'])
+                ->middleware('permission:services.manage')
+                ->name('services.categories.store');
+
+            Route::put('/services/{service}', [AdminServiceController::class, 'update'])
+                ->middleware('permission:services.manage')
+                ->name('services.update');
+
+            Route::post('/services/{service}/toggle-status', [AdminServiceController::class, 'toggleStatus'])
+                ->middleware('permission:services.manage')
+                ->name('services.toggle-status');
+
+            Route::delete('/services/{service}', [AdminServiceController::class, 'destroy'])
+                ->middleware('permission:services.manage')
+                ->name('services.destroy');
+
             Route::get('/jobs', [AdminJobController::class, 'index'])
                 ->middleware('permission:approvals.manage')
                 ->name('jobs.index');
