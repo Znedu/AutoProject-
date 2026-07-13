@@ -20,6 +20,7 @@ use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
 use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
+use App\Http\Controllers\Customer\VehicleController as CustomerVehicleController;
 
 // Import Staff Controllers
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
@@ -185,6 +186,16 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::post('/payment/{bookingId}', [CustomerPaymentController::class, 'submit'])
                 ->middleware('permission:payments.submit')
                 ->name('payment.submit');
+
+            // Vehicle Management
+            Route::get('/vehicles', [CustomerVehicleController::class, 'index'])
+                ->name('vehicles.index');
+            Route::post('/vehicles', [CustomerVehicleController::class, 'store'])
+                ->name('vehicles.store');
+            Route::put('/vehicles/{vehicle}', [CustomerVehicleController::class, 'update'])
+                ->name('vehicles.update');
+            Route::delete('/vehicles/{vehicle}', [CustomerVehicleController::class, 'destroy'])
+                ->name('vehicles.destroy');
         });
 
     Route::prefix('staff')

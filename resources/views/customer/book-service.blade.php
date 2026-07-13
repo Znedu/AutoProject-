@@ -23,6 +23,15 @@
     $fee = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
     $gcashNumber = \App\Models\BusinessSetting::getValue('gcash_account_number', '0912-345-6789');
     $mayaNumber = \App\Models\BusinessSetting::getValue('maya_account_number', '0917-888-9999');
+
+    $savedVehiclesJson = $vehicles->map(fn ($v) => [
+        'id'           => $v->id,
+        'make'         => $v->make,
+        'model'        => $v->model,
+        'year'         => $v->year,
+        'plate_number' => $v->plate_number,
+        'display_name' => $v->display_name,
+    ])->values();
 @endphp
 
 <div 
@@ -61,6 +70,18 @@
 
         services: @js($servicesPayload),
         serviceCategories: @js($categoriesPayload),
+        savedVehicles: @js($savedVehiclesJson),
+        selectedSavedVehicleId: '',
+        handleSelectSavedVehicle() {
+            if (!this.selectedSavedVehicleId) return;
+            const v = this.savedVehicles.find(v => v.id == this.selectedSavedVehicleId);
+            if (v) {
+                this.formData.vehicleMake  = v.make;
+                this.formData.vehicleModel = v.model;
+                this.formData.vehicleYear  = String(v.year);
+                this.formData.plateNumber  = v.plate_number;
+            }
+        },
 
         timeSlots: [
             '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
@@ -505,6 +526,40 @@
             {{-- Vehicle Information --}}
             <x-card>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Vehicle Information</h2>
+
+                {{-- Saved vehicle picker (shown only when user has saved vehicles) --}}
+                <template x-if="savedVehicles.length > 0">
+                    <div class="mb-4 p-4 rounded-xl bg-[#457B9D]/10 border border-[#457B9D]/30">
+                        <p class="text-sm font-semibold text-[#457B9D] dark:text-[#6baac8] mb-2">
+                            🚗 Select from My Garage
+                        </p>
+                        <div class="flex gap-3 items-end">
+                            <div class="flex-1">
+                                <select
+                                    x-model="selectedSavedVehicleId"
+                                    class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                >
+                                    <option value="">— Pick a saved vehicle —</option>
+                                    <template x-for="v in savedVehicles" :key="v.id">
+                                        <option :value="v.id" x-text="v.display_name + ' · ' + v.plate_number"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <button
+                                type="button"
+                                @click="handleSelectSavedVehicle()"
+                                :disabled="!selectedSavedVehicleId"
+                                class="inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white/10 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 hover:border-[#E63946] hover:text-[#E63946] px-4 py-2 text-sm whitespace-nowrap"
+                            >
+                                Use This Vehicle
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            Selecting a vehicle auto-fills the fields below. You can still edit them.
+                        </p>
+                    </div>
+                </template>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <x-input
                         label="Vehicle Make"
