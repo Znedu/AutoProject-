@@ -9,13 +9,15 @@
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'waiting_payment' => 'Waiting Payment',
+        'pending_payment_verification' => 'Pending Verification',
+        'payment_requires_resubmission' => 'Payment Rejected',
         'confirmed' => 'Confirmed',
         'in_progress' => 'In Progress',
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ];
 
-    $filters = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
+    $filters = ['all', 'pending_payment_verification', 'payment_requires_resubmission', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 @endphp
 
 <div class="space-y-6 animate-fade-in">
@@ -42,8 +44,12 @@
                             All
                         @elseif ($filter === 'in_progress')
                             In Progress
+                        @elseif ($filter === 'pending_payment_verification')
+                            Pending Verification
+                        @elseif ($filter === 'payment_requires_resubmission')
+                            Requires Resubmission
                         @else
-                            {{ $filter }}
+                            {{ str_replace('_', ' ', $filter) }}
                         @endif
                     </x-button>
                 </a>
@@ -55,7 +61,7 @@
         @forelse ($bookings as $booking)
             @php
                 $quotation = $booking->quotations->first();
-                $payment = $booking->payments->first();
+                $payment = $booking->payments->sortByDesc('id')->first();
                 $serviceNames = $booking->bookingServices->pluck('service.name')->join(', ');
                 $badgeStatus = str_replace('_', '-', $booking->status);
                 $vehicleLabel = trim(implode(' ', array_filter([
@@ -106,6 +112,11 @@
                                         <x-icon name="check-square" class="w-4 h-4 text-green-600 inline" />
                                         Paid & Verified
                                     </span>
+                                @elseif ($payment && $payment->status === 'rejected')
+                                    <span class="flex items-center gap-1 text-red-600 font-medium">
+                                        <x-icon name="x" class="w-4 h-4 text-red-600 inline" />
+                                        Payment Rejected
+                                    </span>
                                 @elseif ($payment)
                                     <span class="flex items-center gap-1 text-amber-600 font-medium">
                                         <x-icon name="info" class="w-4 h-4 text-amber-600 inline" />
@@ -135,7 +146,13 @@
                             </x-button>
                         </a>
 
-                        @if ($payment)
+                        @if ($booking->status === \App\Models\Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION)
+                            <a href="{{ route('customer.payment', $booking->id) }}">
+                                <x-button variant="accent" size="sm" class="whitespace-nowrap w-full text-white bg-red-600 hover:bg-red-700">
+                                    Resubmit Payment
+                                </x-button>
+                            </a>
+                        @elseif ($payment)
                             <a href="{{ route('customer.payment', $booking->id) }}">
                                 <x-button variant="secondary" size="sm" class="whitespace-nowrap w-full">
                                     Payment Details

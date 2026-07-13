@@ -18,6 +18,8 @@ class DashboardController extends Controller
         $upcomingCount = Booking::forUser($userId)
             ->whereIn('status', [
                 Booking::STATUS_PENDING,
+                Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
+                Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
                 Booking::STATUS_APPROVED,
                 Booking::STATUS_WAITING_PAYMENT,
                 Booking::STATUS_CONFIRMED,
@@ -62,6 +64,8 @@ class DashboardController extends Controller
         $upcomingBookings = Booking::forUser($userId)
             ->whereIn('status', [
                 Booking::STATUS_PENDING,
+                Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
+                Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
                 Booking::STATUS_APPROVED,
                 Booking::STATUS_WAITING_PAYMENT,
                 Booking::STATUS_CONFIRMED,
@@ -77,6 +81,7 @@ class DashboardController extends Controller
                     'vehicle' => $booking->vehicle ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}" : 'N/A',
                     'date' => $booking->scheduled_date ? $booking->scheduled_date->format('F d, Y') : $booking->preferred_date->format('F d, Y'),
                     'status' => $booking->status,
+                    'status_label' => $booking->badge_label,
                 ];
             });
 
