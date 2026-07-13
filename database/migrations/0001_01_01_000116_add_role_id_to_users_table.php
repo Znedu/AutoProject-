@@ -45,6 +45,7 @@ return new class extends Migration
                 });
 
             Schema::table('users', function (Blueprint $table) {
+                $table->dropIndex('users_role_index');
                 $table->dropColumn('role');
             });
         }

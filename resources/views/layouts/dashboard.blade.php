@@ -52,6 +52,7 @@
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/customer'],
                 ['icon' => 'calendar', 'label' => 'Book Service', 'path' => '/customer/book-service'],
                 ['icon' => 'clipboard-list', 'label' => 'My Bookings', 'path' => '/customer/bookings'],
+                ['icon' => 'car', 'label' => 'My Vehicles', 'path' => '/customer/vehicles'],
                 ['icon' => 'map-pin', 'label' => 'Track Service', 'path' => '/customer/track'],
                 ['icon' => 'message-square', 'label' => 'Support Tickets', 'path' => '/customer/support'],
                 ['icon' => 'user', 'label' => 'Profile', 'path' => '/customer/profile'],
