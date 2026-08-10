@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
+use App\Notifications\Support\TicketCreatedNotification;
+use App\Notifications\Support\TicketReopenedNotification;
+use App\Notifications\Support\TicketReplyNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -67,6 +71,8 @@ class SupportController extends Controller
             'status' => 'open',
         ]);
 
+        app(NotificationDispatcherService::class)->notifyStaff(new TicketCreatedNotification($ticket));
+
         return response()->json([
             'success' => true,
             'ticket' => [
@@ -98,6 +104,8 @@ class SupportController extends Controller
             'is_internal' => false,
         ]);
 
+        app(NotificationDispatcherService::class)->notifyStaff(new TicketReplyNotification($ticket, $reply));
+
         return response()->json([
             'success' => true,
             'reply' => [
@@ -122,6 +130,8 @@ class SupportController extends Controller
             'resolved_at' => null,
             'resolved_by' => null,
         ]);
+
+        app(NotificationDispatcherService::class)->notifyStaff(new TicketReopenedNotification($ticket));
 
         return response()->json([
             'success' => true,

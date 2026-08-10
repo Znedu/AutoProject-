@@ -26,7 +26,7 @@ class JobController extends Controller
                 'mechanic',
                 'assigner',
             ])
-            ->whereHas('booking', fn ($q) => $q->where('status', \App\Models\Booking::STATUS_APPROVED))
+            ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
             ->when($filter === 'unassigned', fn ($q) => $q->where('status', JobOrder::STATUS_PENDING))
             ->when($filter === 'assigned',   fn ($q) => $q->where('status', JobOrder::STATUS_ASSIGNED))
             ->latest()
@@ -42,10 +42,10 @@ class JobController extends Controller
 
         $stats = [
             'unassigned'    => JobOrder::where('status', JobOrder::STATUS_PENDING)
-                ->whereHas('booking', fn ($q) => $q->where('status', \App\Models\Booking::STATUS_APPROVED))
+                ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
                 ->count(),
             'assigned'      => JobOrder::where('status', JobOrder::STATUS_ASSIGNED)
-                ->whereHas('booking', fn ($q) => $q->where('status', \App\Models\Booking::STATUS_APPROVED))
+                ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
                 ->count(),
             'in_progress'   => JobOrder::where('status', JobOrder::STATUS_IN_PROGRESS)->count(),
             'mechanics_available' => User::mechanics()->active()->count(),

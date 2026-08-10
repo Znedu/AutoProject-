@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
+use App\Notifications\Support\TicketReplyNotification;
+use App\Notifications\Support\TicketResolvedNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\Request;
 
 class AssistanceController extends Controller
@@ -56,6 +59,10 @@ class AssistanceController extends Controller
             $ticket->update(['status' => SupportTicket::STATUS_IN_PROGRESS]);
         }
 
+        if ($ticket->user) {
+            app(NotificationDispatcherService::class)->notifyUser($ticket->user, new TicketReplyNotification($ticket, $reply));
+        }
+
         return response()->json([
             'success' => true,
             'reply'   => [
@@ -73,6 +80,10 @@ class AssistanceController extends Controller
             'resolved_at' => now(),
             'resolved_by' => auth()->id(),
         ]);
+
+        if ($ticket->user) {
+            app(NotificationDispatcherService::class)->notifyUser($ticket->user, new TicketResolvedNotification($ticket));
+        }
 
         return response()->json(['success' => true]);
     }

@@ -6,6 +6,12 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Notifications\Booking\BookingConfirmedNotification;
+use App\Notifications\Job\JobOrderCreatedNotification;
+use App\Notifications\Payment\BookingAutoCancelledNotification;
+use App\Notifications\Payment\PaymentRejectedNotification;
+use App\Notifications\Payment\PaymentResubmittedNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -21,15 +27,11 @@ class PaymentVerificationService
      */
     public const MAX_ATTEMPTS = 3;
 
-    /**
-     * NOTE: Email notifications on approve/reject will be added in a future
-     * iteration using PHPMailer + Hostinger business email. Service layer is
-     * structured with clear approve/reject boundaries to make insertion trivial.
-     */
     public function __construct(
         protected BookingStatusLogger   $statusLogger,
         protected BookingApprovalService $approvalService,
         protected PaymentNumberGenerator $paymentNumberGenerator,
+        protected NotificationDispatcherService $dispatcher,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -55,7 +57,7 @@ class PaymentVerificationService
             ->latest()
             ->firstOrFail();
 
-        return DB::transaction(function () use ($booking, $admin, $payment): Booking {
+        $booking = DB::transaction(function () use ($booking, $admin, $payment): Booking {
             $previousStatus = $booking->status;
 
             // Verify the payment
@@ -104,6 +106,17 @@ class PaymentVerificationService
                 'statusLogs',
             ]);
         });
+
+        if ($booking->user) {
+            $this->dispatcher->notifyUser($booking->user, new BookingConfirmedNotification($booking));
+        }
+
+        $jobOrder = $booking->jobOrder ?? $booking->fresh(['jobOrder'])->jobOrder;
+        if ($jobOrder) {
+            $this->dispatcher->notifyAdmins(new JobOrderCreatedNotification($jobOrder));
+        }
+
+        return $booking;
     }
 
     /**
@@ -127,7 +140,7 @@ class PaymentVerificationService
             ->latest()
             ->firstOrFail();
 
-        return DB::transaction(function () use ($booking, $admin, $payment, $reason): Booking {
+        $booking = DB::transaction(function () use ($booking, $admin, $payment, $reason): Booking {
             $previousStatus = $booking->status;
 
             // Mark this payment attempt as rejected
@@ -171,6 +184,19 @@ class PaymentVerificationService
                 'statusLogs',
             ]);
         });
+
+        if ($booking->status === Booking::STATUS_CANCELLED) {
+            if ($booking->user) {
+                $this->dispatcher->notifyUser($booking->user, new BookingAutoCancelledNotification($booking));
+            }
+            $this->dispatcher->notifyAdmins(new BookingAutoCancelledNotification($booking));
+        } else {
+            if ($booking->user) {
+                $this->dispatcher->notifyUser($booking->user, new PaymentRejectedNotification($booking, $reason));
+            }
+        }
+
+        return $booking;
     }
 
     // -------------------------------------------------------------------------
@@ -197,7 +223,7 @@ class PaymentVerificationService
             );
         }
 
-        return DB::transaction(function () use ($booking, $customer, $data, $screenshot): Payment {
+        $payment = DB::transaction(function () use ($booking, $customer, $data, $screenshot): Payment {
             $previousStatus = $booking->status;
 
             // Create a fresh payment record — keeps full audit trail
@@ -237,5 +263,9 @@ class PaymentVerificationService
 
             return $payment->fresh('proofs');
         });
+
+        $this->dispatcher->notifyAdminsWithPermission('approvals.manage', new PaymentResubmittedNotification($booking));
+
+        return $payment;
     }
 }
