@@ -201,6 +201,13 @@
 
     <!-- Main View Content Area -->
     <div class="lg:ml-64">
+        <!-- Sticky Top Header Bar -->
+        <header class="sticky top-0 z-20 flex items-center justify-end h-16 px-6 bg-white/80 dark:bg-[#0B0B0B]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
+            <div class="flex items-center gap-3">
+                <x-notification-bell />
+            </div>
+        </header>
+
         <main class="p-6 lg:p-8">
             @if (isset($slot))
                 {{ $slot }}

@@ -36,6 +36,8 @@ use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardContro
 use App\Http\Controllers\Mechanic\JobController as MechanicJobController;
 use App\Http\Controllers\Mechanic\NoteController as MechanicNoteController;
 
+use App\Http\Controllers\NotificationController;
+
 Route::get('/', function () {
     return view('landing');
 })->name('landing');
@@ -52,6 +54,12 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
 
 Route::middleware(['auth', 'active'])->group(function () {
+
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/{id}/read', [NotificationController::class, 'markRead'])->name('read');
+        Route::post('/read-all', [NotificationController::class, 'markAllRead'])->name('read-all');
+    });
 
     Route::prefix('admin')
         ->middleware('role:admin')

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Mechanic;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\JobOrder;
+use App\Notifications\Job\JobCompletedNotification;
+use App\Notifications\Job\JobStartedNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\Request;
 
 class JobController extends Controller
@@ -85,6 +88,10 @@ class JobController extends Controller
             'progress_percent' => $newProgress,
         ]);
 
+        if ($job->booking?->user) {
+            app(NotificationDispatcherService::class)->notifyUser($job->booking->user, new JobStartedNotification($job));
+        }
+
         return response()->json(['success' => true, 'progress' => $newProgress]);
     }
 
@@ -120,6 +127,12 @@ class JobController extends Controller
                 'completed_at' => now(),
             ]);
         }
+
+        $dispatcher = app(NotificationDispatcherService::class);
+        if ($job->booking?->user) {
+            $dispatcher->notifyUser($job->booking->user, new JobCompletedNotification($job));
+        }
+        $dispatcher->notifyStaff(new JobCompletedNotification($job));
 
         return response()->json(['success' => true]);
     }

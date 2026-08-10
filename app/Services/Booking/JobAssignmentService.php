@@ -5,10 +5,17 @@ namespace App\Services\Booking;
 use App\Enums\RoleSlug;
 use App\Models\JobOrder;
 use App\Models\User;
+use App\Notifications\Job\JobAssignedNotification;
+use App\Notifications\Job\JobUnassignedNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use InvalidArgumentException;
 
 class JobAssignmentService
 {
+    public function __construct(
+        protected NotificationDispatcherService $dispatcher
+    ) {}
+
     /**
      * Assign a mechanic to a pending job order.
      *
@@ -38,7 +45,19 @@ class JobAssignmentService
             'internal_notes'            => $data['internal_notes'] ?? $job->internal_notes,
         ]);
 
-        return $job->fresh(['mechanic', 'booking']);
+        $freshJob = $job->fresh(['mechanic', 'booking.user']);
+
+        // Notify Mechanic
+        if ($freshJob->mechanic) {
+            $this->dispatcher->notifyUser($freshJob->mechanic, new JobAssignedNotification($freshJob));
+        }
+
+        // Notify Customer
+        if ($freshJob->booking?->user) {
+            $this->dispatcher->notifyUser($freshJob->booking->user, new JobAssignedNotification($freshJob));
+        }
+
+        return $freshJob;
     }
 
     /**
@@ -50,6 +69,8 @@ class JobAssignmentService
             throw new InvalidArgumentException('Only assigned jobs can be unassigned.');
         }
 
+        $previousMechanic = $job->mechanic;
+
         $job->update([
             'mechanic_id' => null,
             'assigned_by' => null,
@@ -57,6 +78,14 @@ class JobAssignmentService
             'status'      => JobOrder::STATUS_PENDING,
         ]);
 
-        return $job->fresh();
+        $freshJob = $job->fresh();
+
+        if ($previousMechanic) {
+            $this->dispatcher->notifyUser($previousMechanic, new JobUnassignedNotification($freshJob));
+        }
+
+        $this->dispatcher->notifyAdmins(new JobUnassignedNotification($freshJob));
+
+        return $freshJob;
     }
 }

@@ -8,6 +8,8 @@ use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\Booking\NewBookingNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +23,7 @@ class BookingCreatorService
         protected ScheduleAvailabilityService $scheduleAvailability,
         protected QuotationBuilderService $quotationBuilder,
         protected BookingStatusLogger $statusLogger,
+        protected NotificationDispatcherService $dispatcher,
     ) {}
 
     /**
@@ -56,7 +59,7 @@ class BookingCreatorService
             throw new \InvalidArgumentException('One or more selected services are invalid or inactive.');
         }
 
-        return DB::transaction(function () use ($customer, $data, $services): Booking {
+        $booking = DB::transaction(function () use ($customer, $data, $services): Booking {
             $vehicle = $this->resolveVehicle($customer, $data);
             $normalizedTime = $this->scheduleAvailability->normalizeTime($data['preferred_time']);
 
@@ -118,6 +121,10 @@ class BookingCreatorService
                 'payments',
             ]);
         });
+
+        $this->dispatcher->notifyAdminsWithPermission('approvals.manage', new NewBookingNotification($booking));
+
+        return $booking;
     }
 
     /**

@@ -11,10 +11,12 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Notifications\Booking\WalkInBookingCreatedNotification;
 use App\Services\Booking\BookingCreatorService;
 use App\Services\Booking\BookingNumberGenerator;
 use App\Services\Booking\QuotationBuilderService;
 use App\Services\Booking\ScheduleAvailabilityService;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -126,6 +128,10 @@ class WalkInBookingController extends Controller
             $booking->update(['is_walk_in' => true]);
 
             DB::commit();
+
+            $dispatcher = app(NotificationDispatcherService::class);
+            $dispatcher->notifyAdmins(new WalkInBookingCreatedNotification($booking));
+            $dispatcher->notifyUser($customer, new WalkInBookingCreatedNotification($booking));
 
             return redirect()
                 ->route('staff.booking-queue')

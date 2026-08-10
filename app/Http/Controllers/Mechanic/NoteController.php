@@ -9,6 +9,8 @@ use App\Models\Booking;
 use App\Models\ServiceStage;
 use App\Models\ServiceStageProgress;
 use App\Models\ServiceUpdatePhoto;
+use App\Notifications\Job\ServiceUpdateNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\Request;
 
 class NoteController extends Controller
@@ -97,6 +99,10 @@ class NoteController extends Controller
             'message' => $request->note,
             'is_visible_to_customer' => true,
         ]);
+
+        if ($update->is_visible_to_customer && $job->booking?->user) {
+            app(NotificationDispatcherService::class)->notifyUser($job->booking->user, new ServiceUpdateNotification($update));
+        }
 
         // Process file uploads if files exist
         if ($request->hasFile('photos')) {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Notifications\Scheduling\AppointmentScheduledNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\Request;
 
 class BookingQueueController extends Controller
@@ -69,6 +71,14 @@ class BookingQueueController extends Controller
                 'scheduled_date' => $request->input('scheduled_date', $booking->preferred_date),
                 'scheduled_time' => $request->input('scheduled_time', $booking->preferred_time),
             ]);
+
+            $dispatcher = app(NotificationDispatcherService::class);
+            if ($booking->user) {
+                $dispatcher->notifyUser($booking->user, new AppointmentScheduledNotification($booking));
+            }
+            if ($booking->jobOrder?->mechanic) {
+                $dispatcher->notifyUser($booking->jobOrder->mechanic, new AppointmentScheduledNotification($booking));
+            }
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {

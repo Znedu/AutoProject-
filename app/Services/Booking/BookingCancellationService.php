@@ -4,6 +4,8 @@ namespace App\Services\Booking;
 
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\Booking\BookingCancelledNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -11,6 +13,7 @@ class BookingCancellationService
 {
     public function __construct(
         protected BookingStatusLogger $statusLogger,
+        protected NotificationDispatcherService $dispatcher,
     ) {}
 
     public function cancel(Booking $booking, User $customer, ?string $reason = null): Booking
@@ -23,7 +26,7 @@ class BookingCancellationService
             throw new InvalidArgumentException('Only pending bookings can be cancelled.');
         }
 
-        return DB::transaction(function () use ($booking, $customer, $reason): Booking {
+        $booking = DB::transaction(function () use ($booking, $customer, $reason): Booking {
             $previousStatus = $booking->status;
 
             $booking->update([
@@ -42,5 +45,10 @@ class BookingCancellationService
 
             return $booking->fresh();
         });
+
+        $this->dispatcher->notifyAdmins(new BookingCancelledNotification($booking));
+        $this->dispatcher->notifyStaff(new BookingCancelledNotification($booking));
+
+        return $booking;
     }
 }

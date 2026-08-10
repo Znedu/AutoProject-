@@ -9,6 +9,10 @@ use App\Models\User;
 use App\Models\JobOrder;
 use App\Models\ServiceStage;
 use App\Models\ServiceStageProgress;
+use App\Notifications\Booking\BookingApprovedNotification;
+use App\Notifications\Booking\BookingRejectedNotification;
+use App\Notifications\Job\JobOrderCreatedNotification;
+use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -16,6 +20,7 @@ class BookingApprovalService
 {
     public function __construct(
         protected BookingStatusLogger $statusLogger,
+        protected NotificationDispatcherService $dispatcher,
     ) {}
 
     public function approve(Booking $booking, User $admin): Booking
@@ -33,7 +38,7 @@ class BookingApprovalService
             throw new InvalidArgumentException('Reservation fee must be verified before approval.');
         }
 
-        return DB::transaction(function () use ($booking, $admin): Booking {
+        $booking = DB::transaction(function () use ($booking, $admin): Booking {
             $previousStatus = $booking->status;
 
             $booking->update([
@@ -76,6 +81,17 @@ class BookingApprovalService
                 'statusLogs',
             ]);
         });
+
+        if ($booking->user) {
+            $this->dispatcher->notifyUser($booking->user, new BookingApprovedNotification($booking));
+        }
+
+        $jobOrder = $booking->jobOrder ?? $booking->fresh(['jobOrder'])->jobOrder;
+        if ($jobOrder) {
+            $this->dispatcher->notifyAdmins(new JobOrderCreatedNotification($jobOrder));
+        }
+
+        return $booking;
     }
 
     public function createJobOrderForBooking(Booking $booking, User $admin): void
@@ -138,7 +154,7 @@ class BookingApprovalService
             throw new InvalidArgumentException('Only pending bookings can be rejected.');
         }
 
-        return DB::transaction(function () use ($booking, $admin, $reason): Booking {
+        $booking = DB::transaction(function () use ($booking, $admin, $reason): Booking {
             $previousStatus = $booking->status;
 
             $booking->update([
@@ -169,6 +185,12 @@ class BookingApprovalService
                 'statusLogs',
             ]);
         });
+
+        if ($booking->user) {
+            $this->dispatcher->notifyUser($booking->user, new BookingRejectedNotification($booking));
+        }
+
+        return $booking;
     }
 
     public function verifyReservationPayment(Booking $booking, User $admin): Payment
