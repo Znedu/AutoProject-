@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Direct all requests into the /public folder
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Block direct access to hidden files like .env, .git, etc.
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
