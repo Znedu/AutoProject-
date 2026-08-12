@@ -22,7 +22,7 @@ class JobController extends Controller
             'booking.vehicle',
             'booking.services',
             'mechanic',
-            'stageProgress.stage',
+            'stageProgress.serviceStage',
             'serviceUpdates',
         ])
             ->when($filter === 'unassigned', fn ($q) => $q->where('status', JobOrder::STATUS_PENDING))
