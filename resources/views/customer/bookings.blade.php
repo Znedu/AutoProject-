@@ -164,7 +164,7 @@
                             <form
                                 method="POST"
                                 action="{{ route('customer.bookings.destroy', $booking) }}"
-                                onsubmit="return confirm('Are you sure you want to cancel this booking?')"
+                                onsubmit="event.preventDefault(); const form = this; window.showConfirm({ title: 'Cancel Booking', message: 'Are you sure you want to cancel booking {{ $booking->booking_number }}? Please note that the ₱200 reservation fee is non-refundable. This action cannot be undone.', confirmText: 'Yes, Cancel Booking', variant: 'danger', onConfirm: () => form.submit() });"
                             >
                                 @csrf
                                 @method('DELETE')

@@ -54,12 +54,19 @@
         paymentMethod: @js(old('payment_method', '')),
         referenceNumber: @js(old('reference_number', '')),
         uploadedFile: null,
+        uploadedFilePreview: null,
         gcashNumber: @js($gcashNumber),
         mayaNumber: @js($mayaNumber),
         reservationFee: @js('₱' . number_format($fee, 2)),
         handleFileUpload(e) {
             if (e.target.files && e.target.files[0]) {
-                this.uploadedFile = e.target.files[0].name;
+                const file = e.target.files[0];
+                this.uploadedFile = file.name;
+                if (file.type.startsWith('image/')) {
+                    this.uploadedFilePreview = URL.createObjectURL(file);
+                } else {
+                    this.uploadedFilePreview = null;
+                }
                 document.getElementById('hidden-payment-screenshot').files = e.target.files;
             }
         },
@@ -867,13 +874,27 @@
                                 Upload Payment Screenshot <span class="text-red-500">*</span>
                             </label>
                             <label class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl cursor-pointer hover:border-[#E63946] transition-colors bg-gray-50 dark:bg-white/5">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                                    <x-icon name="check-square" class="w-12 h-12 text-gray-400 mb-3" />
-                                    <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <span class="font-bold">Click to upload</span> or drag and drop
-                                    </p>
-                                    <p class="text-xs text-gray-500 mb-2">PNG, JPG or JPEG (MAX. 5MB)</p>
-                                    <template x-if="uploadedFile">
+                                <div class="flex flex-col items-center justify-center p-4 text-center">
+                                    <template x-if="!uploadedFilePreview">
+                                        <div>
+                                            <x-icon name="check-square" class="w-12 h-12 text-gray-400 mb-3 mx-auto" />
+                                            <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                                <span class="font-bold">Click to upload</span> or drag and drop
+                                            </p>
+                                            <p class="text-xs text-gray-500 mb-2">PNG, JPG or JPEG (MAX. 5MB)</p>
+                                        </div>
+                                    </template>
+                                    <template x-if="uploadedFilePreview">
+                                        <div class="flex flex-col items-center justify-center gap-1.5">
+                                            <img :src="uploadedFilePreview" alt="Payment Screenshot Preview" class="h-20 w-20 object-cover rounded-lg border-2 border-green-500 shadow-sm" />
+                                            <div class="flex items-center gap-1 text-xs font-bold text-green-600">
+                                                <x-icon name="check-square" class="w-4 h-4 text-green-600" />
+                                                <span x-text="uploadedFile" class="truncate max-w-[200px]"></span>
+                                            </div>
+                                            <p class="text-[10px] text-gray-400">Click box to replace file</p>
+                                        </div>
+                                    </template>
+                                    <template x-if="uploadedFile && !uploadedFilePreview">
                                         <div class="mt-2 flex items-center gap-2 text-green-600 justify-center">
                                             <x-icon name="check-square" class="w-5 h-5 text-green-600" />
                                             <span class="font-bold" x-text="uploadedFile"></span>

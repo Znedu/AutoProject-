@@ -206,13 +206,27 @@
                                 New Payment Screenshot <span class="text-red-500">*</span>
                             </h2>
                             <label for="resubmit_screenshot" class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl cursor-pointer hover:border-[#E63946] transition-colors bg-gray-50 dark:bg-white/5 min-h-44">
-                                <div class="flex flex-col items-center justify-center p-6 text-center">
-                                    <x-icon name="check-square" class="w-10 h-10 text-gray-400 mb-2" />
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                        <span class="font-bold">Click to upload</span> or drag & drop
-                                    </p>
-                                    <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
-                                    <template x-if="uploadedFile">
+                                <div class="flex flex-col items-center justify-center p-4 text-center">
+                                    <template x-if="!uploadedFilePreview">
+                                        <div>
+                                            <x-icon name="check-square" class="w-10 h-10 text-gray-400 mb-2 mx-auto" />
+                                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                                <span class="font-bold">Click to upload</span> or drag & drop
+                                            </p>
+                                            <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
+                                        </div>
+                                    </template>
+                                    <template x-if="uploadedFilePreview">
+                                        <div class="flex flex-col items-center justify-center gap-1.5">
+                                            <img :src="uploadedFilePreview" alt="Payment Screenshot Preview" class="h-20 w-20 object-cover rounded-lg border-2 border-green-500 shadow-sm" />
+                                            <div class="flex items-center gap-1 text-xs font-bold text-green-600">
+                                                <x-icon name="check-square" class="w-4 h-4 text-green-600" />
+                                                <span x-text="uploadedFile" class="truncate max-w-[200px]"></span>
+                                            </div>
+                                            <p class="text-[10px] text-gray-400">Click box to replace file</p>
+                                        </div>
+                                    </template>
+                                    <template x-if="uploadedFile && !uploadedFilePreview">
                                         <div class="mt-3 flex items-center gap-2 text-green-600 text-xs">
                                             <x-icon name="check-square" class="w-4 h-4" />
                                             <span class="font-bold" x-text="uploadedFile"></span>
@@ -409,14 +423,28 @@
 
                             <div x-show="isEditing" style="display: none;" class="flex-1 flex flex-col justify-center">
                                 <label for="payment_screenshot_input_edit" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl cursor-pointer hover:border-[#E63946] transition-colors bg-gray-50 dark:bg-white/5">
-                                    <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
-                                        <x-icon name="check-square" class="w-10 h-10 text-gray-400 mb-2 animate-bounce" />
-                                        <p class="mb-1 text-sm text-gray-600 dark:text-gray-400">
-                                            <span class="font-bold">Click to replace screenshot</span>
-                                        </p>
-                                        <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
-                                        <p class="text-xs text-gray-400 mt-2">Leave empty to keep existing proof</p>
-                                        <template x-if="uploadedFile">
+                                    <div class="flex flex-col items-center justify-center p-4 text-center">
+                                        <template x-if="!uploadedFilePreview">
+                                            <div>
+                                                <x-icon name="check-square" class="w-10 h-10 text-gray-400 mb-2 animate-bounce mx-auto" />
+                                                <p class="mb-1 text-sm text-gray-600 dark:text-gray-400">
+                                                    <span class="font-bold">Click to replace screenshot</span>
+                                                </p>
+                                                <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
+                                                <p class="text-xs text-gray-400 mt-2">Leave empty to keep existing proof</p>
+                                            </div>
+                                        </template>
+                                        <template x-if="uploadedFilePreview">
+                                            <div class="flex flex-col items-center justify-center gap-1.5">
+                                                <img :src="uploadedFilePreview" alt="Replacement Screenshot Preview" class="h-20 w-20 object-cover rounded-lg border-2 border-green-500 shadow-sm" />
+                                                <div class="flex items-center gap-1 text-xs font-bold text-green-600">
+                                                    <x-icon name="check-square" class="w-4 h-4 text-green-600" />
+                                                    <span x-text="uploadedFile" class="truncate max-w-[200px]"></span>
+                                                </div>
+                                                <p class="text-[10px] text-gray-400">Click box to replace file</p>
+                                            </div>
+                                        </template>
+                                        <template x-if="uploadedFile && !uploadedFilePreview">
                                             <div class="mt-3 flex items-center justify-center gap-2 text-green-600 text-xs">
                                                 <x-icon name="check-square" class="w-4 h-4 text-green-600" />
                                                 <span class="font-bold" x-text="uploadedFile"></span>
@@ -517,13 +545,27 @@
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Upload Payment Screenshot</h2>
                     <div class="space-y-4">
                         <label for="payment_screenshot_input" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-white/15 rounded-xl cursor-pointer hover:border-[#E63946] transition-colors bg-gray-50 dark:bg-white/5">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <x-icon name="check-square" class="w-12 h-12 text-gray-400 mb-3" />
-                                <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <span class="font-bold">Click to upload</span> or drag and drop
-                                </p>
-                                <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
-                                <template x-if="uploadedFile">
+                            <div class="flex flex-col items-center justify-center p-4 text-center">
+                                <template x-if="!uploadedFilePreview">
+                                    <div>
+                                        <x-icon name="check-square" class="w-12 h-12 text-gray-400 mb-3 mx-auto" />
+                                        <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <span class="font-bold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p class="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
+                                    </div>
+                                </template>
+                                <template x-if="uploadedFilePreview">
+                                    <div class="flex flex-col items-center justify-center gap-1.5">
+                                        <img :src="uploadedFilePreview" alt="Payment Screenshot Preview" class="h-20 w-20 object-cover rounded-lg border-2 border-green-500 shadow-sm" />
+                                        <div class="flex items-center gap-1 text-xs font-bold text-green-600">
+                                            <x-icon name="check-square" class="w-4 h-4 text-green-600" />
+                                            <span x-text="uploadedFile" class="truncate max-w-[200px]"></span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400">Click box to replace file</p>
+                                    </div>
+                                </template>
+                                <template x-if="uploadedFile && !uploadedFilePreview">
                                     <div class="mt-4 flex items-center gap-2 text-green-600">
                                         <x-icon name="check-square" class="w-5 h-5 text-green-600" />
                                         <span class="font-bold" x-text="uploadedFile"></span>
@@ -569,9 +611,16 @@
             referenceNumber: @js($payment->reference_number ?? ''),
             selectedPayment: @js($payment->method ?? 'gcash'),
             uploadedFile: null,
+            uploadedFilePreview: null,
             handleFileUpload(e) {
                 if (e.target.files && e.target.files[0]) {
-                    this.uploadedFile = e.target.files[0].name;
+                    const file = e.target.files[0];
+                    this.uploadedFile = file.name;
+                    if (file.type.startsWith('image/')) {
+                        this.uploadedFilePreview = URL.createObjectURL(file);
+                    } else {
+                        this.uploadedFilePreview = null;
+                    }
                 }
             }
         };
@@ -581,9 +630,16 @@
         return {
             selectedPayment: 'gcash',
             uploadedFile: null,
+            uploadedFilePreview: null,
             handleFileUpload(e) {
                 if (e.target.files && e.target.files[0]) {
-                    this.uploadedFile = e.target.files[0].name;
+                    const file = e.target.files[0];
+                    this.uploadedFile = file.name;
+                    if (file.type.startsWith('image/')) {
+                        this.uploadedFilePreview = URL.createObjectURL(file);
+                    } else {
+                        this.uploadedFilePreview = null;
+                    }
                 }
             }
         };
@@ -593,10 +649,17 @@
         return {
             selectedPayment: 'gcash',
             uploadedFile: null,
+            uploadedFilePreview: null,
             bookingDetails: @js($bookingDetails),
             handleFileUpload(e) {
                 if (e.target.files && e.target.files[0]) {
-                    this.uploadedFile = e.target.files[0].name;
+                    const file = e.target.files[0];
+                    this.uploadedFile = file.name;
+                    if (file.type.startsWith('image/')) {
+                        this.uploadedFilePreview = URL.createObjectURL(file);
+                    } else {
+                        this.uploadedFilePreview = null;
+                    }
                 }
             }
         };

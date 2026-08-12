@@ -493,32 +493,38 @@
             },
 
             handleDelete(id) {
-                if (confirm('Are you sure you want to delete this service?')) {
-                    fetch(`/admin/services/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
-                    })
-                    .then(res => {
-                        if (!res.ok) {
-                            return res.json().then(err => { throw err; });
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            this.services = this.services.filter(s => s.id !== id);
-                            showToast.success(data.message);
-                        } else {
-                            showToast.error(data.message || 'Failed to delete service.');
-                        }
-                    })
-                    .catch(err => {
-                        showToast.error(err.message || 'An error occurred.');
-                    });
-                }
+                window.showConfirm({
+                    title: 'Delete Service',
+                    message: 'Are you sure you want to delete this service? This action cannot be undone.',
+                    confirmText: 'Delete Service',
+                    variant: 'danger',
+                    onConfirm: () => {
+                        fetch(`/admin/services/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => {
+                            if (!res.ok) {
+                                return res.json().then(err => { throw err; });
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                this.services = this.services.filter(s => s.id !== id);
+                                showToast.success(data.message);
+                            } else {
+                                showToast.error(data.message || 'Failed to delete service.');
+                            }
+                        })
+                        .catch(err => {
+                            showToast.error(err.message || 'An error occurred.');
+                        });
+                    }
+                });
             }
         };
     }

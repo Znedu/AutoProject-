@@ -22,8 +22,8 @@ class BookingCancellationService
             throw new InvalidArgumentException('You may only cancel your own bookings.');
         }
 
-        if ($booking->status !== Booking::STATUS_PENDING) {
-            throw new InvalidArgumentException('Only pending bookings can be cancelled.');
+        if (!$booking->is_cancellable) {
+            throw new InvalidArgumentException('This booking cannot be cancelled in its current status.');
         }
 
         $booking = DB::transaction(function () use ($booking, $customer, $reason): Booking {
