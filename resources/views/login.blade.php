@@ -26,6 +26,7 @@
 
         <div class="relative z-10 w-full max-w-md">
             {{-- Logo --}}
+                  {{-- Logo --}}
             <div class="text-center mb-8">
                 <h1 class="text-5xl font-bold text-white mb-2 tracking-wider">
                     AUTO<span class="text-[#E63946] text-glow">PROJECT</span>+
