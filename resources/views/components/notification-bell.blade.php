@@ -28,6 +28,11 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
+                // Session expired — reload so user can re-authenticate cleanly
+                if (response.status === 401 || response.redirected) {
+                    window.location.reload();
+                    return;
+                }
                 if (response.ok) {
                     const data = await response.json();
                     this.count = data.count || 0;
@@ -39,9 +44,13 @@
         },
 
         async markAsRead(notification) {
+            const actionUrl = notification.data && notification.data.action_url
+                ? notification.data.action_url
+                : null;
+
             if (!notification.is_read) {
                 try {
-                    await fetch(`/notifications/${notification.id}/read`, {
+                    const res = await fetch(`/notifications/${notification.id}/read`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -49,20 +58,26 @@
                             'Accept': 'application/json'
                         }
                     });
+                    // Session has expired — navigate to login properly
+                    if (res.status === 401 || res.redirected) {
+                        window.location.href = '{{ route('login') }}';
+                        return;
+                    }
                     notification.is_read = true;
                     this.count = Math.max(0, this.count - 1);
                 } catch (e) {
                     console.error('Failed to mark notification as read:', e);
                 }
             }
-            if (notification.data && notification.data.action_url) {
-                window.location.href = notification.data.action_url;
+
+            if (actionUrl) {
+                window.location.href = actionUrl;
             }
         },
 
         async markAllRead() {
             try {
-                await fetch('{{ route('notifications.read-all') }}', {
+                const res = await fetch('{{ route('notifications.read-all') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -70,6 +85,10 @@
                         'Accept': 'application/json'
                     }
                 });
+                if (res.status === 401 || res.redirected) {
+                    window.location.reload();
+                    return;
+                }
                 this.count = 0;
                 this.notifications.forEach(n => n.is_read = true);
             } catch (e) {
