@@ -67,11 +67,11 @@ class PaymentVerificationService
                 'verified_at' => now(),
             ]);
 
-            // Confirm the booking
+            // Confirm and lock in the scheduled appointment
             $booking->update([
-                'status'      => Booking::STATUS_CONFIRMED,
-                'approved_by' => $admin->id,
-                'approved_at' => now(),
+                'status'         => Booking::STATUS_CONFIRMED,
+                'approved_by'    => $admin->id,
+                'approved_at'    => now(),
                 'scheduled_date' => $booking->preferred_date,
                 'scheduled_time' => $booking->preferred_time,
             ]);

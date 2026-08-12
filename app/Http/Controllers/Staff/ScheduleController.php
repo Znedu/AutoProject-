@@ -46,15 +46,18 @@ class ScheduleController extends Controller
             $avail   = $this->availability->availabilityForDate($dateStr);
             $allSlots = $this->availability->slotsForDate($dateStr);
 
-            // Bookings for this day
-            $dayBookings = Booking::whereNotIn('status', ['cancelled', 'rejected'])
+            // Bookings for this day (prioritizes scheduled_date/scheduled_time over preferred_date/preferred_time)
+            $dayBookings = Booking::whereNotIn('status', ['cancelled', 'rejected', 'pending', 'pending_payment_verification', 'payment_requires_resubmission', 'waiting_payment'])
                 ->where(function ($q) use ($dateStr) {
-                    $q->whereDate('preferred_date', $dateStr)
-                      ->orWhereDate('scheduled_date', $dateStr);
+                    $q->whereDate('scheduled_date', $dateStr)
+                      ->orWhere(function ($sub) use ($dateStr) {
+                          $sub->whereNull('scheduled_date')
+                              ->whereDate('preferred_date', $dateStr);
+                      });
                 })
                 ->with(['services', 'user', 'vehicle'])
-                ->orderBy('preferred_time')
                 ->get()
+                ->sortBy(fn ($b) => $b->scheduled_time ?? $b->preferred_time)
                 ->map(fn ($b) => [
                     'id'       => $b->id,
                     'customer' => $b->customer_name ?? ($b->user?->name ?? 'Unknown'),
@@ -62,7 +65,9 @@ class ScheduleController extends Controller
                     'vehicle'  => $b->vehicle
                         ? "{$b->vehicle->make} {$b->vehicle->model}"
                         : 'Unknown',
-                    'time'     => $b->preferred_time ? $b->preferred_time->format('g:i A') : 'N/A',
+                    'time'     => ($b->scheduled_time ?? $b->preferred_time)
+                        ? ($b->scheduled_time ?? $b->preferred_time)->format('g:i A')
+                        : 'N/A',
                     'status'   => $b->status,
                     'is_walk_in' => $b->is_walk_in,
                 ])->values()->toArray();
