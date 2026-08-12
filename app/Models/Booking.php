@@ -142,10 +142,11 @@ class Booking extends Model
 
     protected function isCancellable(): Attribute
     {
-        return Attribute::get(fn (): bool => in_array($this->status, [
-            self::STATUS_PENDING,
-            self::STATUS_PENDING_PAYMENT_VERIFICATION,
-            self::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
+        return Attribute::get(fn (): bool => !in_array($this->status, [
+            self::STATUS_IN_PROGRESS,
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+            self::STATUS_REJECTED,
         ]));
     }
 

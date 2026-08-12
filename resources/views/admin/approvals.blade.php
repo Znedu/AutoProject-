@@ -216,7 +216,7 @@
                                 <form method="POST" action="{{ route('admin.bookings.confirm-payment', $booking) }}">
                                     @csrf
                                     <button type="submit"
-                                        onclick="return confirm('Confirm this payment and approve booking {{ $booking->booking_number }}?')"
+                                        onclick="event.preventDefault(); const form = this.closest('form'); window.showConfirm({ title: 'Verify & Confirm Booking', message: 'Confirm payment and approve booking {{ $booking->booking_number }}?', confirmText: 'Verify & Confirm', variant: 'success', onConfirm: () => form.submit() });"
                                         class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-green-600 hover:bg-green-700 active:scale-95 transition-all shadow-md shadow-green-500/20">
                                         <x-icon name="check-circle" class="w-5 h-5" />
                                         Verify &amp; Confirm

@@ -281,27 +281,34 @@
             },
 
             handleDelete(id) {
-                if (!confirm('Remove this vehicle from your garage?')) return;
-                fetch(`/customer/vehicles/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                window.showConfirm({
+                    title: 'Remove Vehicle',
+                    message: 'Are you sure you want to remove this vehicle from your garage?',
+                    confirmText: 'Remove Vehicle',
+                    variant: 'danger',
+                    onConfirm: () => {
+                        fetch(`/customer/vehicles/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => {
+                            if (!res.ok) return res.json().then(err => { throw err; });
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                this.vehicles = this.vehicles.filter(v => v.id !== id);
+                                showToast.success(data.message);
+                            } else {
+                                showToast.error(data.message || 'Failed to delete vehicle.');
+                            }
+                        })
+                        .catch(err => showToast.error(err.message || 'An error occurred.'));
                     }
-                })
-                .then(res => {
-                    if (!res.ok) return res.json().then(err => { throw err; });
-                    return res.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        this.vehicles = this.vehicles.filter(v => v.id !== id);
-                        showToast.success(data.message);
-                    } else {
-                        showToast.error(data.message || 'Failed to delete vehicle.');
-                    }
-                })
-                .catch(err => showToast.error(err.message || 'An error occurred.'));
+                });
             }
         };
     }

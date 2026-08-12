@@ -16,7 +16,6 @@
             title="Total Bookings"
             value="{{ $totalBookings }}"
             color="blue"
-            :trend="['value' => '+12% from last month', 'isPositive' => true]"
         >
             <x-slot:icon>
                 <x-icon name="calendar" class="w-6 h-6" />
@@ -27,7 +26,6 @@
             title="Active Services"
             value="{{ $activeServicesCount }}"
             color="red"
-            :trend="['value' => '+5 this week', 'isPositive' => true]"
         >
             <x-slot:icon>
                 <x-icon name="check-circle" class="w-6 h-6" />
@@ -38,7 +36,6 @@
             title="Completed Jobs"
             value="{{ $completedJobsCount }}"
             color="green"
-            :trend="['value' => '+18% completion rate', 'isPositive' => true]"
         >
             <x-slot:icon>
                 <x-icon name="check-circle" class="w-6 h-6" />
@@ -49,7 +46,6 @@
             title="Monthly Revenue"
             value="₱{{ number_format($totalRevenue) }}"
             color="charcoal"
-            :trend="['value' => '+8% from last month', 'isPositive' => true]"
         >
             <x-slot:icon>
                 <x-icon name="dollar-sign" class="w-6 h-6" />

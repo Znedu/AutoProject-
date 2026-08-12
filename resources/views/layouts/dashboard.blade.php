@@ -220,6 +220,9 @@
     <!-- Toast Notifications -->
     <x-toast />
 
+    <!-- Confirmation Modal Dialog -->
+    <x-confirm-dialog />
+
     @stack('scripts')
 </body>
 </html>

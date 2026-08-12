@@ -174,10 +174,16 @@
             },
 
             handleDelete(id) {
-                if (confirm('Are you sure you want to delete this user?')) {
-                    this.users = this.users.filter(u => u.id !== id);
-                    showToast.success('User ' + id + ' deleted');
-                }
+                window.showConfirm({
+                    title: 'Delete User',
+                    message: 'Are you sure you want to delete this user? This action cannot be undone.',
+                    confirmText: 'Delete User',
+                    variant: 'danger',
+                    onConfirm: () => {
+                        this.users = this.users.filter(u => u.id !== id);
+                        showToast.success('User ' + id + ' deleted');
+                    }
+                });
             },
 
             handleEdit(id) {

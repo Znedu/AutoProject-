@@ -31,37 +31,21 @@
         <x-card class="bg-gradient-to-br from-[#E63946] to-[#D62839] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Total Revenue</p>
             <p class="text-3xl font-bold">₱{{ number_format($totalRevenue) }}</p>
-            <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
-                <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
-                <span>+18% vs last period</span>
-            </div>
         </x-card>
 
         <x-card class="bg-gradient-to-br from-[#457B9D] to-[#5A8FB0] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Total Bookings</p>
             <p class="text-3xl font-bold">{{ $totalBookings }}</p>
-            <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
-                <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
-                <span>+12% vs last period</span>
-            </div>
         </x-card>
 
         <x-card class="bg-gradient-to-br from-green-500 to-green-600 border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Completion Rate</p>
             <p class="text-3xl font-bold">{{ $completionRate }}%</p>
-            <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
-                <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
-                <span>+3% vs last period</span>
-            </div>
         </x-card>
 
         <x-card class="bg-gradient-to-br from-[#1F2937] to-[#374151] border-transparent shadow-lg p-6">
             <p class="text-white/80 text-sm mb-1">Avg. Service Value</p>
             <p class="text-3xl font-bold">₱{{ number_format($avgServiceValue) }}</p>
-            <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold">
-                <x-icon name="chevron-right" class="w-4 h-4 rotate-270" />
-                <span>+5% vs last period</span>
-            </div>
         </x-card>
     </div>
 

@@ -32,7 +32,7 @@ class BookingPolicy
     {
         return $user->hasPermission('bookings.cancel')
             && $booking->user_id === $user->id
-            && $booking->status === Booking::STATUS_PENDING;
+            && $booking->is_cancellable;
     }
 
     public function approve(User $user, Booking $booking): bool
