@@ -32,8 +32,12 @@ class BookingQueueController extends Controller
                         ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}"
                         : 'Unknown',
                     'plateNumber'   => $booking->vehicle?->plate_number ?? 'N/A',
-                    'preferredDate' => $booking->preferred_date ? $booking->preferred_date->format('F d, Y') : 'N/A',
-                    'preferredTime' => $booking->preferred_time ? $booking->preferred_time->format('g:i A') : 'N/A',
+                    'preferredDate'          => $booking->preferred_date ? $booking->preferred_date->format('F d, Y') : 'N/A',
+                    'preferredTime'          => $booking->preferred_time ? $booking->preferred_time->format('g:i A') : 'N/A',
+                    'scheduledDate'          => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : ($booking->preferred_date ? $booking->preferred_date->format('Y-m-d') : ''),
+                    'scheduledTime'          => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : ($booking->preferred_time ? $booking->preferred_time->format('H:i') : ''),
+                    'scheduledDateFormatted' => $booking->scheduled_date ? $booking->scheduled_date->format('F d, Y') : null,
+                    'scheduledTimeFormatted' => $booking->scheduled_time ? $booking->scheduled_time->format('g:i A') : null,
                     'status'        => $booking->status,
                     'estimatedCost' => $estimatedCost,
                     'notes'         => $booking->notes ?? '',
@@ -60,14 +64,14 @@ class BookingQueueController extends Controller
     }
 
     /**
-     * Schedule a booking to its preferred (or supplied) date/time.
-     * Staff can confirm the slot; they cannot approve/reject the booking itself.
+     * Schedule or reschedule a booking to its preferred (or supplied) date/time.
+     * Staff can confirm or update the slot at any time.
      */
     public function schedule(Request $request, Booking $booking)
     {
         try {
             $booking->update([
-                'status'         => Booking::STATUS_SCHEDULED,
+                'status'         => Booking::STATUS_CONFIRMED,
                 'scheduled_date' => $request->input('scheduled_date', $booking->preferred_date),
                 'scheduled_time' => $request->input('scheduled_time', $booking->preferred_time),
             ]);
@@ -80,7 +84,15 @@ class BookingQueueController extends Controller
                 $dispatcher->notifyUser($booking->jobOrder->mechanic, new AppointmentScheduledNotification($booking));
             }
 
-            return response()->json(['success' => true]);
+            $booking->refresh();
+
+            return response()->json([
+                'success'                  => true,
+                'scheduled_date'           => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : '',
+                'scheduled_time'           => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : '',
+                'scheduled_date_formatted' => $booking->scheduled_date ? $booking->scheduled_date->format('F d, Y') : '',
+                'scheduled_time_formatted' => $booking->scheduled_time ? $booking->scheduled_time->format('g:i A') : '',
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 400);
         }

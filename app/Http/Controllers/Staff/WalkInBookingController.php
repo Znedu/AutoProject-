@@ -124,8 +124,26 @@ class WalkInBookingController extends Controller
                 'reference_number' => 'WALKIN-' . strtoupper(Str::random(8)),
             ]);
 
-            // Mark as walk-in
-            $booking->update(['is_walk_in' => true]);
+            // Walk-in customer: automatically confirm payment, lock schedule slot & create job order
+            $booking->update([
+                'is_walk_in'     => true,
+                'status'         => Booking::STATUS_CONFIRMED,
+                'scheduled_date' => $booking->preferred_date,
+                'scheduled_time' => $booking->preferred_time,
+                'approved_at'    => now(),
+            ]);
+
+            // Mark in-store cash payment as verified
+            $payment = $booking->payments()->reservationFees()->latest()->first();
+            if ($payment) {
+                $payment->update([
+                    'status'      => Payment::STATUS_VERIFIED,
+                    'verified_at' => now(),
+                ]);
+            }
+
+            // Create JobOrder automatically for walk-in
+            app(\App\Services\Booking\BookingApprovalService::class)->createJobOrderForBooking($booking, auth()->user() ?? $customer);
 
             DB::commit();
 

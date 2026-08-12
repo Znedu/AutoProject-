@@ -16,13 +16,13 @@
     {{-- Filters --}}
     <x-card>
         <div class="flex flex-wrap gap-2">
-            <template x-for="filter in ['all', 'pending', 'approved', 'scheduled', 'rejected']" :key="filter">
+            <template x-for="filter in ['all', 'pending', 'confirmed', 'rejected']" :key="filter">
                 <button
                     type="button"
                     @click="selectedFilter = filter"
                     class="inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer px-4 py-2 text-sm capitalize"
                     :class="(selectedFilter === filter ? 'bg-gray-200 dark:bg-[#151515] text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 hover:border-[#E63946] hover:shadow-lg hover:shadow-[#E63946]/20' : 'text-gray-600 dark:text-[#B8B8B8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5')"
-                    x-text="filter === 'all' ? 'All Bookings' : (filter === 'pending' ? 'Pending Review' : filter)"
+                    x-text="filter === 'all' ? 'All Bookings' : (filter === 'pending' ? 'Pending Review' : (filter === 'confirmed' ? 'Confirmed' : filter))"
                 ></button>
             </template>
         </div>
@@ -47,9 +47,7 @@
                             <div>
                                 <div class="flex flex-wrap items-center gap-3 mb-3">
                                     <h3 class="text-xl font-bold text-gray-900 dark:text-white" x-text="booking.service"></h3>
-                                    <x-status-badge ::status="booking.status">
-                                        <span x-text="booking.status === 'pending' ? 'Pending Review' : (booking.status === 'approved' ? 'Approved' : (booking.status === 'scheduled' ? 'Scheduled' : 'Rejected'))"></span>
-                                    </x-status-badge>
+                                    <x-status-badge ::status="booking.status" />
                                     <template x-if="booking.isWalkIn">
                                         <span class="px-2 py-0.5 text-xs font-semibold rounded bg-[#D2781A]/10 text-[#D2781A] border border-[#D2781A]/20">Walk-In</span>
                                     </template>
@@ -70,9 +68,28 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Plate: <span x-text="booking.plateNumber"></span></p>
                             </div>
                             <div>
-                                <h4 class="text-sm font-medium mb-2 text-gray-900 dark:text-white">Preferred Schedule</h4>
-                                <p class="font-bold text-gray-900 dark:text-white" x-text="booking.preferredDate"></p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" x-text="booking.preferredTime"></p>
+                                <h4 class="text-sm font-medium mb-2 text-gray-900 dark:text-white">Schedule Information</h4>
+                                <template x-if="booking.scheduledDateFormatted">
+                                    <div class="space-y-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                                            Scheduled Slot
+                                        </span>
+                                        <p class="font-bold text-gray-900 dark:text-white" x-text="booking.scheduledDateFormatted"></p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400" x-text="booking.scheduledTimeFormatted"></p>
+                                        <p class="text-xs text-gray-500 pt-1 border-t border-gray-200 dark:border-white/10">
+                                            Requested: <span x-text="booking.preferredDate"></span> at <span x-text="booking.preferredTime"></span>
+                                        </p>
+                                    </div>
+                                </template>
+                                <template x-if="!booking.scheduledDateFormatted">
+                                    <div class="space-y-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+                                            Customer Requested
+                                        </span>
+                                        <p class="font-bold text-gray-900 dark:text-white" x-text="booking.preferredDate"></p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400" x-text="booking.preferredTime"></p>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
@@ -96,7 +113,7 @@
                                             </h4>
                                             <div class="flex items-center gap-2">
                                                 <template x-if="booking.reservationFee.paid">
-                                                    <span class="text-sm font-medium text-green-600">Paid (Reference Verified / In-Store Collected)</span>
+                                                    <span class="text-sm font-medium text-green-600" x-text="booking.isWalkIn ? 'Paid (In-Store Collected)' : 'Paid (Reference Verified)'"></span>
                                                 </template>
                                                 <template x-if="!booking.reservationFee.paid">
                                                     <span class="text-sm font-medium text-red-600">Pending Payment</span>
@@ -143,7 +160,7 @@
 
                         {{-- Inline Scheduler Form --}}
                         <div x-show="showSchedulerId === booking.id" x-cloak class="p-4 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl space-y-4">
-                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Schedule Confirmation</h4>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Reschedule Service</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Scheduled Date</label>
@@ -161,25 +178,23 @@
                             </div>
                             <div class="flex gap-2 justify-end">
                                 <x-button variant="ghost" size="sm" @click="showSchedulerId = null">Cancel</x-button>
-                                <x-button variant="accent" size="sm" @click="handleSchedule(booking.id, booking)">Confirm Schedule</x-button>
+                                <x-button variant="accent" size="sm" @click="handleSchedule(booking.id, booking)">
+                                    Confirm Reschedule
+                                </x-button>
                             </div>
                         </div>
 
                         {{-- Actions --}}
-                        <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200 dark:border-white/10" x-show="showSchedulerId !== booking.id">
-                            <template x-if="booking.status !== 'scheduled' && booking.status !== 'rejected' && booking.status !== 'cancelled'">
+                        <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-200 dark:border-white/10" x-show="showSchedulerId !== booking.id">
+                            <template x-if="booking.status !== 'rejected' && booking.status !== 'cancelled' && booking.status !== 'completed'">
                                 <x-button
                                     variant="secondary"
                                     size="sm"
                                     @click="openScheduler(booking)"
                                 >
-                                    Schedule Service
+                                    <x-icon name="calendar" class="w-4 h-4 mr-1.5 inline-block" />
+                                    <span>Reschedule Service</span>
                                 </x-button>
-                            </template>
-                            <template x-if="booking.status === 'scheduled'">
-                                <span class="text-sm font-semibold text-green-600 flex items-center gap-1">
-                                    <x-icon name="check-square" class="w-4 h-4" /> Scheduled
-                                </span>
                             </template>
                         </div>
                     </div>
@@ -195,12 +210,12 @@
             <p class="text-3xl font-extrabold text-[#E63946]" x-text="bookings.filter(b => b.status === 'pending').length"></p>
         </x-card>
         <x-card class="text-center p-4">
-            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Approved</p>
-            <p class="text-3xl font-extrabold text-green-500" x-text="bookings.filter(b => b.status === 'approved').length"></p>
+            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Confirmed</p>
+            <p class="text-3xl font-extrabold text-blue-500" x-text="bookings.filter(b => b.status === 'confirmed').length"></p>
         </x-card>
         <x-card class="text-center p-4">
-            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Scheduled</p>
-            <p class="text-3xl font-extrabold text-[#457B9D]" x-text="bookings.filter(b => b.status === 'scheduled').length"></p>
+            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">In Progress</p>
+            <p class="text-3xl font-extrabold text-purple-500" x-text="bookings.filter(b => b.status === 'in_progress').length"></p>
         </x-card>
         <x-card class="text-center p-4">
             <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Rejected</p>
@@ -234,11 +249,15 @@
 
             openScheduler(booking) {
                 this.showSchedulerId = booking.id;
-                this.scheduledDate = booking.preferredDate || '';
-                this.scheduledTime = booking.preferredTime || '';
+                this.scheduledDate = booking.scheduledDate || '';
+                this.scheduledTime = booking.scheduledTime || '';
             },
 
             handleSchedule(id, booking) {
+                if (!this.scheduledDate || !this.scheduledTime) {
+                    showToast.error('Please select both a date and time slot.');
+                    return;
+                }
                 fetch('/staff/bookings/' + id + '/schedule', {
                     method: 'POST',
                     headers: {
@@ -253,11 +272,13 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        booking.status = 'scheduled';
+                        booking.status = 'confirmed';
+                        booking.scheduledDate = data.scheduled_date;
+                        booking.scheduledTime = data.scheduled_time;
+                        booking.scheduledDateFormatted = data.scheduled_date_formatted;
+                        booking.scheduledTimeFormatted = data.scheduled_time_formatted;
                         this.showSchedulerId = null;
-                        showToast.success('Booking #' + id + ' scheduled successfully!');
-                        booking.preferredDate = this.scheduledDate;
-                        booking.preferredTime = this.scheduledTime;
+                        showToast.success('Booking #' + id + ' schedule updated successfully!');
                     } else {
                         showToast.error('Failed to schedule booking: ' + (data.error || 'Unknown error'));
                     }

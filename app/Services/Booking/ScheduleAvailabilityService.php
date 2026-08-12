@@ -147,12 +147,13 @@ class ScheduleAvailabilityService
             ->when($excludeBookingId, fn ($query) => $query->where('id', '!=', $excludeBookingId))
             ->whereIn('status', self::OCCUPYING_STATUSES)
             ->where(function ($query) use ($date, $normalizedTime) {
-                $query->where(function ($preferred) use ($date, $normalizedTime) {
-                    $preferred->whereDate('preferred_date', $date)
-                        ->whereTime('preferred_time', $normalizedTime);
-                })->orWhere(function ($scheduled) use ($date, $normalizedTime) {
+                $query->where(function ($scheduled) use ($date, $normalizedTime) {
                     $scheduled->whereDate('scheduled_date', $date)
                         ->whereTime('scheduled_time', $normalizedTime);
+                })->orWhere(function ($preferred) use ($date, $normalizedTime) {
+                    $preferred->whereNull('scheduled_date')
+                        ->whereDate('preferred_date', $date)
+                        ->whereTime('preferred_time', $normalizedTime);
                 });
             })
             ->count();

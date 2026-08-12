@@ -42,7 +42,7 @@ class BookingApprovalService
             $previousStatus = $booking->status;
 
             $booking->update([
-                'status' => Booking::STATUS_APPROVED,
+                'status' => Booking::STATUS_CONFIRMED,
                 'scheduled_date' => $booking->preferred_date,
                 'scheduled_time' => $booking->preferred_time,
                 'approved_by' => $admin->id,
