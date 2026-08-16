@@ -13,7 +13,14 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return redirect(DashboardRedirectService::pathFor(Auth::user()));
+            $user = Auth::user();
+
+            if ($user->isCustomer() && ! $user->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice')
+                    ->with('info', 'Please verify your email address to continue.');
+            }
+
+            return redirect(DashboardRedirectService::pathFor($user));
         }
 
         return view('login');
@@ -43,6 +50,14 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate();
+
+        if ($user->isCustomer() && ! $user->hasVerifiedEmail()) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'This account has not been verified yet. Please re-register with your email address to receive a verification code.',
+            ])->onlyInput('email');
+        }
 
         return redirect()
             ->intended(DashboardRedirectService::pathFor($user))

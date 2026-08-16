@@ -70,25 +70,6 @@
                         @enderror
                     </div>
 
-                    {{-- Phone Number --}}
-                    <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1.5">
-                            Phone Number <span class="text-[#E63946]">*</span>
-                        </label>
-                        <input
-                            id="phone"
-                            type="tel"
-                            name="phone"
-                            value="{{ old('phone') }}"
-                            placeholder="+63 912 345 6789"
-                            required
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
-                        @error('phone')
-                            <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                     {{-- Password --}}
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
