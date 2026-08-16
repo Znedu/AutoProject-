@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BookingApprovalController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Customer\BookingController;
@@ -42,16 +43,19 @@ Route::get('/', function () {
     return view('landing');
 })->name('landing');
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
-});
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [RegisterController::class, 'register']);
 
 Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware(['auth', 'active'])
     ->name('logout');
+
+Route::get('/verify-email', [EmailVerificationController::class, 'show'])->name('verification.notice');
+Route::post('/verify-email', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+Route::post('/verify-email/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
+Route::match(['get', 'post'], '/verify-email/cancel', [EmailVerificationController::class, 'cancel'])->name('verification.cancel');
 
 Route::middleware(['auth', 'active'])->group(function () {
 
@@ -138,7 +142,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         });
 
     Route::prefix('customer')
-        ->middleware('role:customer')
+        ->middleware(['role:customer', 'verified'])
         ->name('customer.')
         ->group(function () {
             Route::get('/', [CustomerDashboardController::class, 'index'])->name('dashboard');

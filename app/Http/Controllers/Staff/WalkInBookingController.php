@@ -96,12 +96,13 @@ class WalkInBookingController extends Controller
             if ($request->booking_type === 'new') {
                 $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
                 $customer = User::create([
-                    'name'     => $request->customer_name,
-                    'email'    => $request->new_email,
-                    'phone'    => $request->contact_number,
-                    'role_id'  => $customerRole->id,
-                    'status'   => User::STATUS_ACTIVE,
-                    'password' => $request->new_password,
+                    'name'              => $request->customer_name,
+                    'email'             => $request->new_email,
+                    'phone'             => $request->contact_number,
+                    'role_id'           => $customerRole->id,
+                    'status'            => User::STATUS_ACTIVE,
+                    'password'          => $request->new_password,
+                    'email_verified_at' => now(),
                 ]);
             } else {
                 $customer = User::findOrFail($request->customer_id);

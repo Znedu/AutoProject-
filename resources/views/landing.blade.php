@@ -33,16 +33,31 @@
                     <a href="#about" class="text-[#B8B8B8] hover:text-white transition-colors duration-300">About</a>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a href="{{ url('/login') }}">
-                        <button class="px-6 py-2.5 text-white border border-white/20 rounded-lg hover:border-[#E63946] hover:text-[#E63946] transition-all duration-300 cursor-pointer">
-                            Login
-                        </button>
-                    </a>
-                    <a href="{{ url('/register') }}">
-                        <button class="px-6 py-2.5 bg-gradient-red text-white rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer">
-                            Get Started
-                        </button>
-                    </a>
+                    @auth
+                        <a href="{{ \App\Services\Auth\DashboardRedirectService::pathFor(auth()->user()) }}">
+                            <button class="px-6 py-2.5 bg-gradient-red text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer">
+                                Dashboard
+                            </button>
+                        </a>
+                    @elseif (session('verification_email'))
+                        <a href="{{ route('verification.notice') }}">
+                            <button class="px-6 py-2.5 bg-gradient-red text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer flex items-center gap-2">
+                                <x-icon name="mail" class="w-4 h-4" />
+                                Verify Email
+                            </button>
+                        </a>
+                    @else
+                        <a href="{{ url('/login') }}">
+                            <button class="px-6 py-2.5 text-white border border-white/20 rounded-lg hover:border-[#E63946] hover:text-[#E63946] transition-all duration-300 cursor-pointer">
+                                Login
+                            </button>
+                        </a>
+                        <a href="{{ url('/register') }}">
+                            <button class="px-6 py-2.5 bg-gradient-red text-white rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer">
+                                Get Started
+                            </button>
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -70,12 +85,28 @@
                     <span class="text-white font-semibold"> AutoProject+</span>
                 </p>
                 <div class="flex flex-col sm:flex-row gap-6 justify-center">
-                    <a href="{{ url('/register') }}">
-                        <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
-                            Book a Service
-                            <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </a>
+                    @auth
+                        <a href="{{ url('/customer/book-service') }}">
+                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                                Book a Service
+                                <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </a>
+                    @elseif (session('verification_email'))
+                        <a href="{{ route('verification.notice') }}">
+                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                                Verify Email to Continue
+                                <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </a>
+                    @else
+                        <a href="{{ url('/register') }}">
+                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                                Book a Service
+                                <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </a>
+                    @endauth
                     <a href="#services">
                         <button class="px-10 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl text-lg font-semibold border border-white/20 hover:bg-white/20 hover:border-[#E63946] transition-all duration-300 cursor-pointer">
                             Explore Services
