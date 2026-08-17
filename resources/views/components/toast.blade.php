@@ -41,23 +41,23 @@
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
             :class="{
-                'bg-green-500/10 border-green-500/20 text-green-500': toast.type === 'success',
-                'bg-red-500/10 border-red-500/20 text-red-500': toast.type === 'error',
-                'bg-blue-500/10 border-blue-500/20 text-blue-500': toast.type === 'info' || toast.type === 'default'
+                'bg-emerald-950/95 border-emerald-500/50 text-emerald-200 shadow-emerald-900/40': toast.type === 'success',
+                'bg-red-950/95 border-red-500/50 text-red-200 shadow-red-900/40': toast.type === 'error',
+                'bg-blue-950/95 border-blue-500/50 text-blue-200 shadow-blue-900/40': toast.type === 'info' || toast.type === 'default'
             }"
-            class="flex items-center justify-between p-4 rounded-xl border backdrop-blur-md shadow-lg"
+            class="flex items-center justify-between p-4 rounded-xl border backdrop-blur-xl shadow-2xl"
         >
             <div class="flex items-center gap-3">
                 <!-- Icon mapping -->
                 <div class="shrink-0">
                     <template x-if="toast.type === 'success'">
-                        <x-icon name="check-circle" class="w-5 h-5 text-green-500" />
+                        <x-icon name="check-circle" class="w-5 h-5 text-emerald-400" />
                     </template>
                     <template x-if="toast.type === 'error'">
-                        <x-icon name="close" class="w-5 h-5 text-red-500" />
+                        <x-icon name="close" class="w-5 h-5 text-red-400" />
                     </template>
                     <template x-if="toast.type === 'info' || toast.type === 'default'">
-                        <x-icon name="info" class="w-5 h-5 text-blue-500" />
+                        <x-icon name="info" class="w-5 h-5 text-blue-400" />
                     </template>
                 </div>
                 <p class="text-sm font-semibold" x-text="toast.message"></p>

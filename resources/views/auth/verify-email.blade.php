@@ -48,20 +48,23 @@
 
                 {{-- Status / Error Alerts --}}
                 @if (session('success'))
-                    <div class="mb-5 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
-                        {{ session('success') }}
+                    <div class="mb-6 p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm font-medium flex items-center gap-3 shadow-lg shadow-emerald-500/10">
+                        <x-icon name="check-circle" class="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span>{{ session('success') }}</span>
                     </div>
                 @endif
 
                 @if (session('error'))
-                    <div class="mb-5 p-4 rounded-xl bg-[#E63946]/10 border border-[#E63946]/20 text-[#E63946] text-sm">
-                        {{ session('error') }}
+                    <div class="mb-6 p-4 rounded-xl bg-[#E63946]/20 border border-[#E63946]/40 text-red-200 text-sm font-medium flex items-center gap-3 shadow-lg shadow-[#E63946]/10">
+                        <x-icon name="info" class="w-5 h-5 text-[#E63946] shrink-0" />
+                        <span>{{ session('error') }}</span>
                     </div>
                 @endif
 
                 @if (session('info'))
-                    <div class="mb-5 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
-                        {{ session('info') }}
+                    <div class="mb-6 p-4 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-200 text-sm font-medium flex items-center gap-3 shadow-lg shadow-blue-500/10">
+                        <x-icon name="info" class="w-5 h-5 text-blue-400 shrink-0" />
+                        <span>{{ session('info') }}</span>
                     </div>
                 @endif
 
