@@ -82,6 +82,18 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:users.manage')
                 ->name('users.index');
 
+            Route::post('/users', [AdminUserController::class, 'store'])
+                ->middleware('permission:users.manage')
+                ->name('users.store');
+
+            Route::put('/users/{user}', [AdminUserController::class, 'update'])
+                ->middleware('permission:users.manage')
+                ->name('users.update');
+
+            Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
+                ->middleware('permission:users.manage')
+                ->name('users.destroy');
+
             Route::get('/approvals', [BookingApprovalController::class, 'index'])
                 ->middleware('permission:approvals.manage')
                 ->name('approvals.index');
