@@ -22,6 +22,9 @@
         @if (session()->has('success'))
             add({ type: 'success', message: @js(session('success')) });
         @endif
+        @if (session()->has('status'))
+            add({ type: 'success', message: @js(session('status')) });
+        @endif
         @if (session()->has('error'))
             add({ type: 'error', message: @js(session('error')) });
         @endif
@@ -41,9 +44,9 @@
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
             :class="{
-                'bg-emerald-950/95 border-emerald-500/50 text-emerald-200 shadow-emerald-900/40': toast.type === 'success',
-                'bg-red-950/95 border-red-500/50 text-red-200 shadow-red-900/40': toast.type === 'error',
-                'bg-blue-950/95 border-blue-500/50 text-blue-200 shadow-blue-900/40': toast.type === 'info' || toast.type === 'default'
+                'bg-emerald-900/95 border-emerald-400/60 text-white shadow-emerald-900/50': toast.type === 'success',
+                'bg-red-900/95 border-red-400/60 text-white shadow-red-900/50': toast.type === 'error',
+                'bg-blue-900/95 border-blue-400/60 text-white shadow-blue-900/50': toast.type === 'info' || toast.type === 'default'
             }"
             class="flex items-center justify-between p-4 rounded-xl border backdrop-blur-xl shadow-2xl"
         >
@@ -60,7 +63,7 @@
                         <x-icon name="info" class="w-5 h-5 text-blue-400" />
                     </template>
                 </div>
-                <p class="text-sm font-semibold" x-text="toast.message"></p>
+                <p class="text-sm font-semibold text-white" x-text="toast.message"></p>
             </div>
             <button x-on:click="remove(toast.id)" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 cursor-pointer ml-3 shrink-0">
                 <x-icon name="close" class="w-4 h-4" />

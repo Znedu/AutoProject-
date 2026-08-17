@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Login | AutoProject+</title>
-    <meta name="description" content="Login to your AutoProject+ account to manage bookings, track services, and more.">
+    <title>Forgot Password | AutoProject+</title>
+    <meta name="description" content="Reset your AutoProject+ password by requesting a password reset link via email.">
 
     <!-- Styles / Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -26,17 +26,24 @@
 
         <div class="relative z-10 w-full max-w-md">
             {{-- Logo --}}
-                  {{-- Logo --}}
             <div class="text-center mb-8">
                 <h1 class="text-5xl font-bold text-white mb-2 tracking-wider">
                     AUTO<span class="text-[#E63946] text-glow">PROJECT</span>+
                 </h1>
-                <p class="text-[#B8B8B8] text-lg">Welcome back! Please login to continue.</p>
+                <p class="text-[#B8B8B8] text-lg">Reset your account password</p>
             </div>
 
-            {{-- Login Card --}}
+            {{-- Card --}}
             <div class="glass-card p-8 rounded-2xl">
-                <h2 class="text-2xl font-bold text-white mb-6">Login to Your Account</h2>
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <x-icon name="key-round" class="w-8 h-8" />
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Forgot Password?</h2>
+                    <p class="text-[#B8B8B8] text-sm">
+                        Enter your registered email address and we'll send you a link to reset your password.
+                    </p>
+                </div>
 
                 {{-- Status / Error Alerts --}}
                 @if (session('status'))
@@ -58,8 +65,8 @@
                     </div>
                 @endif
 
-                {{-- Login Form --}}
-                <form method="POST" action="{{ url('/login') }}" class="space-y-5">
+                {{-- Forgot Password Form --}}
+                <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
                     @csrf
 
                     {{-- Email --}}
@@ -72,34 +79,12 @@
                             type="email"
                             name="email"
                             value="{{ old('email') }}"
-                            placeholder="Enter your email"
+                            placeholder="Enter your registered email"
                             required
+                            autofocus
                             class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
                         />
                         @error('email')
-                            <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Password --}}
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="password" class="block text-sm font-medium text-white">
-                                Password <span class="text-[#E63946]">*</span>
-                            </label>
-                            <a href="{{ route('password.request') }}" class="text-sm text-[#E63946] hover:underline">
-                                Forgot Password?
-                            </a>
-                        </div>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Enter your password"
-                            required
-                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
-                        @error('password')
                             <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -109,27 +94,17 @@
                         type="submit"
                         class="w-full group px-6 py-3.5 bg-[#E63946] hover:bg-[#E63946]/90 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-[#E63946]/20 hover:shadow-[#E63946]/40 flex items-center justify-center gap-2 cursor-pointer"
                     >
-                        <x-icon name="log-in" class="w-5 h-5" />
-                        Login to Dashboard
-                        <x-icon name="arrow-right" class="w-4.5 h-4.5 group-hover:translate-x-1 transition-transform" />
+                        <x-icon name="mail" class="w-5 h-5" />
+                        Send Password Reset Link
                     </button>
                 </form>
 
-                {{-- Register Link --}}
-                <div class="mt-6 text-center">
-                    <p class="text-[#B8B8B8]">
-                        Don't have an account?
-                        <a href="{{ url('/register') }}" class="text-[#E63946] font-semibold hover:underline transition-colors">
-                            Create Account
-                        </a>
-                    </p>
+                {{-- Back to Login Link --}}
+                <div class="mt-6 pt-6 border-t border-white/10 text-center">
+                    <a href="{{ route('login') }}" class="text-[#B8B8B8] hover:text-white font-medium transition-colors inline-flex items-center gap-2 text-sm">
+                        ← Back to Login
+                    </a>
                 </div>
-
-            {{-- Back to Home --}}
-            <div class="mt-6 text-center">
-                <a href="{{ url('/') }}" class="text-[#B8B8B8] hover:text-white transition-colors inline-flex items-center gap-2">
-                    ← Back to Home
-                </a>
             </div>
         </div>
     </div>
