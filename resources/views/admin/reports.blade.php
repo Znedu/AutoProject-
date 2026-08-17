@@ -156,104 +156,56 @@
         </div>
     </x-card>
 
-    {{-- Popularity & Status distribution charts --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Service Popularity Horizontal Bar Chart --}}
-        <x-card>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Service Popularity</h2>
-                <x-button variant="ghost" size="sm" @click="showToast.success('Exporting service popularity report...')">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export
-                </x-button>
-            </div>
-            <div x-data="{
-                init() {
-                    const ctx = document.getElementById('servicePopularityChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: @js($servicePopularityLabels),
-                            datasets: [{
-                                label: 'Bookings Completed',
-                                data: @js($servicePopularityCounts),
-                                backgroundColor: '#E63946',
-                                borderRadius: 8,
-                                borderSkipped: false
-                            }]
+    {{-- Service Popularity Horizontal Bar Chart --}}
+    <x-card>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Service Popularity</h2>
+            <x-button variant="ghost" size="sm" @click="showToast.success('Exporting service popularity report...')">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export
+            </x-button>
+        </div>
+        <div x-data="{
+            init() {
+                const ctx = document.getElementById('servicePopularityChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: @js($servicePopularityLabels),
+                        datasets: [{
+                            label: 'Bookings Completed',
+                            data: @js($servicePopularityCounts),
+                            backgroundColor: '#E63946',
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
                         },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(107, 114, 128, 0.1)' },
+                                ticks: { color: '#6b7280' }
                             },
-                            scales: {
-                                x: {
-                                    grid: { color: 'rgba(107, 114, 128, 0.1)' },
-                                    ticks: { color: '#6b7280' }
-                                },
-                                y: {
-                                    grid: { display: false },
-                                    ticks: { color: '#6b7280' }
-                                }
+                            y: {
+                                grid: { display: false },
+                                ticks: { color: '#6b7280' }
                             }
                         }
-                    });
-                }
-            }" class="h-[300px] relative">
-                <canvas id="servicePopularityChart"></canvas>
-            </div>
-        </x-card>
-
-        {{-- Booking Status Distribution Pie Chart --}}
-        <x-card>
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Booking Status Distribution</h2>
-                <x-button variant="ghost" size="sm" @click="showToast.success('Exporting status report...')">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export
-                </x-button>
-            </div>
-            <div x-data="{
-                init() {
-                    const ctx = document.getElementById('bookingStatusDistributionChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'pie',
-                        data: {
-                            labels: ['Completed', 'In Progress', 'Pending', 'Cancelled'],
-                            datasets: [{
-                                data: @js($statusCounts),
-                                backgroundColor: ['#10B981', '#457B9D', '#F59E0B', '#EF4444'],
-                                borderWidth: 2,
-                                borderColor: document.documentElement.classList.contains('dark') ? '#151515' : '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'right',
-                                    labels: {
-                                        color: '#6b7280',
-                                        boxWidth: 12
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }" class="h-[300px] relative">
-                <canvas id="bookingStatusDistributionChart"></canvas>
-            </div>
-        </x-card>
-    </div>
+                    }
+                });
+            }
+        }" class="h-[300px] relative">
+            <canvas id="servicePopularityChart"></canvas>
+        </div>
+    </x-card>
 
     {{-- Customer Activity Trends Line Chart --}}
     <x-card>

@@ -58,13 +58,14 @@ $maxWidthClass = [
     x-on:keydown.escape.window="show = false"
     x-on:keydown.tab.prevent="$event.shiftKey ? prevFocus() : nextFocus()"
     x-show="show"
-    class="fixed inset-0 z-50 overflow-y-auto px-4 py-6 sm:px-0 flex items-center justify-center"
+    x-cloak
+    class="fixed inset-0 z-[100] overflow-y-auto px-4 py-6 sm:px-0 flex items-center justify-center"
     style="display: none;"
 >
-    <!-- Overlay -->
+    <!-- Overlay Backdrop -->
     <div
         x-show="show"
-        class="fixed inset-0 transform transition-all"
+        class="fixed inset-0 bg-black/70 backdrop-blur-md transition-all cursor-pointer"
         x-on:click="show = false"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0"
@@ -72,14 +73,12 @@ $maxWidthClass = [
         x-transition:leave="ease-in duration-200"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-    >
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-    </div>
+    ></div>
 
-    <!-- Modal Content -->
+    <!-- Modal Content Box -->
     <div
         x-show="show"
-        class="bg-white dark:bg-[#151515] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden shadow-xl transform transition-all sm:w-full {{ $maxWidthClass }} mx-auto"
+        class="relative z-10 bg-white dark:bg-[#151515] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-2xl transform transition-all w-full {{ $maxWidthClass }} mx-auto my-auto"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
         x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -89,16 +88,16 @@ $maxWidthClass = [
     >
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                 {{ $title ?? $header ?? '' }}
             </h3>
-            <button x-on:click="show = false" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 cursor-pointer">
+            <button type="button" x-on:click="show = false" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 cursor-pointer p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                 <x-icon name="close" class="h-5 w-5" />
             </button>
         </div>
 
         <!-- Modal Body -->
-        <div class="px-6 py-4 text-gray-700 dark:text-gray-300">
+        <div class="px-6 py-5 text-gray-700 dark:text-gray-300 max-h-[calc(100vh-12rem)] overflow-y-auto">
             {{ $slot }}
         </div>
 
