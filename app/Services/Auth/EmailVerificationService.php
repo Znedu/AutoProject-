@@ -6,7 +6,6 @@ use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\Auth\EmailVerificationCodeNotification;
 use Illuminate\Support\Facades\Hash;
-use ValidationException;
 
 class EmailVerificationService
 {
@@ -51,60 +50,67 @@ class EmailVerificationService
      */
     public function verify(User $user, string $code): array
     {
-        $record = EmailVerificationCode::query()
-            ->where('user_id', $user->id)
-            ->latest()
-            ->first();
+        try {
+            $record = EmailVerificationCode::query()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first();
 
-        if (! $record) {
-            return [
-                'success' => false,
-                'message' => 'No verification code found. Please request a new code.',
-            ];
-        }
+            if (! $record) {
+                return [
+                    'success' => false,
+                    'message' => 'No verification code found. Please request a new code.',
+                ];
+            }
 
-        if ($record->isExpired()) {
-            $record->delete();
-            return [
-                'success' => false,
-                'message' => 'Verification code has expired. Please request a new code.',
-            ];
-        }
-
-        if ($record->attempts >= self::MAX_ATTEMPTS) {
-            $record->delete();
-            return [
-                'success' => false,
-                'message' => 'Too many failed attempts. This code is no longer valid. Please request a new code.',
-            ];
-        }
-
-        if (! Hash::check($code, $record->code)) {
-            $record->increment('attempts');
+            if ($record->isExpired()) {
+                $record->delete();
+                return [
+                    'success' => false,
+                    'message' => 'Verification code has expired. Please request a new code.',
+                ];
+            }
 
             if ($record->attempts >= self::MAX_ATTEMPTS) {
                 $record->delete();
                 return [
                     'success' => false,
-                    'message' => 'Too many failed attempts (5/5). Please request a new verification code.',
+                    'message' => 'Too many failed attempts. This code is no longer valid. Please request a new code.',
                 ];
             }
 
-            $remaining = self::MAX_ATTEMPTS - $record->attempts;
+            if (! Hash::check($code, $record->code)) {
+                $record->increment('attempts');
+
+                if ($record->attempts >= self::MAX_ATTEMPTS) {
+                    $record->delete();
+                    return [
+                        'success' => false,
+                        'message' => 'Too many failed attempts (5/5). Please request a new verification code.',
+                    ];
+                }
+
+                $remaining = self::MAX_ATTEMPTS - $record->attempts;
+                return [
+                    'success' => false,
+                    'message' => "Invalid verification code. {$remaining} attempts remaining.",
+                ];
+            }
+
+            // Code is correct
+            $user->markEmailAsVerified();
+            $this->invalidateAllCodes($user);
+
+            return [
+                'success' => true,
+                'message' => 'Email verified successfully!',
+            ];
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
-                'message' => "Invalid verification code. {$remaining} attempts remaining.",
+                'message' => 'An error occurred during verification. Please try requesting a new code.',
             ];
         }
-
-        // Code is correct
-        $user->markEmailAsVerified();
-        $this->invalidateAllCodes($user);
-
-        return [
-            'success' => true,
-            'message' => 'Email verified successfully!',
-        ];
     }
 
     /**
@@ -112,16 +118,20 @@ class EmailVerificationService
      */
     public function canResend(User $user): bool
     {
-        $latestCode = EmailVerificationCode::query()
-            ->where('user_id', $user->id)
-            ->latest()
-            ->first();
+        try {
+            $latestCode = EmailVerificationCode::query()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first();
 
-        if (! $latestCode) {
+            if (! $latestCode) {
+                return true;
+            }
+
+            return $latestCode->created_at->diffInSeconds(now()) >= self::RESEND_COOLDOWN_SECONDS;
+        } catch (\Throwable $e) {
             return true;
         }
-
-        return $latestCode->created_at->diffInSeconds(now()) >= self::RESEND_COOLDOWN_SECONDS;
     }
 
     /**
@@ -129,19 +139,23 @@ class EmailVerificationService
      */
     public function getCooldownSecondsRemaining(User $user): int
     {
-        $latestCode = EmailVerificationCode::query()
-            ->where('user_id', $user->id)
-            ->latest()
-            ->first();
+        try {
+            $latestCode = EmailVerificationCode::query()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->first();
 
-        if (! $latestCode) {
+            if (! $latestCode) {
+                return 0;
+            }
+
+            $elapsed = $latestCode->created_at->diffInSeconds(now());
+            $remaining = self::RESEND_COOLDOWN_SECONDS - $elapsed;
+
+            return max(0, (int) $remaining);
+        } catch (\Throwable $e) {
             return 0;
         }
-
-        $elapsed = $latestCode->created_at->diffInSeconds(now());
-        $remaining = self::RESEND_COOLDOWN_SECONDS - $elapsed;
-
-        return max(0, (int) $remaining);
     }
 
     /**
@@ -149,6 +163,10 @@ class EmailVerificationService
      */
     public function invalidateAllCodes(User $user): void
     {
-        EmailVerificationCode::query()->where('user_id', $user->id)->delete();
+        try {
+            EmailVerificationCode::query()->where('user_id', $user->id)->delete();
+        } catch (\Throwable $e) {
+            // Ignore if already clean
+        }
     }
 }

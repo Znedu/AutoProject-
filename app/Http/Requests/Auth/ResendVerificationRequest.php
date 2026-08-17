@@ -8,7 +8,7 @@ class ResendVerificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null || session()->has('verification_email');
+        return true;
     }
 
     public function rules(): array
