@@ -6,16 +6,17 @@ use App\Enums\RoleSlug;
 use App\Exceptions\Booking\ScheduleNotAvailableException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BusinessSetting;
+use App\Models\Quotation;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Notifications\Booking\WalkInBookingCreatedNotification;
+use App\Services\Billing\BookingBillingService;
+use App\Services\Booking\BookingApprovalService;
 use App\Services\Booking\BookingCreatorService;
-use App\Services\Booking\BookingNumberGenerator;
-use App\Services\Booking\QuotationBuilderService;
-use App\Services\Booking\ScheduleAvailabilityService;
 use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -44,23 +45,23 @@ class WalkInBookingController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($u) => [
-                'id'    => $u->id,
-                'name'  => $u->name,
+                'id' => $u->id,
+                'name' => $u->name,
                 'email' => $u->email,
                 'phone' => $u->phone ?? '',
             ]);
 
-        $fee          = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
-        $gcashNumber  = \App\Models\BusinessSetting::getValue('gcash_account_number', '0912-345-6789');
-        $mayaNumber   = \App\Models\BusinessSetting::getValue('maya_account_number', '0917-888-9999');
+        $fee = BusinessSetting::getValue('reservation_fee', 200.00);
+        $gcashNumber = BusinessSetting::getValue('gcash_account_number', '0912-345-6789');
+        $mayaNumber = BusinessSetting::getValue('maya_account_number', '0917-888-9999');
 
         return view('staff.walk-in-booking', [
             'serviceCategories' => $serviceCategories,
-            'services'          => $services,
-            'customers'         => $customers,
-            'fee'               => $fee,
-            'gcashNumber'       => $gcashNumber,
-            'mayaNumber'        => $mayaNumber,
+            'services' => $services,
+            'customers' => $customers,
+            'fee' => $fee,
+            'gcashNumber' => $gcashNumber,
+            'mayaNumber' => $mayaNumber,
         ]);
     }
 
@@ -69,24 +70,24 @@ class WalkInBookingController extends Controller
         BookingCreatorService $creator
     ): RedirectResponse {
         $request->validate([
-            'booking_type'     => ['required', 'in:existing,new'],
-            'customer_id'      => ['required_if:booking_type,existing', 'nullable', 'integer', 'exists:users,id'],
-            'customer_name'    => ['required', 'string', 'max:255'],
-            'contact_number'   => ['required', 'string', 'max:50'],
+            'booking_type' => ['required', 'in:existing,new'],
+            'customer_id' => ['required_if:booking_type,existing', 'nullable', 'integer', 'exists:users,id'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'contact_number' => ['required', 'string', 'max:50'],
             // New customer fields
-            'new_email'        => ['required_if:booking_type,new', 'nullable', 'email', 'max:255', 'unique:users,email'],
-            'new_password'     => ['required_if:booking_type,new', 'nullable', 'string', 'min:8'],
+            'new_email' => ['required_if:booking_type,new', 'nullable', 'email', 'max:255', 'unique:users,email'],
+            'new_password' => ['required_if:booking_type,new', 'nullable', 'string', 'min:8'],
             // Vehicle
-            'vehicle_make'     => ['required', 'string', 'max:100'],
-            'vehicle_model'    => ['required', 'string', 'max:100'],
-            'vehicle_year'     => ['required', 'integer', 'min:1900', 'max:' . (date('Y') + 2)],
-            'plate_number'     => ['required', 'string', 'max:30'],
+            'vehicle_make' => ['required', 'string', 'max:100'],
+            'vehicle_model' => ['required', 'string', 'max:100'],
+            'vehicle_year' => ['required', 'integer', 'min:1900', 'max:'.(date('Y') + 2)],
+            'plate_number' => ['required', 'string', 'max:30'],
             // Booking
-            'service_ids'      => ['required', 'array', 'min:1'],
-            'service_ids.*'    => ['integer', 'exists:services,id'],
-            'preferred_date'   => ['required', 'date', 'after_or_equal:today'],
-            'preferred_time'   => ['required', 'string'],
-            'notes'            => ['nullable', 'string'],
+            'service_ids' => ['required', 'array', 'min:1'],
+            'service_ids.*' => ['integer', 'exists:services,id'],
+            'preferred_date' => ['required', 'date', 'after_or_equal:today'],
+            'preferred_time' => ['required', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         try {
@@ -96,12 +97,12 @@ class WalkInBookingController extends Controller
             if ($request->booking_type === 'new') {
                 $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
                 $customer = User::create([
-                    'name'              => $request->customer_name,
-                    'email'             => $request->new_email,
-                    'phone'             => $request->contact_number,
-                    'role_id'           => $customerRole->id,
-                    'status'            => User::STATUS_ACTIVE,
-                    'password'          => $request->new_password,
+                    'name' => $request->customer_name,
+                    'email' => $request->new_email,
+                    'phone' => $request->contact_number,
+                    'role_id' => $customerRole->id,
+                    'status' => User::STATUS_ACTIVE,
+                    'password' => $request->new_password,
                     'email_verified_at' => now(),
                 ]);
             } else {
@@ -109,42 +110,47 @@ class WalkInBookingController extends Controller
             }
 
             $booking = $creator->create($customer, [
-                'service_ids'    => $request->service_ids,
-                'brands'         => $request->input('brands', []),
-                'customer_name'  => $request->customer_name,
+                'service_ids' => $request->service_ids,
+                'brands' => $request->input('brands', []),
+                'customer_name' => $request->customer_name,
                 'contact_number' => $request->contact_number,
-                'vehicle_make'   => $request->vehicle_make,
-                'vehicle_model'  => $request->vehicle_model,
-                'vehicle_year'   => $request->vehicle_year,
-                'plate_number'   => $request->plate_number,
+                'vehicle_make' => $request->vehicle_make,
+                'vehicle_model' => $request->vehicle_model,
+                'vehicle_year' => $request->vehicle_year,
+                'plate_number' => $request->plate_number,
                 'preferred_date' => $request->preferred_date,
                 'preferred_time' => $request->preferred_time,
-                'notes'          => $request->notes,
+                'notes' => $request->notes,
                 // Walk-ins don't have an online payment — reservation fee is collected in-store
-                'payment_method'   => 'cash',
-                'reference_number' => 'WALKIN-' . strtoupper(Str::random(8)),
+                'payment_method' => 'cash',
+                'reference_number' => 'WALKIN-'.strtoupper(Str::random(8)),
             ]);
 
             // Walk-in customer: automatically confirm payment, lock schedule slot & create job order
             $booking->update([
-                'is_walk_in'     => true,
-                'status'         => Booking::STATUS_CONFIRMED,
+                'is_walk_in' => true,
+                'status' => Booking::STATUS_CONFIRMED,
                 'scheduled_date' => $booking->preferred_date,
                 'scheduled_time' => $booking->preferred_time,
-                'approved_at'    => now(),
+                'approved_at' => now(),
             ]);
 
             // Mark in-store cash payment as verified
             $payment = $booking->payments()->reservationFees()->latest()->first();
             if ($payment) {
                 $payment->update([
-                    'status'      => Payment::STATUS_VERIFIED,
+                    'status' => Payment::STATUS_VERIFIED,
                     'verified_at' => now(),
                 ]);
             }
 
             // Create JobOrder automatically for walk-in
-            app(\App\Services\Booking\BookingApprovalService::class)->createJobOrderForBooking($booking, auth()->user() ?? $customer);
+            app(BookingApprovalService::class)->createJobOrderForBooking($booking, auth()->user() ?? $customer);
+
+            // Create initial final draft quotation if none exists
+            if (! $booking->quotations()->where('type', Quotation::TYPE_FINAL)->exists()) {
+                app(BookingBillingService::class)->createFinalDraft($booking, auth()->user() ?? $customer);
+            }
 
             DB::commit();
 
@@ -157,10 +163,12 @@ class WalkInBookingController extends Controller
                 ->with('success', "Walk-in booking #{$booking->booking_number} created successfully for {$customer->name}.");
         } catch (ScheduleNotAvailableException $e) {
             DB::rollBack();
+
             return back()->withInput()->withErrors(['preferred_time' => $e->getMessage()]);
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to create booking: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to create booking: '.$e->getMessage());
         }
     }
 
@@ -175,15 +183,15 @@ class WalkInBookingController extends Controller
             ->active()
             ->where(function ($query) use ($q) {
                 $query->where('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%")
-                      ->orWhere('phone', 'like', "%{$q}%");
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%");
             })
             ->orderBy('name')
             ->limit(10)
             ->get()
             ->map(fn ($u) => [
-                'id'    => $u->id,
-                'name'  => $u->name,
+                'id' => $u->id,
+                'name' => $u->name,
                 'email' => $u->email,
                 'phone' => $u->phone ?? '',
             ]);
@@ -200,10 +208,10 @@ class WalkInBookingController extends Controller
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($v) => [
-                'id'           => $v->id,
-                'make'         => $v->make,
-                'model'        => $v->model,
-                'year'         => $v->year,
+                'id' => $v->id,
+                'make' => $v->make,
+                'model' => $v->model,
+                'year' => $v->year,
                 'plate_number' => $v->plate_number,
             ]);
 

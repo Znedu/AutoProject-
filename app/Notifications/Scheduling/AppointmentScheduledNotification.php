@@ -27,13 +27,13 @@ class AppointmentScheduledNotification extends BaseNotification
             : route('customer.track', ['booking_id' => $this->booking->id]);
 
         return [
-            'type'        => NotificationType::APPOINTMENT_SCHEDULED->value,
-            'title'       => 'Appointment Scheduled',
-            'message'     => $message,
-            'action_url'  => $actionUrl,
-            'icon'        => 'calendar',
+            'type' => NotificationType::APPOINTMENT_SCHEDULED->value,
+            'title' => 'Appointment Scheduled',
+            'message' => $message,
+            'action_url' => $actionUrl,
+            'icon' => 'calendar',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

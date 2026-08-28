@@ -22,7 +22,7 @@ class VerifyEmailRequest extends FormRequest
     {
         return [
             'code.required' => 'Please enter the 6-digit verification code.',
-            'code.digits'   => 'The verification code must be exactly 6 digits.',
+            'code.digits' => 'The verification code must be exactly 6 digits.',
         ];
     }
 }

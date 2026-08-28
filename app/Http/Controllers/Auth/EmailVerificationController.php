@@ -34,13 +34,14 @@ class EmailVerificationController extends Controller
             if (Auth::guest()) {
                 Auth::login($user);
             }
+
             return redirect(DashboardRedirectService::pathFor($user));
         }
 
         $cooldown = $this->verificationService->getCooldownSecondsRemaining($user);
 
         return view('auth.verify-email', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'cooldown' => $cooldown,
         ]);
     }
@@ -60,6 +61,7 @@ class EmailVerificationController extends Controller
             if (Auth::guest()) {
                 Auth::login($user);
             }
+
             return redirect(DashboardRedirectService::pathFor($user));
         }
 
@@ -94,6 +96,7 @@ class EmailVerificationController extends Controller
             if (Auth::guest()) {
                 Auth::login($user);
             }
+
             return redirect(DashboardRedirectService::pathFor($user));
         }
 

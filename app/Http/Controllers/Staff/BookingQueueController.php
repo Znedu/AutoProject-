@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BusinessSetting;
 use App\Models\Payment;
 use App\Notifications\Scheduling\AppointmentScheduledNotification;
 use App\Services\Notification\NotificationDispatcherService;
@@ -17,43 +18,46 @@ class BookingQueueController extends Controller
             ->latest()
             ->get()
             ->map(function ($booking) {
-                $payment = $booking->payments->where('type', Payment::TYPE_RESERVATION_FEE)->first();
+                $payment = $booking->payments->where('type', Payment::TYPE_RESERVATION_FEE)->sortByDesc('id')->first();
 
                 $min = $booking->services->sum('min_cost');
                 $max = $booking->services->sum('max_cost');
-                $estimatedCost = $min > 0 ? '₱' . number_format($min) . ' - ₱' . number_format($max) : 'TBD';
+                $estimatedCost = $min > 0 ? '₱'.number_format($min).' - ₱'.number_format($max) : 'TBD';
+
+                $resFeeSetting = (float) BusinessSetting::getValue('reservation_fee', 200.00);
 
                 return [
-                    'id'            => $booking->id,
-                    'customer'      => $booking->customer_name ?? ($booking->user?->name ?? 'Unknown'),
-                    'contact'       => $booking->contact_number ?? ($booking->user?->phone ?? 'N/A'),
-                    'service'       => $booking->services->first()?->name ?? 'Custom Service',
-                    'vehicle'       => $booking->vehicle
+                    'id' => $booking->id,
+                    'customer' => $booking->customer_name ?? ($booking->user?->name ?? 'Unknown'),
+                    'contact' => $booking->contact_number ?? ($booking->user?->phone ?? 'N/A'),
+                    'service' => $booking->services->first()?->name ?? 'Custom Service',
+                    'vehicle' => $booking->vehicle
                         ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}"
                         : 'Unknown',
-                    'plateNumber'   => $booking->vehicle?->plate_number ?? 'N/A',
-                    'preferredDate'          => $booking->preferred_date ? $booking->preferred_date->format('F d, Y') : 'N/A',
-                    'preferredTime'          => $booking->preferred_time ? $booking->preferred_time->format('g:i A') : 'N/A',
-                    'scheduledDate'          => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : ($booking->preferred_date ? $booking->preferred_date->format('Y-m-d') : ''),
-                    'scheduledTime'          => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : ($booking->preferred_time ? $booking->preferred_time->format('H:i') : ''),
+                    'plateNumber' => $booking->vehicle?->plate_number ?? 'N/A',
+                    'preferredDate' => $booking->preferred_date ? $booking->preferred_date->format('F d, Y') : 'N/A',
+                    'preferredTime' => $booking->preferred_time ? $booking->preferred_time->format('g:i A') : 'N/A',
+                    'scheduledDate' => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : ($booking->preferred_date ? $booking->preferred_date->format('Y-m-d') : ''),
+                    'scheduledTime' => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : ($booking->preferred_time ? $booking->preferred_time->format('H:i') : ''),
                     'scheduledDateFormatted' => $booking->scheduled_date ? $booking->scheduled_date->format('F d, Y') : null,
                     'scheduledTimeFormatted' => $booking->scheduled_time ? $booking->scheduled_time->format('g:i A') : null,
-                    'status'        => $booking->status,
+                    'status' => $booking->status,
                     'estimatedCost' => $estimatedCost,
-                    'notes'         => $booking->notes ?? '',
-                    'isWalkIn'      => $booking->is_walk_in,
+                    'notes' => $booking->notes ?? '',
+                    'isWalkIn' => (bool) $booking->is_walk_in,
                     'reservationFee' => [
-                        'amount'          => $payment ? (float) $payment->amount : 200.00,
-                        'paid'            => $payment
-                            ? in_array($payment->status, [Payment::STATUS_SUBMITTED, Payment::STATUS_VERIFIED])
-                            : false,
-                        'paymentMethod'   => $payment ? strtoupper($payment->method) : 'N/A',
+                        'amount' => $payment ? (float) $payment->amount : $resFeeSetting,
+                        'isVerified' => $payment ? $payment->status === Payment::STATUS_VERIFIED : false,
+                        'isSubmitted' => $payment ? in_array($payment->status, [Payment::STATUS_SUBMITTED, Payment::STATUS_PENDING]) : false,
+                        'isRejected' => $payment ? $payment->status === Payment::STATUS_REJECTED : false,
+                        'hasPayment' => (bool) $payment,
+                        'paymentMethod' => $payment ? strtoupper($payment->method) : 'N/A',
                         'referenceNumber' => $payment?->reference_number ?? 'N/A',
-                        'paymentDate'     => $payment && $payment->paid_at
+                        'paymentDate' => $payment && $payment->paid_at
                             ? $payment->paid_at->format('F d, Y') : 'N/A',
-                        'paymentTime'     => $payment && $payment->paid_at
+                        'paymentTime' => $payment && $payment->paid_at
                             ? $payment->paid_at->format('g:i A') : 'N/A',
-                        'status'          => $payment?->status ?? 'pending',
+                        'status' => $payment?->status ?? 'unpaid',
                     ],
                 ];
             });
@@ -71,7 +75,7 @@ class BookingQueueController extends Controller
     {
         try {
             $booking->update([
-                'status'         => Booking::STATUS_CONFIRMED,
+                'status' => Booking::STATUS_CONFIRMED,
                 'scheduled_date' => $request->input('scheduled_date', $booking->preferred_date),
                 'scheduled_time' => $request->input('scheduled_time', $booking->preferred_time),
             ]);
@@ -87,9 +91,9 @@ class BookingQueueController extends Controller
             $booking->refresh();
 
             return response()->json([
-                'success'                  => true,
-                'scheduled_date'           => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : '',
-                'scheduled_time'           => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : '',
+                'success' => true,
+                'scheduled_date' => $booking->scheduled_date ? $booking->scheduled_date->format('Y-m-d') : '',
+                'scheduled_time' => $booking->scheduled_time ? $booking->scheduled_time->format('H:i') : '',
                 'scheduled_date_formatted' => $booking->scheduled_date ? $booking->scheduled_date->format('F d, Y') : '',
                 'scheduled_time_formatted' => $booking->scheduled_time ? $booking->scheduled_time->format('g:i A') : '',
             ]);

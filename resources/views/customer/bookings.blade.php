@@ -106,7 +106,10 @@
 
                         <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                             <div class="flex items-center gap-2 text-sm">
-                                <span class="text-gray-700 dark:text-gray-300">Reservation Fee (₱200):</span>
+                                @php
+                                    $resFee = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
+                                @endphp
+                                <span class="text-gray-700 dark:text-gray-300">Reservation Fee (₱{{ number_format((float) $resFee) }}):</span>
                                 @if ($payment && $payment->is_verified)
                                     <span class="flex items-center gap-1 text-green-600 font-medium">
                                         <x-icon name="check-square" class="w-4 h-4 text-green-600 inline" />
@@ -139,6 +142,15 @@
                             </x-button>
                         </a>
 
+                        @if (in_array($booking->status, [\App\Models\Booking::STATUS_CONFIRMED, \App\Models\Booking::STATUS_SCHEDULED, \App\Models\Booking::STATUS_IN_PROGRESS, \App\Models\Booking::STATUS_COMPLETED]))
+                            <a href="{{ route('customer.bookings.billing', $booking) }}">
+                                <x-button variant="primary" size="sm" class="whitespace-nowrap w-full">
+                                    <x-icon name="receipt" class="w-4 h-4 mr-1 inline" />
+                                    View Billing
+                                </x-button>
+                            </a>
+                        @endif
+
                         <a href="{{ route('customer.support.index') }}?subject={{ urlencode('Issue with '.$booking->booking_number.' - '.$serviceNames) }}">
                             <x-button variant="secondary" size="sm" class="whitespace-nowrap">
                                 <x-icon name="message-square" class="w-4 h-4 mr-1 inline text-gray-500" />
@@ -164,7 +176,7 @@
                             <form
                                 method="POST"
                                 action="{{ route('customer.bookings.destroy', $booking) }}"
-                                onsubmit="event.preventDefault(); const form = this; window.showConfirm({ title: 'Cancel Booking', message: 'Are you sure you want to cancel booking {{ $booking->booking_number }}? Please note that the ₱200 reservation fee is non-refundable. This action cannot be undone.', confirmText: 'Yes, Cancel Booking', variant: 'danger', onConfirm: () => form.submit() });"
+                                onsubmit="event.preventDefault(); const form = this; window.showConfirm({ title: 'Cancel Booking', message: 'Are you sure you want to cancel booking {{ $booking->booking_number }}? Please note that the reservation fee is non-refundable. This action cannot be undone.', confirmText: 'Yes, Cancel Booking', variant: 'danger', onConfirm: () => form.submit() });"
                             >
                                 @csrf
                                 @method('DELETE')

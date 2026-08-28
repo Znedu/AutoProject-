@@ -11,6 +11,7 @@ use App\Notifications\Job\JobOrderCreatedNotification;
 use App\Notifications\Payment\BookingAutoCancelledNotification;
 use App\Notifications\Payment\PaymentRejectedNotification;
 use App\Notifications\Payment\PaymentResubmittedNotification;
+use App\Services\Billing\BookingBillingService;
 use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class PaymentVerificationService
     public const MAX_ATTEMPTS = 3;
 
     public function __construct(
-        protected BookingStatusLogger   $statusLogger,
+        protected BookingStatusLogger $statusLogger,
         protected BookingApprovalService $approvalService,
         protected PaymentNumberGenerator $paymentNumberGenerator,
         protected NotificationDispatcherService $dispatcher,
@@ -62,28 +63,33 @@ class PaymentVerificationService
 
             // Verify the payment
             $payment->update([
-                'status'      => Payment::STATUS_VERIFIED,
+                'status' => Payment::STATUS_VERIFIED,
                 'verified_by' => $admin->id,
                 'verified_at' => now(),
             ]);
 
             // Confirm and lock in the scheduled appointment
             $booking->update([
-                'status'         => Booking::STATUS_CONFIRMED,
-                'approved_by'    => $admin->id,
-                'approved_at'    => now(),
+                'status' => Booking::STATUS_CONFIRMED,
+                'approved_by' => $admin->id,
+                'approved_at' => now(),
                 'scheduled_date' => $booking->preferred_date,
                 'scheduled_time' => $booking->preferred_time,
             ]);
 
-            // Approve the latest quotation
+            // Approve the latest initial estimate quotation
             $quotation = $booking->quotations()->latestVersion()->first();
             if ($quotation !== null) {
                 $quotation->update([
-                    'status'      => Quotation::STATUS_APPROVED,
+                    'status' => Quotation::STATUS_APPROVED,
                     'approved_by' => $admin->id,
                     'approved_at' => now(),
                 ]);
+            }
+
+            // Create initial final draft quotation if none exists
+            if (! $booking->quotations()->where('type', Quotation::TYPE_FINAL)->exists()) {
+                app(BookingBillingService::class)->createFinalDraft($booking, $admin);
             }
 
             // Auto-create job order (same logic as BookingApprovalService::approve)
@@ -145,9 +151,9 @@ class PaymentVerificationService
 
             // Mark this payment attempt as rejected
             $payment->update([
-                'status'           => Payment::STATUS_REJECTED,
-                'verified_by'      => $admin->id,
-                'verified_at'      => now(),
+                'status' => Payment::STATUS_REJECTED,
+                'verified_by' => $admin->id,
+                'verified_at' => now(),
                 'rejection_reason' => $reason,
             ]);
 
@@ -160,7 +166,7 @@ class PaymentVerificationService
 
             $booking->update([
                 'payment_attempts' => $newAttempts,
-                'status'           => $newBookingStatus,
+                'status' => $newBookingStatus,
             ]);
 
             $logNote = $newBookingStatus === Booking::STATUS_CANCELLED
@@ -228,26 +234,26 @@ class PaymentVerificationService
 
             // Create a fresh payment record — keeps full audit trail
             $payment = Payment::create([
-                'payment_number'   => $this->paymentNumberGenerator->generate(),
-                'booking_id'       => $booking->id,
-                'user_id'          => $customer->id,
-                'type'             => Payment::TYPE_RESERVATION_FEE,
-                'amount'           => $booking->payments()->reservationFees()->latest()->value('amount') ?? 200.00,
-                'currency'         => 'PHP',
-                'method'           => $data['payment_method'],
+                'payment_number' => $this->paymentNumberGenerator->generate(),
+                'booking_id' => $booking->id,
+                'user_id' => $customer->id,
+                'type' => Payment::TYPE_RESERVATION_FEE,
+                'amount' => $booking->payments()->reservationFees()->latest()->value('amount') ?? 200.00,
+                'currency' => 'PHP',
+                'method' => $data['payment_method'],
                 'reference_number' => $data['reference_number'],
-                'status'           => Payment::STATUS_SUBMITTED,
-                'paid_at'          => now(),
+                'status' => Payment::STATUS_SUBMITTED,
+                'paid_at' => now(),
             ]);
 
             // Store the new proof
             $path = $screenshot->store('payment_proofs', 'public');
             $payment->proofs()->create([
-                'disk'          => 'public',
-                'file_path'     => $path,
+                'disk' => 'public',
+                'file_path' => $path,
                 'original_name' => $screenshot->getClientOriginalName(),
-                'mime_type'     => $screenshot->getClientMimeType(),
-                'size_bytes'    => $screenshot->getSize(),
+                'mime_type' => $screenshot->getClientMimeType(),
+                'size_bytes' => $screenshot->getSize(),
             ]);
 
             // Back to pending verification

@@ -14,8 +14,8 @@ class ResetPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'token'    => ['required', 'string'],
-            'email'    => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
@@ -23,11 +23,11 @@ class ResetPasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'token.required'     => 'Password reset token is missing or invalid.',
-            'email.required'     => 'Please enter your email address.',
-            'email.email'        => 'Please enter a valid email address.',
-            'password.required'  => 'Please enter a new password.',
-            'password.min'       => 'Password must be at least 8 characters long.',
+            'token.required' => 'Password reset token is missing or invalid.',
+            'email.required' => 'Please enter your email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'password.required' => 'Please enter a new password.',
+            'password.min' => 'Password must be at least 8 characters long.',
             'password.confirmed' => 'Password confirmation does not match.',
         ];
     }

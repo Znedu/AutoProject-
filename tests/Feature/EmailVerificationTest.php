@@ -7,7 +7,7 @@ use App\Models\EmailVerificationCode;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Auth\EmailVerificationCodeNotification;
-use App\Services\Auth\EmailVerificationService;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -23,7 +23,7 @@ class EmailVerificationTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
+        $this->withoutMiddleware([ValidateCsrfToken::class]);
 
         $this->customerRole = Role::firstOrCreate(
             ['slug' => RoleSlug::Customer->value],
@@ -36,9 +36,9 @@ class EmailVerificationTest extends TestCase
         Notification::fake();
 
         $response = $this->post('/register', [
-            'name'                  => 'Test Customer',
-            'email'                 => 'test@example.com',
-            'password'              => 'password123',
+            'name' => 'Test Customer',
+            'email' => 'test@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
@@ -57,7 +57,7 @@ class EmailVerificationTest extends TestCase
     public function test_unverified_customer_is_redirected_away_from_customer_dashboard(): void
     {
         $unverifiedUser = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
@@ -69,7 +69,7 @@ class EmailVerificationTest extends TestCase
     public function test_verified_customer_can_access_customer_dashboard(): void
     {
         $verifiedUser = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => now(),
         ]);
 
@@ -81,16 +81,16 @@ class EmailVerificationTest extends TestCase
     public function test_customer_can_verify_email_with_valid_otp_code(): void
     {
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
         $code = '123456';
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make($code),
+            'user_id' => $user->id,
+            'code' => Hash::make($code),
             'expires_at' => now()->addMinutes(15),
-            'attempts'   => 0,
+            'attempts' => 0,
         ]);
 
         $response = $this->actingAs($user)->post(route('verification.verify'), [
@@ -105,15 +105,15 @@ class EmailVerificationTest extends TestCase
     public function test_invalid_otp_code_increments_attempts(): void
     {
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make('123456'),
+            'user_id' => $user->id,
+            'code' => Hash::make('123456'),
             'expires_at' => now()->addMinutes(15),
-            'attempts'   => 0,
+            'attempts' => 0,
         ]);
 
         $response = $this->actingAs($user)->post(route('verification.verify'), [
@@ -123,7 +123,7 @@ class EmailVerificationTest extends TestCase
         $response->assertSessionHasErrors('code');
         $this->assertNull($user->fresh()->email_verified_at);
         $this->assertDatabaseHas('email_verification_codes', [
-            'user_id'  => $user->id,
+            'user_id' => $user->id,
             'attempts' => 1,
         ]);
     }
@@ -131,15 +131,15 @@ class EmailVerificationTest extends TestCase
     public function test_code_invalidated_after_5_failed_attempts(): void
     {
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make('123456'),
+            'user_id' => $user->id,
+            'code' => Hash::make('123456'),
             'expires_at' => now()->addMinutes(15),
-            'attempts'   => 4,
+            'attempts' => 4,
         ]);
 
         $response = $this->actingAs($user)->post(route('verification.verify'), [
@@ -154,15 +154,15 @@ class EmailVerificationTest extends TestCase
     public function test_expired_code_is_rejected(): void
     {
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make('123456'),
+            'user_id' => $user->id,
+            'code' => Hash::make('123456'),
             'expires_at' => now()->subMinute(),
-            'attempts'   => 0,
+            'attempts' => 0,
         ]);
 
         $response = $this->actingAs($user)->post(route('verification.verify'), [
@@ -178,16 +178,16 @@ class EmailVerificationTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
+            'role_id' => $this->customerRole->id,
             'email_verified_at' => null,
         ]);
 
         // Code issued just now
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make('123456'),
+            'user_id' => $user->id,
+            'code' => Hash::make('123456'),
             'expires_at' => now()->addMinutes(15),
-            'attempts'   => 0,
+            'attempts' => 0,
         ]);
 
         $response = $this->actingAs($user)->post(route('verification.resend'));
@@ -199,14 +199,14 @@ class EmailVerificationTest extends TestCase
     public function test_login_prompts_unverified_customer_to_reregister(): void
     {
         $user = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
-            'email'             => 'unverified@example.com',
-            'password'          => 'password123',
+            'role_id' => $this->customerRole->id,
+            'email' => 'unverified@example.com',
+            'password' => 'password123',
             'email_verified_at' => null,
         ]);
 
         $response = $this->post('/login', [
-            'email'    => 'unverified@example.com',
+            'email' => 'unverified@example.com',
             'password' => 'password123',
         ]);
 
@@ -216,12 +216,12 @@ class EmailVerificationTest extends TestCase
     public function test_walk_in_customer_account_is_auto_verified(): void
     {
         $walkinUser = User::create([
-            'name'              => 'Walk-in Customer',
-            'email'             => 'walkin@example.com',
-            'phone'             => '09123456789',
-            'role_id'           => $this->customerRole->id,
-            'status'            => User::STATUS_ACTIVE,
-            'password'          => 'password123',
+            'name' => 'Walk-in Customer',
+            'email' => 'walkin@example.com',
+            'phone' => '09123456789',
+            'role_id' => $this->customerRole->id,
+            'status' => User::STATUS_ACTIVE,
+            'password' => 'password123',
             'email_verified_at' => now(),
         ]);
 
@@ -235,16 +235,16 @@ class EmailVerificationTest extends TestCase
         Notification::fake();
 
         $unverifiedUser = User::factory()->create([
-            'role_id'           => $this->customerRole->id,
-            'name'              => 'Old Name',
-            'email'             => 'pending@example.com',
+            'role_id' => $this->customerRole->id,
+            'name' => 'Old Name',
+            'email' => 'pending@example.com',
             'email_verified_at' => null,
         ]);
 
         $response = $this->post('/register', [
-            'name'                  => 'New Name',
-            'email'                 => 'pending@example.com',
-            'password'              => 'newpassword123',
+            'name' => 'New Name',
+            'email' => 'pending@example.com',
+            'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ]);
 
@@ -262,15 +262,15 @@ class EmailVerificationTest extends TestCase
     public function test_verified_user_cannot_re_register_with_same_email(): void
     {
         User::factory()->create([
-            'role_id'           => $this->customerRole->id,
-            'email'             => 'verified@example.com',
+            'role_id' => $this->customerRole->id,
+            'email' => 'verified@example.com',
             'email_verified_at' => now(),
         ]);
 
         $response = $this->post('/register', [
-            'name'                  => 'Another User',
-            'email'                 => 'verified@example.com',
-            'password'              => 'password123',
+            'name' => 'Another User',
+            'email' => 'verified@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 

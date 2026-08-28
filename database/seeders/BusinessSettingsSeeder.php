@@ -62,6 +62,20 @@ class BusinessSettingsSeeder extends Seeder
                 'group' => 'general',
                 'description' => 'Business Contact Phone',
             ],
+            [
+                'key' => 'reservation_fee_credits_toward_total',
+                'value' => 'false',
+                'type' => 'boolean',
+                'group' => 'booking',
+                'description' => 'Whether reservation fee is credited toward the final billing total',
+            ],
+            [
+                'key' => 'allow_staff_billing_edits',
+                'value' => 'true',
+                'type' => 'boolean',
+                'group' => 'booking',
+                'description' => 'Whether staff members can add or edit line items on draft final billing',
+            ],
         ];
 
         foreach ($settings as $setting) {

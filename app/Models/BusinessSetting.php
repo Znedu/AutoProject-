@@ -17,14 +17,13 @@ class BusinessSetting extends Model
     /**
      * Get setting value by key casted to appropriate type.
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function getValue(string $key, $default = null)
     {
         $setting = self::where('key', $key)->first();
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 

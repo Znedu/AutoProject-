@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Mechanic;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\JobOrder;
+use App\Models\ServiceStage;
 use App\Notifications\Job\JobCompletedNotification;
 use App\Notifications\Job\JobStartedNotification;
 use App\Services\Notification\NotificationDispatcherService;
-use Illuminate\Http\Request;
 
 class JobController extends Controller
 {
@@ -21,7 +21,7 @@ class JobController extends Controller
                 $booking = $job->booking;
                 $vehicle = $booking?->vehicle;
                 $user = $booking?->user;
-                
+
                 // Find the active service stage ID
                 $currentStageId = $job->stageProgress->where('is_current', true)->first()?->service_stage_id;
 
@@ -36,16 +36,16 @@ class JobController extends Controller
                 // Map service updates
                 $serviceUpdates = $job->serviceUpdates->map(function ($update) {
                     $photos = $update->photos->map(fn ($p) => [
-                        'url'     => $p->url ?? '/storage/' . $p->file_path,
-                        'caption' => $p->caption ?? ''
+                        'url' => $p->url ?? '/storage/'.$p->file_path,
+                        'caption' => $p->caption ?? '',
                     ])->values()->toArray();
 
                     return [
-                        'id'       => $update->id,
-                        'message'  => $update->message,
-                        'date'     => $update->created_at->format('M d, Y - g:i A'),
+                        'id' => $update->id,
+                        'message' => $update->message,
+                        'date' => $update->created_at->format('M d, Y - g:i A'),
                         'mechanic' => $update->user?->name ?? 'Mechanic',
-                        'photos'   => $photos
+                        'photos' => $photos,
                     ];
                 })->values()->toArray();
 
@@ -66,7 +66,7 @@ class JobController extends Controller
                 ];
             });
 
-        $stages = \App\Models\ServiceStage::orderBy('sort_order')->get();
+        $stages = ServiceStage::orderBy('sort_order')->get();
 
         return view('mechanic.jobs', [
             'jobs' => $jobs,
@@ -83,8 +83,8 @@ class JobController extends Controller
 
         $newProgress = max($job->progress_percent, 5);
         $job->update([
-            'status'           => JobOrder::STATUS_IN_PROGRESS,
-            'started_at'       => now(),
+            'status' => JobOrder::STATUS_IN_PROGRESS,
+            'started_at' => now(),
             'progress_percent' => $newProgress,
         ]);
 

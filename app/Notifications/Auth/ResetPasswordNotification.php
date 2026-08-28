@@ -30,7 +30,7 @@ class ResetPasswordNotification extends Notification
             ->subject('Reset your AutoProject+ password')
             ->markdown('mail.auth.reset-password', [
                 'name' => $notifiable->name,
-                'url'  => $url,
+                'url' => $url,
             ]);
     }
 }

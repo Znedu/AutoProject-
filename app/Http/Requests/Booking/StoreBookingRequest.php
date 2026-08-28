@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Booking;
 
+use App\Models\Booking;
 use App\Models\Payment;
 use App\Rules\ScheduleAvailable;
 use App\Services\Booking\ScheduleAvailabilityService;
@@ -12,7 +13,7 @@ class StoreBookingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', \App\Models\Booking::class) ?? false;
+        return $this->user()?->can('create', Booking::class) ?? false;
     }
 
     /**

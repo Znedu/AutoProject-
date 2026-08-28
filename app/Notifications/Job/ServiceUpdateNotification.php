@@ -15,13 +15,13 @@ class ServiceUpdateNotification extends BaseNotification
         $bookingId = $this->update->jobOrder?->booking_id;
 
         return [
-            'type'        => NotificationType::SERVICE_UPDATE->value,
-            'title'       => 'Service Update',
-            'message'     => "New service update posted for your vehicle: {$this->update->message}",
-            'action_url'  => route('customer.track', ['booking_id' => $bookingId]),
-            'icon'        => 'file-text',
+            'type' => NotificationType::SERVICE_UPDATE->value,
+            'title' => 'Service Update',
+            'message' => "New service update posted for your vehicle: {$this->update->message}",
+            'action_url' => route('customer.track', ['booking_id' => $bookingId]),
+            'icon' => 'file-text',
             'entity_type' => 'job',
-            'entity_id'   => $this->update->job_order_id,
+            'entity_id' => $this->update->job_order_id,
         ];
     }
 }

@@ -9,6 +9,8 @@ use App\Http\Requests\Payment\RejectPaymentRequest;
 use App\Models\Booking;
 use App\Services\Booking\BookingApprovalService;
 use App\Services\Booking\PaymentVerificationService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,18 +35,18 @@ class BookingApprovalController extends Controller
         $stats = [
             'pending_verification' => Booking::query()->pendingPaymentVerification()->count(),
             'requires_resubmission' => Booking::query()->paymentRequiresResubmission()->count(),
-            'confirmed_today'      => Booking::query()
+            'confirmed_today' => Booking::query()
                 ->status(Booking::STATUS_CONFIRMED)
                 ->whereDate('approved_at', today())
                 ->count(),
-            'total_week'           => Booking::query()
+            'total_week' => Booking::query()
                 ->where('created_at', '>=', now()->startOfWeek())
                 ->count(),
         ];
 
         return view('admin.approvals', [
-            'bookings'       => $bookings,
-            'stats'          => $stats,
+            'bookings' => $bookings,
+            'stats' => $stats,
             'selectedFilter' => $status,
         ]);
     }
@@ -60,7 +62,7 @@ class BookingApprovalController extends Controller
             ->withQueryString();
 
         return view('admin.bookings.history', [
-            'bookings'       => $bookings,
+            'bookings' => $bookings,
             'selectedFilter' => $status,
         ]);
     }
@@ -78,7 +80,7 @@ class BookingApprovalController extends Controller
 
         try {
             $verification->confirm($booking, $request->user());
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+        } catch (ModelNotFoundException) {
             return back()->with('error', 'No pending payment found for this booking.');
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
@@ -96,7 +98,7 @@ class BookingApprovalController extends Controller
 
         try {
             $updated = $verification->rejectPayment($booking, $request->user(), $request->validated('reason'));
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+        } catch (ModelNotFoundException) {
             return back()->with('error', 'No pending payment found for this booking.');
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
@@ -141,7 +143,7 @@ class BookingApprovalController extends Controller
 
         try {
             $approval->verifyReservationPayment($booking, $request->user());
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+        } catch (ModelNotFoundException) {
             return back()->with('error', 'No pending reservation payment found for this booking.');
         }
 
@@ -149,7 +151,7 @@ class BookingApprovalController extends Controller
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<Booking>
+     * @return Builder<Booking>
      */
     protected function bookingQuery()
     {
@@ -157,10 +159,10 @@ class BookingApprovalController extends Controller
             'user',
             'vehicle',
             'bookingServices.service',
-            'quotations'  => fn ($query) => $query->latestVersion()->limit(1),
-            'payments'    => fn ($query) => $query->reservationFees()->latest()->limit(1),
+            'quotations' => fn ($query) => $query->latestVersion()->limit(1),
+            'payments' => fn ($query) => $query->reservationFees()->latest()->limit(1),
             'payments.proofs',
-            'statusLogs'  => fn ($query) => $query->latest('created_at')->limit(10),
+            'statusLogs' => fn ($query) => $query->latest('created_at')->limit(10),
         ]);
     }
 }

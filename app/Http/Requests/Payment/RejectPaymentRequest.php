@@ -22,7 +22,7 @@ class RejectPaymentRequest extends FormRequest
     {
         return [
             'reason.required' => 'A rejection reason is required.',
-            'reason.min'      => 'The rejection reason must be at least 10 characters.',
+            'reason.min' => 'The rejection reason must be at least 10 characters.',
         ];
     }
 }

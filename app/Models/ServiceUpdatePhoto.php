@@ -27,7 +27,7 @@ class ServiceUpdatePhoto extends Model
     protected function url(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->file_path
-            ? '/storage/' . $this->file_path
+            ? '/storage/'.$this->file_path
             : null);
     }
 

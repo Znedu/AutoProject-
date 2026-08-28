@@ -22,16 +22,16 @@ class NotificationController extends Controller
             ->get()
             ->map(function ($notification) {
                 return [
-                    'id'         => $notification->id,
-                    'read_at'    => $notification->read_at?->toIso8601String(),
-                    'is_read'    => $notification->read(),
+                    'id' => $notification->id,
+                    'read_at' => $notification->read_at?->toIso8601String(),
+                    'is_read' => $notification->read(),
                     'created_at' => $notification->created_at->diffForHumans(),
-                    'data'       => $notification->data,
+                    'data' => $notification->data,
                 ];
             });
 
         return response()->json([
-            'count'         => $unreadCount,
+            'count' => $unreadCount,
             'notifications' => $notifications,
         ]);
     }

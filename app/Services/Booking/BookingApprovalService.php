@@ -3,12 +3,12 @@
 namespace App\Services\Booking;
 
 use App\Models\Booking;
+use App\Models\JobOrder;
 use App\Models\Payment;
 use App\Models\Quotation;
-use App\Models\User;
-use App\Models\JobOrder;
 use App\Models\ServiceStage;
 use App\Models\ServiceStageProgress;
+use App\Models\User;
 use App\Notifications\Booking\BookingApprovedNotification;
 use App\Notifications\Booking\BookingRejectedNotification;
 use App\Notifications\Job\JobOrderCreatedNotification;
@@ -106,13 +106,13 @@ class BookingApprovalService
         // Create the JobOrder in a 'pending' (unassigned) state.
         // The admin will explicitly assign a mechanic via the Job Assignment page.
         $jobOrder = JobOrder::create([
-            'job_number'     => $jobNumber,
-            'booking_id'     => $booking->id,
-            'mechanic_id'    => null,
-            'assigned_by'    => null,
-            'assigned_at'    => null,
-            'status'         => JobOrder::STATUS_PENDING,
-            'priority'       => JobOrder::PRIORITY_MEDIUM,
+            'job_number' => $jobNumber,
+            'booking_id' => $booking->id,
+            'mechanic_id' => null,
+            'assigned_by' => null,
+            'assigned_at' => null,
+            'status' => JobOrder::STATUS_PENDING,
+            'priority' => JobOrder::PRIORITY_MEDIUM,
             'progress_percent' => 0,
         ]);
 
@@ -120,10 +120,10 @@ class BookingApprovalService
         $stages = ServiceStage::orderBy('sort_order')->active()->get();
         foreach ($stages as $index => $stage) {
             ServiceStageProgress::create([
-                'job_order_id'     => $jobOrder->id,
+                'job_order_id' => $jobOrder->id,
                 'service_stage_id' => $stage->id,
-                'is_completed'     => false,
-                'is_current'       => ($index === 0),
+                'is_completed' => false,
+                'is_current' => ($index === 0),
             ]);
         }
     }

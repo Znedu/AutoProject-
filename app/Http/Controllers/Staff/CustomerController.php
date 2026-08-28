@@ -18,8 +18,8 @@ class CustomerController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
             ->withCount('bookings')
@@ -29,7 +29,7 @@ class CustomerController extends Controller
 
         return view('staff.customers.index', [
             'customers' => $customers,
-            'search'    => $search,
+            'search' => $search,
         ]);
     }
 
@@ -46,15 +46,15 @@ class CustomerController extends Controller
         ]);
 
         $bookings = $user->bookings->map(fn ($b) => [
-            'id'             => $b->id,
+            'id' => $b->id,
             'booking_number' => $b->booking_number,
-            'service'        => $b->services->first()?->name ?? 'Custom Service',
-            'vehicle'        => $b->vehicle
+            'service' => $b->services->first()?->name ?? 'Custom Service',
+            'vehicle' => $b->vehicle
                 ? "{$b->vehicle->make} {$b->vehicle->model} {$b->vehicle->year}"
                 : 'Unknown',
             'preferred_date' => $b->preferred_date?->format('F d, Y') ?? 'N/A',
-            'status'         => $b->status,
-            'is_walk_in'     => $b->is_walk_in,
+            'status' => $b->status,
+            'is_walk_in' => $b->is_walk_in,
         ]);
 
         return view('staff.customers.show', [

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Booking;
 
-use App\Enums\RoleSlug;
 use App\Models\JobOrder;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,7 +36,7 @@ class AssignJobRequest extends FormRequest
                 Rule::in([JobOrder::PRIORITY_LOW, JobOrder::PRIORITY_MEDIUM, JobOrder::PRIORITY_HIGH]),
             ],
             'estimated_completion_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'internal_notes'            => ['nullable', 'string', 'max:1000'],
+            'internal_notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -45,9 +44,9 @@ class AssignJobRequest extends FormRequest
     {
         return [
             'mechanic_id.required' => 'Please select a mechanic to assign.',
-            'mechanic_id.exists'   => 'The selected mechanic does not exist.',
-            'priority.required'    => 'Please set a priority level.',
-            'priority.in'          => 'Priority must be low, medium, or high.',
+            'mechanic_id.exists' => 'The selected mechanic does not exist.',
+            'priority.required' => 'Please set a priority level.',
+            'priority.in' => 'Priority must be low, medium, or high.',
             'estimated_completion_date.after_or_equal' => 'The estimated completion date must not be in the past.',
         ];
     }

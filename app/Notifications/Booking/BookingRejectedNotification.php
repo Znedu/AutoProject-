@@ -15,13 +15,13 @@ class BookingRejectedNotification extends BaseNotification
         $reason = $this->booking->rejection_reason ? " Reason: {$this->booking->rejection_reason}" : '';
 
         return [
-            'type'        => NotificationType::BOOKING_REJECTED->value,
-            'title'       => 'Booking Rejected',
-            'message'     => "Your booking #{$this->booking->booking_number} was rejected.{$reason}",
-            'action_url'  => route('customer.bookings.index'),
-            'icon'        => 'close',
+            'type' => NotificationType::BOOKING_REJECTED->value,
+            'title' => 'Booking Rejected',
+            'message' => "Your booking #{$this->booking->booking_number} was rejected.{$reason}",
+            'action_url' => route('customer.bookings.index'),
+            'icon' => 'close',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

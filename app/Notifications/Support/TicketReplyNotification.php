@@ -23,13 +23,13 @@ class TicketReplyNotification extends BaseNotification
             : route('staff.assistance');
 
         return [
-            'type'        => NotificationType::TICKET_REPLY->value,
-            'title'       => 'Support Ticket Reply',
-            'message'     => "New reply on ticket #{$this->ticket->ticket_number}: {$this->reply->message}",
-            'action_url'  => $actionUrl,
-            'icon'        => 'message-circle',
+            'type' => NotificationType::TICKET_REPLY->value,
+            'title' => 'Support Ticket Reply',
+            'message' => "New reply on ticket #{$this->ticket->ticket_number}: {$this->reply->message}",
+            'action_url' => $actionUrl,
+            'icon' => 'message-circle',
             'entity_type' => 'ticket',
-            'entity_id'   => $this->ticket->id,
+            'entity_id' => $this->ticket->id,
         ];
     }
 }

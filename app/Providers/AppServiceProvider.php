@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Policies\BookingBillingPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,5 +29,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('role', function (User $user, ...$roles): bool {
             return $user->hasRole(collect($roles)->flatten()->all());
         });
+
+        Gate::define('billing.view', [BookingBillingPolicy::class, 'view']);
+        Gate::define('billing.manage', [BookingBillingPolicy::class, 'manage']);
+        Gate::define('billing.finalize', [BookingBillingPolicy::class, 'finalize']);
+        Gate::define('billing.record-payment', [BookingBillingPolicy::class, 'recordPayment']);
     }
 }

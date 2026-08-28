@@ -21,9 +21,9 @@ return new class extends Migration
             // When payment_attempts reaches PaymentVerificationService::MAX_ATTEMPTS (3),
             // the booking is automatically cancelled.
             $table->unsignedSmallInteger('payment_attempts')
-                  ->default(0)
-                  ->after('cancellation_reason')
-                  ->comment('Number of times payment was rejected by admin');
+                ->default(0)
+                ->after('cancellation_reason')
+                ->comment('Number of times payment was rejected by admin');
         });
     }
 

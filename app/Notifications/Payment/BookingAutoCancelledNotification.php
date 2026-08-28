@@ -17,13 +17,13 @@ class BookingAutoCancelledNotification extends BaseNotification
             : route('customer.bookings.index');
 
         return [
-            'type'        => NotificationType::BOOKING_AUTO_CANCELLED->value,
-            'title'       => 'Booking Automatically Cancelled',
-            'message'     => "Booking #{$this->booking->booking_number} was automatically cancelled after maximum failed payment verification attempts.",
-            'action_url'  => $actionUrl,
-            'icon'        => 'close',
+            'type' => NotificationType::BOOKING_AUTO_CANCELLED->value,
+            'title' => 'Booking Automatically Cancelled',
+            'message' => "Booking #{$this->booking->booking_number} was automatically cancelled after maximum failed payment verification attempts.",
+            'action_url' => $actionUrl,
+            'icon' => 'close',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

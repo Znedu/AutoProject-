@@ -16,8 +16,9 @@ class AdminSeeder extends Seeder
     {
         $adminRoleId = Role::query()->where('slug', RoleSlug::Administrator->value)->value('id');
 
-        if (!$adminRoleId) {
+        if (! $adminRoleId) {
             $this->command->error('Administrator role not found. Please run RoleSeeder first.');
+
             return;
         }
 

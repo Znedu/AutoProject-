@@ -14,6 +14,8 @@ class BookingService extends Model
         'booking_id',
         'service_id',
         'preferred_brand',
+        'unit_min_snapshot',
+        'unit_max_snapshot',
     ];
 
     public function booking(): BelongsTo
@@ -24,5 +26,13 @@ class BookingService extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'unit_min_snapshot' => 'decimal:2',
+            'unit_max_snapshot' => 'decimal:2',
+        ];
     }
 }

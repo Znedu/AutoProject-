@@ -39,11 +39,20 @@ class Quotation extends Model
         'min_total',
         'max_total',
         'final_total',
+        'services_subtotal',
+        'products_subtotal',
+        'labor_subtotal',
+        'discounts_total',
+        'fees_subtotal',
+        'amount_paid_snapshot',
+        'balance_due_snapshot',
         'currency',
         'notes',
         'prepared_by',
         'approved_by',
         'approved_at',
+        'finalized_at',
+        'finalized_by',
         'valid_until',
     ];
 
@@ -54,7 +63,7 @@ class Quotation extends Model
 
     public function lineItems(): HasMany
     {
-        return $this->hasMany(QuotationLineItem::class);
+        return $this->hasMany(QuotationLineItem::class)->orderBy('sort_order');
     }
 
     public function preparer(): BelongsTo
@@ -65,6 +74,21 @@ class Quotation extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function finalizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'finalized_by');
+    }
+
+    public function isFinalized(): bool
+    {
+        return $this->status === self::STATUS_APPROVED && $this->finalized_at !== null;
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->type === self::TYPE_FINAL && $this->status === self::STATUS_DRAFT;
     }
 
     protected function totalRangeDisplay(): Attribute
@@ -87,6 +111,16 @@ class Quotation extends Model
         return $query->where('status', self::STATUS_APPROVED);
     }
 
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopeFinal(Builder $query): Builder
+    {
+        return $query->where('type', self::TYPE_FINAL);
+    }
+
     public function scopeForBooking(Builder $query, int $bookingId): Builder
     {
         return $query->where('booking_id', $bookingId);
@@ -104,7 +138,15 @@ class Quotation extends Model
             'min_total' => 'decimal:2',
             'max_total' => 'decimal:2',
             'final_total' => 'decimal:2',
+            'services_subtotal' => 'decimal:2',
+            'products_subtotal' => 'decimal:2',
+            'labor_subtotal' => 'decimal:2',
+            'discounts_total' => 'decimal:2',
+            'fees_subtotal' => 'decimal:2',
+            'amount_paid_snapshot' => 'decimal:2',
+            'balance_due_snapshot' => 'decimal:2',
             'approved_at' => 'datetime',
+            'finalized_at' => 'datetime',
             'valid_until' => 'date',
         ];
     }

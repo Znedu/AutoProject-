@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\DataTransferObjects\BookingBillingSummary;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -102,6 +103,28 @@ class Booking extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function finalQuotation(): HasOne
+    {
+        return $this->hasOne(Quotation::class)
+            ->where('type', Quotation::TYPE_FINAL)
+            ->latestOfMany('version');
+    }
+
+    public function billingSummary(): BookingBillingSummary
+    {
+        return BookingBillingSummary::from($this);
+    }
+
+    public function totalPaid(): float
+    {
+        return $this->billingSummary()->totalPaid;
+    }
+
+    public function balanceDue(): float
+    {
+        return $this->billingSummary()->balanceDue;
+    }
+
     public function jobOrder(): HasOne
     {
         return $this->hasOne(JobOrder::class);
@@ -125,24 +148,24 @@ class Booking extends Model
     protected function badgeLabel(): Attribute
     {
         return Attribute::get(fn (): string => match ($this->status) {
-            self::STATUS_PENDING                       => 'Awaiting Approval',
-            self::STATUS_APPROVED                      => 'Approved',
-            self::STATUS_REJECTED                      => 'Rejected',
-            self::STATUS_WAITING_PAYMENT               => 'Waiting Payment',
-            self::STATUS_PENDING_PAYMENT_VERIFICATION  => 'Pending Verification',
+            self::STATUS_PENDING => 'Awaiting Approval',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_WAITING_PAYMENT => 'Waiting Payment',
+            self::STATUS_PENDING_PAYMENT_VERIFICATION => 'Pending Verification',
             self::STATUS_PAYMENT_REQUIRES_RESUBMISSION => 'Payment Rejected',
-            self::STATUS_CONFIRMED                     => 'Confirmed',
-            self::STATUS_SCHEDULED                     => 'Scheduled',
-            self::STATUS_IN_PROGRESS                   => 'In Progress',
-            self::STATUS_COMPLETED                     => 'Completed',
-            self::STATUS_CANCELLED                     => 'Cancelled',
-            default                                    => $this->display_status,
+            self::STATUS_CONFIRMED => 'Confirmed',
+            self::STATUS_SCHEDULED => 'Scheduled',
+            self::STATUS_IN_PROGRESS => 'In Progress',
+            self::STATUS_COMPLETED => 'Completed',
+            self::STATUS_CANCELLED => 'Cancelled',
+            default => $this->display_status,
         });
     }
 
     protected function isCancellable(): Attribute
     {
-        return Attribute::get(fn (): bool => !in_array($this->status, [
+        return Attribute::get(fn (): bool => ! in_array($this->status, [
             self::STATUS_IN_PROGRESS,
             self::STATUS_COMPLETED,
             self::STATUS_CANCELLED,

@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\JobOrder;
 use App\Models\Payment;
+use App\Models\Quotation;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
@@ -16,12 +16,15 @@ class ReportController extends Controller
     {
         // General stats
         $totalRevenue = Payment::verified()->sum('amount');
+        $reservationFeesCollected = Payment::verified()->where('type', Payment::TYPE_RESERVATION_FEE)->sum('amount');
+        $totalFinalizedRevenue = (float) Quotation::where('type', Quotation::TYPE_FINAL)->where('status', Quotation::STATUS_APPROVED)->sum('final_total');
+        $outstandingBalances = (float) Quotation::where('type', Quotation::TYPE_FINAL)->where('status', Quotation::STATUS_APPROVED)->where('balance_due_snapshot', '>', 0)->sum('balance_due_snapshot');
         $totalBookings = Booking::count();
-        
+
         $completedJobs = JobOrder::status(JobOrder::STATUS_COMPLETED)->count();
         $totalJobs = JobOrder::count();
         $completionRate = $totalJobs > 0 ? round(($completedJobs / $totalJobs) * 100) : 0;
-        
+
         $avgServiceValue = Payment::verified()->avg('amount') ?? 0;
 
         // Last 6 months labels
@@ -88,7 +91,7 @@ class ReportController extends Controller
             ->leftJoin('bookings', 'booking_services.booking_id', '=', 'bookings.id')
             ->leftJoin('payments', function ($join) {
                 $join->on('bookings.id', '=', 'payments.booking_id')
-                     ->where('payments.status', '=', Payment::STATUS_VERIFIED);
+                    ->where('payments.status', '=', Payment::STATUS_VERIFIED);
             })
             ->select(
                 'services.name',
@@ -100,6 +103,7 @@ class ReportController extends Controller
             ->get()
             ->map(function ($row) {
                 $avgValue = $row->bookings_count > 0 ? round($row->total_revenue / $row->bookings_count) : 0;
+
                 return [
                     'name' => $row->name,
                     'bookings' => $row->bookings_count,
@@ -127,6 +131,9 @@ class ReportController extends Controller
 
         return view('admin.reports', [
             'totalRevenue' => $totalRevenue,
+            'totalFinalizedRevenue' => $totalFinalizedRevenue,
+            'outstandingBalances' => $outstandingBalances,
+            'reservationFeesCollected' => $reservationFeesCollected,
             'totalBookings' => $totalBookings,
             'completionRate' => $completionRate,
             'avgServiceValue' => $avgServiceValue,

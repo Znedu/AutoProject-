@@ -25,4 +25,5 @@ enum NotificationType: string
     case TICKET_REOPENED = 'ticket_reopened';
     case TICKET_AUTO_CLOSED = 'ticket_auto_closed';
     case APPOINTMENT_SCHEDULED = 'appointment_scheduled';
+    case FINAL_BILLING_FINALIZED = 'final_billing_finalized';
 }

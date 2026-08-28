@@ -13,13 +13,13 @@ class NewBookingNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::NEW_BOOKING->value,
-            'title'       => 'New Booking Submitted',
-            'message'     => "New booking #{$this->booking->booking_number} submitted by {$this->booking->customer_name}.",
-            'action_url'  => route('admin.approvals.index'),
-            'icon'        => 'clipboard-list',
+            'type' => NotificationType::NEW_BOOKING->value,
+            'title' => 'New Booking Submitted',
+            'message' => "New booking #{$this->booking->booking_number} submitted by {$this->booking->customer_name}.",
+            'action_url' => route('admin.approvals.index'),
+            'icon' => 'clipboard-list',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

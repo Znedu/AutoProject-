@@ -13,13 +13,13 @@ class PaymentResubmittedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::PAYMENT_RESUBMITTED->value,
-            'title'       => 'Payment Proof Resubmitted',
-            'message'     => "New payment proof resubmitted for booking #{$this->booking->booking_number}.",
-            'action_url'  => route('admin.approvals.index'),
-            'icon'        => 'dollar-sign',
+            'type' => NotificationType::PAYMENT_RESUBMITTED->value,
+            'title' => 'Payment Proof Resubmitted',
+            'message' => "New payment proof resubmitted for booking #{$this->booking->booking_number}.",
+            'action_url' => route('admin.approvals.index'),
+            'icon' => 'dollar-sign',
             'entity_type' => 'payment',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

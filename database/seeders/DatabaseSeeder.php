@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             TicketStatusSeeder::class,
             AdminSeeder::class,
             BusinessSettingsSeeder::class,
+            ProductSeeder::class,
         ]);
 
         $roles = Role::query()->pluck('id', 'slug');
@@ -45,7 +46,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Staff->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
-            ],    
+            ],
             [
                 'name' => 'Mica Staff',
                 'email' => 'staff2@gmail.com',
@@ -78,7 +79,7 @@ class DatabaseSeeder extends Seeder
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
             ],
-                        [
+            [
                 'name' => 'Paul Mechanic',
                 'email' => 'mechanic4@gmail.com',
                 'phone' => '+63 923 333 4464',

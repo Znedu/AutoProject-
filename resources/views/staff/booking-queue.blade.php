@@ -102,7 +102,7 @@
                                     <x-icon 
                                         name="dollar-sign" 
                                         class="w-6 h-6 flex-shrink-0" 
-                                        ::class="booking.reservationFee.paid ? 'text-green-600' : 'text-red-600'"
+                                        ::class="booking.reservationFee.isVerified ? 'text-green-600' : (booking.reservationFee.isSubmitted ? 'text-amber-600' : 'text-red-600')"
                                     />
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -112,17 +112,23 @@
                                                 Reservation Fee (₱<span x-text="booking.reservationFee.amount"></span>)
                                             </h4>
                                             <div class="flex items-center gap-2">
-                                                <template x-if="booking.reservationFee.paid">
-                                                    <span class="text-sm font-medium text-green-600" x-text="booking.isWalkIn ? 'Paid (In-Store Collected)' : 'Paid (Reference Verified)'"></span>
+                                                <template x-if="booking.reservationFee.isVerified">
+                                                    <span class="text-sm font-medium text-green-600" x-text="booking.isWalkIn ? 'Paid (In-Store Collected)' : 'Paid & Verified'"></span>
                                                 </template>
-                                                <template x-if="!booking.reservationFee.paid">
-                                                    <span class="text-sm font-medium text-red-600">Pending Payment</span>
+                                                <template x-if="booking.reservationFee.isSubmitted">
+                                                    <span class="text-sm font-medium text-amber-600">Submitted (Pending Verification)</span>
+                                                </template>
+                                                <template x-if="booking.reservationFee.isRejected">
+                                                    <span class="text-sm font-medium text-red-600">Payment Rejected</span>
+                                                </template>
+                                                <template x-if="!booking.reservationFee.hasPayment">
+                                                    <span class="text-sm font-medium text-red-600">Not Paid</span>
                                                 </template>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <template x-if="booking.reservationFee.paid">
+                                    <template x-if="booking.reservationFee.hasPayment">
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                             <div>
                                                 <p class="text-gray-600 dark:text-gray-400 mb-1">Payment Method</p>
@@ -195,6 +201,16 @@
                                     <x-icon name="calendar" class="w-4 h-4 mr-1.5 inline-block" />
                                     <span>Reschedule Service</span>
                                 </x-button>
+                            </template>
+
+                            <template x-if="booking.status === 'confirmed' || booking.status === 'in_progress' || booking.status === 'completed'">
+                                <a
+                                    :href="'/staff/bookings/' + booking.id + '/billing'"
+                                    class="inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 px-4 py-2 text-sm bg-gray-300 dark:bg-[#2F2F2F] text-gray-900 dark:text-white border border-gray-400 dark:border-white/10 hover:border-gray-500 dark:hover:border-white/30 hover:shadow-lg"
+                                >
+                                    <x-icon name="receipt" class="w-4 h-4 mr-1.5 inline-block text-[#E63946]" />
+                                    <span>Billing</span>
+                                </a>
                             </template>
                         </div>
                     </div>

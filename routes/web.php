@@ -1,45 +1,43 @@
 <?php
 
 use App\Http\Controllers\Admin\BookingApprovalController;
+use App\Http\Controllers\Admin\BookingBillingController as AdminBookingBillingController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\JobController as AdminJobController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Customer\BookingController;
-use App\Http\Controllers\Customer\ScheduleAvailabilityController;
-use Illuminate\Support\Facades\Route;
-
 // Import Admin Controllers
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
-use App\Http\Controllers\Admin\ReportController as AdminReportController;
-use App\Http\Controllers\Admin\JobController as AdminJobController;
-
-// Import Customer Controllers
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Customer\BookingBillingController as CustomerBookingBillingController;
+use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
-use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
-use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
-use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
+// Import Customer Controllers
+use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
+use App\Http\Controllers\Customer\ScheduleAvailabilityController;
+use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
+use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
 use App\Http\Controllers\Customer\VehicleController as CustomerVehicleController;
-
-// Import Staff Controllers
-use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
-use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueController;
-use App\Http\Controllers\Staff\AssistanceController as StaffAssistanceController;
-use App\Http\Controllers\Staff\WalkInBookingController as StaffWalkInBookingController;
-use App\Http\Controllers\Staff\ScheduleController as StaffScheduleController;
-use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
-use App\Http\Controllers\Staff\JobController as StaffJobController;
-
-// Import Mechanic Controllers
 use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardController;
+// Import Staff Controllers
 use App\Http\Controllers\Mechanic\JobController as MechanicJobController;
 use App\Http\Controllers\Mechanic\NoteController as MechanicNoteController;
-
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Staff\AssistanceController as StaffAssistanceController;
+use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueController;
+use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
+use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
+// Import Mechanic Controllers
+use App\Http\Controllers\Staff\JobController as StaffJobController;
+use App\Http\Controllers\Staff\ScheduleController as StaffScheduleController;
+use App\Http\Controllers\Staff\WalkInBookingController as StaffWalkInBookingController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('landing');
@@ -158,6 +156,35 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/reports', [AdminReportController::class, 'index'])
                 ->middleware('permission:reports.view')
                 ->name('reports.index');
+
+            // Booking Billing Management
+            Route::get('/bookings/{booking}/billing', [AdminBookingBillingController::class, 'show'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.billing.show');
+
+            Route::post('/bookings/{booking}/billing/lines', [AdminBookingBillingController::class, 'storeLine'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.billing.lines.store');
+
+            Route::put('/bookings/{booking}/billing/lines/{lineItem}', [AdminBookingBillingController::class, 'updateLine'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.billing.lines.update');
+
+            Route::delete('/bookings/{booking}/billing/lines/{lineItem}', [AdminBookingBillingController::class, 'destroyLine'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.billing.lines.destroy');
+
+            Route::post('/bookings/{booking}/billing/finalize', [AdminBookingBillingController::class, 'finalize'])
+                ->middleware('permission:approvals.adjust-cost')
+                ->name('bookings.billing.finalize');
+
+            Route::post('/bookings/{booking}/billing/payments', [AdminBookingBillingController::class, 'recordPayment'])
+                ->middleware('permission:approvals.manage')
+                ->name('bookings.billing.payments.store');
+
+            Route::get('/products/search', [ProductController::class, 'search'])
+                ->middleware('permission:billing.manage')
+                ->name('products.search');
         });
 
     Route::prefix('customer')
@@ -193,7 +220,6 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/track/refresh', [CustomerTrackController::class, 'refresh'])
                 ->middleware('permission:tracking.view')
                 ->name('track.refresh');
-
 
             Route::get('/support', [CustomerSupportController::class, 'index'])
                 ->middleware('permission:support.view')
@@ -240,6 +266,11 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->name('vehicles.update');
             Route::delete('/vehicles/{vehicle}', [CustomerVehicleController::class, 'destroy'])
                 ->name('vehicles.destroy');
+
+            // Booking Billing (Read-Only)
+            Route::get('/bookings/{booking}/billing', [CustomerBookingBillingController::class, 'show'])
+                ->middleware('permission:billing.view')
+                ->name('bookings.billing');
         });
 
     Route::prefix('staff')
@@ -305,6 +336,31 @@ Route::middleware(['auth', 'active'])->group(function () {
 
             Route::post('/assistance/{ticket}/status', [StaffAssistanceController::class, 'updateStatus'])
                 ->middleware('permission:support.view');
+
+            // Staff Billing View & Manage
+            Route::get('/bookings/{booking}/billing', [AdminBookingBillingController::class, 'show'])
+                ->middleware('permission:billing.view')
+                ->name('bookings.billing.show');
+
+            Route::post('/bookings/{booking}/billing/lines', [AdminBookingBillingController::class, 'storeLine'])
+                ->middleware('permission:billing.manage')
+                ->name('bookings.billing.lines.store');
+
+            Route::put('/bookings/{booking}/billing/lines/{lineItem}', [AdminBookingBillingController::class, 'updateLine'])
+                ->middleware('permission:billing.manage')
+                ->name('bookings.billing.lines.update');
+
+            Route::delete('/bookings/{booking}/billing/lines/{lineItem}', [AdminBookingBillingController::class, 'destroyLine'])
+                ->middleware('permission:billing.manage')
+                ->name('bookings.billing.lines.destroy');
+
+            Route::post('/bookings/{booking}/billing/payments', [AdminBookingBillingController::class, 'recordPayment'])
+                ->middleware('permission:billing.manage')
+                ->name('bookings.billing.payments.store');
+
+            Route::get('/products/search', [ProductController::class, 'search'])
+                ->middleware('permission:billing.manage')
+                ->name('products.search');
         });
 
     Route::prefix('mechanic')

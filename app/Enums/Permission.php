@@ -16,6 +16,7 @@ enum Permission: string
     case SupportReply = 'support.reply';
     case ProfileView = 'profile.view';
     case ProfileUpdate = 'profile.update';
+    case BillingView = 'billing.view';
 
     // Staff operations
     case ViewStaffDashboard = 'staff.dashboard.view';
@@ -25,6 +26,7 @@ enum Permission: string
     case CustomersView = 'customers.view';
     case SupportAssign = 'support.assign';
     case SupportResolve = 'support.resolve';
+    case BillingManage = 'billing.manage';
 
     // Mechanic workshop
     case ViewMechanicDashboard = 'mechanic.dashboard.view';
@@ -58,7 +60,8 @@ enum Permission: string
             self::SupportCreate,
             self::SupportReply,
             self::ProfileView,
-            self::ProfileUpdate => 'customer',
+            self::ProfileUpdate,
+            self::BillingView => 'customer',
 
             self::ViewStaffDashboard,
             self::BookingQueueView,
@@ -66,7 +69,8 @@ enum Permission: string
             self::WalkInCreate,
             self::CustomersView,
             self::SupportAssign,
-            self::SupportResolve => 'staff',
+            self::SupportResolve,
+            self::BillingManage => 'staff',
 
             self::ViewMechanicDashboard,
             self::JobsView,
@@ -105,6 +109,7 @@ enum Permission: string
                 self::SupportReply,
                 self::ProfileView,
                 self::ProfileUpdate,
+                self::BillingView,
             ],
             RoleSlug::Staff => [
                 self::ViewStaffDashboard,
@@ -118,6 +123,8 @@ enum Permission: string
                 self::SupportReply,
                 self::SupportAssign,
                 self::SupportResolve,
+                self::BillingView,
+                self::BillingManage,
             ],
             RoleSlug::Mechanic => [
                 self::ViewMechanicDashboard,
@@ -128,6 +135,7 @@ enum Permission: string
                 self::JobsUpdateProgress,
                 self::ServiceNotesView,
                 self::ServiceNotesCreate,
+                self::BillingView,
             ],
             RoleSlug::Administrator => self::cases(),
         };

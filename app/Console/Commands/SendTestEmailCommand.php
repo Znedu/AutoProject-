@@ -31,15 +31,17 @@ class SendTestEmailCommand extends Command
         $this->info("Sending test email to: {$recipient}...");
 
         try {
-            Mail::raw("Hello! This is a test email from AutoProject+ to verify your SMTP mail configuration.", function ($message) use ($recipient) {
+            Mail::raw('Hello! This is a test email from AutoProject+ to verify your SMTP mail configuration.', function ($message) use ($recipient) {
                 $message->to($recipient)
                     ->subject('AutoProject+ SMTP Test Email');
             });
 
             $this->info("Test email sent successfully to {$recipient}!");
+
             return Command::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error("Failed to send test email: " . $e->getMessage());
+            $this->error('Failed to send test email: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

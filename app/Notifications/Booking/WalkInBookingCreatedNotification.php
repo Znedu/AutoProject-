@@ -17,13 +17,13 @@ class WalkInBookingCreatedNotification extends BaseNotification
             : route('customer.track', ['booking_id' => $this->booking->id]);
 
         return [
-            'type'        => NotificationType::WALKIN_BOOKING_CREATED->value,
-            'title'       => 'Walk-In Booking Created',
-            'message'     => "Walk-in booking #{$this->booking->booking_number} was created for {$this->booking->customer_name}.",
-            'action_url'  => $actionUrl,
-            'icon'        => 'user-plus',
+            'type' => NotificationType::WALKIN_BOOKING_CREATED->value,
+            'title' => 'Walk-In Booking Created',
+            'message' => "Walk-in booking #{$this->booking->booking_number} was created for {$this->booking->customer_name}.",
+            'action_url' => $actionUrl,
+            'icon' => 'user-plus',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

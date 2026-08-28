@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class PaymentProof extends Model
 {
@@ -29,7 +28,7 @@ class PaymentProof extends Model
     protected function url(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->file_path
-            ? asset('storage/' . $this->file_path)
+            ? asset('storage/'.$this->file_path)
             : null);
     }
 

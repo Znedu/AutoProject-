@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Auth\DashboardRedirectService;
+use App\Services\Auth\EmailVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,8 +30,8 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
@@ -45,9 +46,9 @@ class RegisterController extends Controller
 
             // Unverified user: update pending account details & password
             $existingUser->update([
-                'name'     => $request->name,
+                'name' => $request->name,
                 'password' => $request->password,
-                'status'   => User::STATUS_ACTIVE,
+                'status' => User::STATUS_ACTIVE,
             ]);
 
             $user = $existingUser;
@@ -55,10 +56,10 @@ class RegisterController extends Controller
             $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
 
             $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,
-                'role_id'  => $customerRole->id,
-                'status'   => User::STATUS_ACTIVE,
+                'name' => $request->name,
+                'email' => $request->email,
+                'role_id' => $customerRole->id,
+                'status' => User::STATUS_ACTIVE,
                 'password' => $request->password,
             ]);
         }
@@ -66,7 +67,7 @@ class RegisterController extends Controller
         Auth::logout();
         session(['verification_email' => $user->email]);
 
-        app(\App\Services\Auth\EmailVerificationService::class)->sendCode($user);
+        app(EmailVerificationService::class)->sendCode($user);
 
         return redirect()->route('verification.notice')
             ->with('success', 'A 6-digit verification code has been sent to your email address.');

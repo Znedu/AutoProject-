@@ -49,7 +49,6 @@ class BookingPolicy
 
     public function verifyPayment(User $user, Booking $booking): bool
     {
-        return $user->hasPermission('approvals.manage')
-            || $user->hasPermission('bookings.verify-payment');
+        return $user->hasPermission('approvals.manage');
     }
 }

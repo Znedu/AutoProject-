@@ -23,13 +23,13 @@ class JobAssignedNotification extends BaseNotification
             : route('customer.track', ['booking_id' => $this->jobOrder->booking_id]);
 
         return [
-            'type'        => NotificationType::JOB_ASSIGNED->value,
-            'title'       => 'Mechanic Assigned',
-            'message'     => $message,
-            'action_url'  => $actionUrl,
-            'icon'        => 'wrench',
+            'type' => NotificationType::JOB_ASSIGNED->value,
+            'title' => 'Mechanic Assigned',
+            'message' => $message,
+            'action_url' => $actionUrl,
+            'icon' => 'wrench',
             'entity_type' => 'job',
-            'entity_id'   => $this->jobOrder->id,
+            'entity_id' => $this->jobOrder->id,
         ];
     }
 }

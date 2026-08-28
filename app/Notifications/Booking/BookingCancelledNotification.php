@@ -13,13 +13,13 @@ class BookingCancelledNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::BOOKING_CANCELLED->value,
-            'title'       => 'Booking Cancelled',
-            'message'     => "Booking #{$this->booking->booking_number} was cancelled by the customer.",
-            'action_url'  => route('admin.bookings.history'),
-            'icon'        => 'close',
+            'type' => NotificationType::BOOKING_CANCELLED->value,
+            'title' => 'Booking Cancelled',
+            'message' => "Booking #{$this->booking->booking_number} was cancelled by the customer.",
+            'action_url' => route('admin.bookings.history'),
+            'icon' => 'close',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

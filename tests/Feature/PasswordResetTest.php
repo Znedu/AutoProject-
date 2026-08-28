@@ -6,6 +6,7 @@ use App\Enums\RoleSlug;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Auth\ResetPasswordNotification;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -22,7 +23,7 @@ class PasswordResetTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
+        $this->withoutMiddleware([ValidateCsrfToken::class]);
 
         $this->customerRole = Role::firstOrCreate(
             ['slug' => RoleSlug::Customer->value],
@@ -44,7 +45,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create([
             'role_id' => $this->customerRole->id,
-            'status'  => User::STATUS_ACTIVE,
+            'status' => User::STATUS_ACTIVE,
         ]);
 
         $response = $this->post(route('password.email'), [
@@ -73,7 +74,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create([
             'role_id' => $this->customerRole->id,
-            'status'  => User::STATUS_INACTIVE,
+            'status' => User::STATUS_INACTIVE,
         ]);
 
         $response = $this->post(route('password.email'), [
@@ -111,9 +112,9 @@ class PasswordResetTest extends TestCase
         $token = Password::createToken($user);
 
         $response = $this->post(route('password.update'), [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'newpassword123',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ]);
 
@@ -124,7 +125,7 @@ class PasswordResetTest extends TestCase
 
         // Verify user can now log in with new password
         $loginResponse = $this->post('/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'newpassword123',
         ]);
 
@@ -139,9 +140,9 @@ class PasswordResetTest extends TestCase
         ]);
 
         $response = $this->post(route('password.update'), [
-            'token'                 => 'invalid-token',
-            'email'                 => $user->email,
-            'password'              => 'newpassword123',
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ]);
 
@@ -158,9 +159,9 @@ class PasswordResetTest extends TestCase
         $token = Password::createToken($user);
 
         $response = $this->post(route('password.update'), [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'newpassword123',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'newpassword123',
             'password_confirmation' => 'mismatch123',
         ]);
 
@@ -173,7 +174,7 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create([
             'role_id' => $this->customerRole->id,
-            'status'  => User::STATUS_ACTIVE,
+            'status' => User::STATUS_ACTIVE,
         ]);
 
         // First request sends notification

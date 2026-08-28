@@ -8,7 +8,6 @@ use App\Models\JobOrder;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -40,10 +39,10 @@ class DashboardController extends Controller
         $totalCustomers = User::customers()->count();
         $activeMechanics = User::mechanics()->active()->count();
         $todayAppointments = Booking::scheduledOn(now()->toDateString())->count();
-        
+
         $totalJobs = JobOrder::count();
-        $completionRate = $totalJobs > 0 
-            ? round(($completedJobsCount / $totalJobs) * 100) 
+        $completionRate = $totalJobs > 0
+            ? round(($completedJobsCount / $totalJobs) * 100)
             : 0;
 
         // Chart 1: Monthly Services Completed (Last 6 Months)

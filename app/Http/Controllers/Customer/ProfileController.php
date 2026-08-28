@@ -13,7 +13,7 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         $profile = $user->customerProfile;
-        
+
         $address = '';
         if ($profile) {
             $parts = array_filter([$profile->address, $profile->city, $profile->province]);
@@ -57,7 +57,7 @@ class ProfileController extends Controller
         // Simple parser for address field to save back to database profile
         $addressInput = $request->address;
         $parts = explode(',', $addressInput);
-        
+
         $address = trim($parts[0] ?? '');
         $city = trim($parts[1] ?? '');
         $province = trim($parts[2] ?? '');

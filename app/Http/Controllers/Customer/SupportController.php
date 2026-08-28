@@ -64,7 +64,7 @@ class SupportController extends Controller
         ]);
 
         $ticket = SupportTicket::create([
-            'ticket_number' => 'TKT-' . now()->format('Ymd') . '-' . strtoupper(Str::random(4)),
+            'ticket_number' => 'TKT-'.now()->format('Ymd').'-'.strtoupper(Str::random(4)),
             'user_id' => auth()->id(),
             'subject' => $request->subject,
             'message' => $request->message,
@@ -82,7 +82,7 @@ class SupportController extends Controller
                 'status' => $ticket->status,
                 'date' => $ticket->created_at->format('F d, Y'),
                 'replies' => 0,
-            ]
+            ],
         ]);
     }
 
@@ -115,7 +115,7 @@ class SupportController extends Controller
                 'message' => $reply->message,
                 'date' => $reply->created_at->format('F d, Y'),
                 'time' => $reply->created_at->format('g:i A'),
-            ]
+            ],
         ]);
     }
 

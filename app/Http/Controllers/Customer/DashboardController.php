@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ServiceCategory;
 use App\Models\SupportTicket;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -23,7 +22,7 @@ class DashboardController extends Controller
                 Booking::STATUS_APPROVED,
                 Booking::STATUS_WAITING_PAYMENT,
                 Booking::STATUS_CONFIRMED,
-                Booking::STATUS_SCHEDULED
+                Booking::STATUS_SCHEDULED,
             ])
             ->count();
 
@@ -42,7 +41,7 @@ class DashboardController extends Controller
         // Service categories data
         $serviceCategories = ServiceCategory::active()
             ->ordered()
-            ->with(['services' => fn($q) => $q->active()])
+            ->with(['services' => fn ($q) => $q->active()])
             ->get()
             ->map(function ($category) {
                 $services = $category->services;
@@ -69,7 +68,7 @@ class DashboardController extends Controller
                 Booking::STATUS_APPROVED,
                 Booking::STATUS_WAITING_PAYMENT,
                 Booking::STATUS_CONFIRMED,
-                Booking::STATUS_SCHEDULED
+                Booking::STATUS_SCHEDULED,
             ])
             ->with(['services', 'vehicle'])
             ->latest()

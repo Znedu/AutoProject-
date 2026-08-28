@@ -40,12 +40,14 @@
                     <x-table-head>Schedule</x-table-head>
                     <x-table-head>Status</x-table-head>
                     <x-table-head>Submitted</x-table-head>
+                    <x-table-head class="text-right">Actions</x-table-head>
                 </x-table-row>
             </x-table-header>
             <x-table-body>
                 @forelse ($bookings as $booking)
                     @php
-                        $quotation = $booking->quotations->first();
+                        $finalQuotation = $booking->quotations->where('type', \App\Models\Quotation::TYPE_FINAL)->first();
+                        $quotation = $finalQuotation ?? $booking->quotations->first();
                         $serviceNames = $booking->bookingServices->pluck('service.name')->join(', ');
                     @endphp
                     <x-table-row>
@@ -59,7 +61,12 @@
                         <x-table-cell>
                             <p class="text-sm text-gray-700 dark:text-gray-300">{{ $serviceNames }}</p>
                             @if ($quotation)
-                                <p class="text-xs text-[#E63946] font-semibold mt-1">{{ $quotation->total_range_display }}</p>
+                                <p class="text-xs text-[#E63946] font-semibold mt-1">
+                                    {{ $quotation->total_range_display }}
+                                    @if ($quotation->isFinalized())
+                                        <span class="text-[10px] text-green-600 ml-1 font-normal">(Finalized)</span>
+                                    @endif
+                                </p>
                             @endif
                         </x-table-cell>
                         <x-table-cell>
@@ -72,10 +79,18 @@
                         <x-table-cell>
                             <span class="text-sm text-gray-600 dark:text-gray-400">{{ $booking->created_at->format('M j, Y') }}</span>
                         </x-table-cell>
+                        <x-table-cell class="text-right">
+                            <a href="{{ route('admin.bookings.billing.show', $booking) }}">
+                                <x-button variant="secondary" size="sm">
+                                    <x-icon name="receipt" class="w-3.5 h-3.5 mr-1 text-[#E63946]" />
+                                    Billing
+                                </x-button>
+                            </a>
+                        </x-table-cell>
                     </x-table-row>
                 @empty
                     <x-table-row>
-                        <x-table-cell colspan="6">
+                        <x-table-cell colspan="7">
                             <p class="text-center py-8 text-gray-500">No bookings found.</p>
                         </x-table-cell>
                     </x-table-row>

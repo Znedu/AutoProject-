@@ -2,15 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RoleSlug;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\Permission;
+use App\Models\Quotation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\Service;
-use App\Enums\RoleSlug;
-use App\Services\Booking\PaymentVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -21,9 +20,13 @@ class PaymentVerificationTest extends TestCase
     use RefreshDatabase;
 
     protected User $customer;
+
     protected User $admin;
+
     protected Role $customerRole;
+
     protected Role $adminRole;
+
     protected Vehicle $vehicle;
 
     protected function setUp(): void
@@ -240,5 +243,10 @@ class PaymentVerificationTest extends TestCase
         // Job order must be automatically created
         $this->assertNotNull($booking->jobOrder);
         $this->assertEquals('pending', $booking->jobOrder->status);
+
+        // Final draft quotation must be created
+        $finalQuotation = $booking->quotations()->where('type', Quotation::TYPE_FINAL)->first();
+        $this->assertNotNull($finalQuotation);
+        $this->assertEquals(Quotation::STATUS_DRAFT, $finalQuotation->status);
     }
 }

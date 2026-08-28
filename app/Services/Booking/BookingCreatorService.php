@@ -4,13 +4,14 @@ namespace App\Services\Booking;
 
 use App\Exceptions\Booking\ScheduleNotAvailableException;
 use App\Models\Booking;
+use App\Models\BusinessSetting;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Notifications\Booking\NewBookingNotification;
 use App\Services\Notification\NotificationDispatcherService;
-use Illuminate\Support\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class BookingCreatorService
@@ -41,13 +42,13 @@ class BookingCreatorService
      *     notes?: string|null,
      *     payment_method: string,
      *     reference_number: string,
-     *     payment_screenshot?: \Illuminate\Http\UploadedFile|null,
+     *     payment_screenshot?: UploadedFile|null,
      * }  $data
      */
     public function create(User $customer, array $data): Booking
     {
         if (! $this->scheduleAvailability->isSlotAvailable($data['preferred_date'], $data['preferred_time'])) {
-            throw new ScheduleNotAvailableException();
+            throw new ScheduleNotAvailableException;
         }
 
         $services = Service::query()
@@ -82,17 +83,21 @@ class BookingCreatorService
                 $booking->bookingServices()->create([
                     'service_id' => $service->id,
                     'preferred_brand' => $brandPreferences[$service->id] ?? null,
+                    'unit_min_snapshot' => $service->min_cost,
+                    'unit_max_snapshot' => $service->max_cost,
                 ]);
             }
 
             $this->quotationBuilder->createInitialEstimate($booking, $services, $brandPreferences);
+
+            $reservationFee = (float) BusinessSetting::getValue('reservation_fee', 200.00);
 
             $payment = Payment::create([
                 'payment_number' => $this->paymentNumberGenerator->generate(),
                 'booking_id' => $booking->id,
                 'user_id' => $customer->id,
                 'type' => Payment::TYPE_RESERVATION_FEE,
-                'amount' => self::RESERVATION_FEE,
+                'amount' => $reservationFee,
                 'currency' => 'PHP',
                 'method' => $data['payment_method'],
                 'reference_number' => $data['reference_number'],
@@ -100,7 +105,7 @@ class BookingCreatorService
                 'paid_at' => now(),
             ]);
 
-            if (isset($data['payment_screenshot']) && $data['payment_screenshot'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($data['payment_screenshot']) && $data['payment_screenshot'] instanceof UploadedFile) {
                 $file = $data['payment_screenshot'];
                 $path = $file->store('payment_proofs', 'public');
                 $payment->proofs()->create([

@@ -7,10 +7,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+use App\Models\SupportTicket;
 use App\Notifications\Support\TicketAutoClosedNotification;
 use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Support\Facades\Schedule;
-use App\Models\SupportTicket;
 
 Schedule::call(function () {
     // Automatically transition support tickets from Resolved to Closed after 3 days of inactivity

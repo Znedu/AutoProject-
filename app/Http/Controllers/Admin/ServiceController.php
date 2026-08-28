@@ -55,12 +55,12 @@ class ServiceController extends Controller
         ]);
 
         $code = $validated['code'] ?? Str::slug($validated['name']);
-        
+
         // Ensure code uniqueness if auto-generated
         $originalCode = $code;
         $counter = 1;
         while (Service::where('code', $code)->exists()) {
-            $code = $originalCode . '-' . $counter;
+            $code = $originalCode.'-'.$counter;
             $counter++;
         }
 
@@ -88,7 +88,7 @@ class ServiceController extends Controller
                 'status' => ucfirst($service->status),
                 'code' => $service->code,
                 'service_category_id' => $service->service_category_id,
-            ]
+            ],
         ]);
     }
 
@@ -96,7 +96,7 @@ class ServiceController extends Controller
     {
         $validated = $request->validate([
             'service_category_id' => 'required|exists:service_categories,id',
-            'code' => 'required|string|max:50|unique:services,code,' . $service->id,
+            'code' => 'required|string|max:50|unique:services,code,'.$service->id,
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'minCost' => 'required|numeric|min:0',
@@ -127,14 +127,14 @@ class ServiceController extends Controller
                 'status' => ucfirst($service->status),
                 'code' => $service->code,
                 'service_category_id' => $service->service_category_id,
-            ]
+            ],
         ]);
     }
 
     public function toggleStatus(Service $service)
     {
-        $newStatus = $service->status === Service::STATUS_ACTIVE 
-            ? Service::STATUS_INACTIVE 
+        $newStatus = $service->status === Service::STATUS_ACTIVE
+            ? Service::STATUS_INACTIVE
             : Service::STATUS_ACTIVE;
 
         $this->serviceRepository->update($service, [
@@ -154,7 +154,7 @@ class ServiceController extends Controller
                 'status' => ucfirst($service->status),
                 'code' => $service->code,
                 'service_category_id' => $service->service_category_id,
-            ]
+            ],
         ]);
     }
 
@@ -178,26 +178,26 @@ class ServiceController extends Controller
         $originalSlug = $slug;
         $counter = 1;
         while (ServiceCategory::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
         }
 
         $maxOrder = ServiceCategory::max('sort_order') ?? 0;
 
         $category = ServiceCategory::create([
-            'name'       => $validated['name'],
-            'slug'       => $slug,
-            'icon'       => 'settings',
-            'color'      => '#457B9D',
+            'name' => $validated['name'],
+            'slug' => $slug,
+            'icon' => 'settings',
+            'color' => '#457B9D',
             'sort_order' => $maxOrder + 1,
-            'is_active'  => true,
+            'is_active' => true,
         ]);
 
         return response()->json([
-            'success'  => true,
-            'message'  => 'Category created successfully!',
+            'success' => true,
+            'message' => 'Category created successfully!',
             'category' => [
-                'id'   => $category->id,
+                'id' => $category->id,
                 'name' => $category->name,
             ],
         ]);

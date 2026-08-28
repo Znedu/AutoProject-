@@ -27,12 +27,12 @@ class VehicleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'make'         => 'required|string|max:100',
-            'model'        => 'required|string|max:100',
-            'year'         => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'make' => 'required|string|max:100',
+            'model' => 'required|string|max:100',
+            'year' => 'required|integer|min:1900|max:'.(date('Y') + 1),
             'plate_number' => 'required|string|max:20',
-            'color'        => 'nullable|string|max:50',
-            'notes'        => 'nullable|string|max:500',
+            'color' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $vehicle = $this->vehicleRepository->create($request->user()->id, $validated);
@@ -49,12 +49,12 @@ class VehicleController extends Controller
         $this->authorize('update', $vehicle);
 
         $validated = $request->validate([
-            'make'         => 'required|string|max:100',
-            'model'        => 'required|string|max:100',
-            'year'         => 'required|integer|min:1900|max:' . (date('Y') + 1),
+            'make' => 'required|string|max:100',
+            'model' => 'required|string|max:100',
+            'year' => 'required|integer|min:1900|max:'.(date('Y') + 1),
             'plate_number' => 'required|string|max:20',
-            'color'        => 'nullable|string|max:50',
-            'notes'        => 'nullable|string|max:500',
+            'color' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $this->vehicleRepository->update($vehicle, $validated);
@@ -81,13 +81,13 @@ class VehicleController extends Controller
     private function formatVehicle(Vehicle $vehicle): array
     {
         return [
-            'id'           => $vehicle->id,
-            'make'         => $vehicle->make,
-            'model'        => $vehicle->model,
-            'year'         => $vehicle->year,
+            'id' => $vehicle->id,
+            'make' => $vehicle->make,
+            'model' => $vehicle->model,
+            'year' => $vehicle->year,
             'plate_number' => $vehicle->plate_number,
-            'color'        => $vehicle->color ?? '',
-            'notes'        => $vehicle->notes ?? '',
+            'color' => $vehicle->color ?? '',
+            'notes' => $vehicle->notes ?? '',
             'display_name' => $vehicle->display_name,
         ];
     }

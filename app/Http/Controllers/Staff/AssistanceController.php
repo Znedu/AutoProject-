@@ -20,20 +20,20 @@ class AssistanceController extends Controller
             ->map(function ($ticket) {
                 $replies = $ticket->replies->map(function ($reply) use ($ticket) {
                     return [
-                        'from'    => $reply->user_id === $ticket->user_id ? 'Customer' : 'Staff',
+                        'from' => $reply->user_id === $ticket->user_id ? 'Customer' : 'Staff',
                         'message' => $reply->message,
-                        'date'    => $reply->created_at->format('F d, Y - g:i A'),
+                        'date' => $reply->created_at->format('F d, Y - g:i A'),
                     ];
                 })->toArray();
 
                 return [
-                    'id'       => $ticket->id,
+                    'id' => $ticket->id,
                     'customer' => $ticket->user?->name ?? 'Unknown',
-                    'subject'  => $ticket->subject,
-                    'message'  => $ticket->message,
-                    'status'   => $ticket->status,
-                    'date'     => $ticket->created_at->format('F d, Y'),
-                    'replies'  => $replies,
+                    'subject' => $ticket->subject,
+                    'message' => $ticket->message,
+                    'status' => $ticket->status,
+                    'date' => $ticket->created_at->format('F d, Y'),
+                    'replies' => $replies,
                 ];
             });
 
@@ -50,9 +50,9 @@ class AssistanceController extends Controller
 
         $reply = SupportTicketReply::create([
             'support_ticket_id' => $ticket->id,
-            'user_id'           => auth()->id(),
-            'message'           => $request->message,
-            'is_internal'       => false,
+            'user_id' => auth()->id(),
+            'message' => $request->message,
+            'is_internal' => false,
         ]);
 
         if ($ticket->status === SupportTicket::STATUS_OPEN) {
@@ -65,10 +65,10 @@ class AssistanceController extends Controller
 
         return response()->json([
             'success' => true,
-            'reply'   => [
-                'from'    => 'Staff',
+            'reply' => [
+                'from' => 'Staff',
                 'message' => $reply->message,
-                'date'    => $reply->created_at->format('F d, Y - g:i A'),
+                'date' => $reply->created_at->format('F d, Y - g:i A'),
             ],
         ]);
     }
@@ -76,7 +76,7 @@ class AssistanceController extends Controller
     public function resolve(SupportTicket $ticket)
     {
         $ticket->update([
-            'status'      => SupportTicket::STATUS_RESOLVED,
+            'status' => SupportTicket::STATUS_RESOLVED,
             'resolved_at' => now(),
             'resolved_by' => auth()->id(),
         ]);

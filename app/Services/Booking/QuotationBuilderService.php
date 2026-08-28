@@ -6,6 +6,8 @@ use App\Models\Booking;
 use App\Models\Quotation;
 use App\Models\QuotationLineItem;
 use App\Models\Service;
+use App\Models\User;
+use App\Services\Billing\BookingBillingService;
 use Illuminate\Support\Collection;
 
 class QuotationBuilderService
@@ -47,5 +49,10 @@ class QuotationBuilderService
         }
 
         return $quotation->load('lineItems');
+    }
+
+    public function createFinalDraftFromBooking(Booking $booking, ?User $preparedBy = null): Quotation
+    {
+        return app(BookingBillingService::class)->createFinalDraft($booking, $preparedBy);
     }
 }

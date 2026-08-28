@@ -134,17 +134,27 @@
                             </p>
                         </div>
 
-                        {{-- Reassign toggle for already-assigned jobs --}}
-                        @unless ($isUnassigned)
-                            <button
-                                type="button"
-                                @click="showForm = !showForm"
-                                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#457B9D] border border-[#457B9D]/30 rounded-xl hover:bg-[#457B9D]/10 transition-colors duration-200"
+                        <div class="flex items-center gap-2">
+                            <a
+                                href="{{ route('admin.bookings.billing.show', $booking) }}"
+                                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-white/10 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-200"
                             >
-                                <x-icon name="wrench" class="w-4 h-4" />
-                                <span x-text="showForm ? 'Cancel' : 'Reassign'"></span>
-                            </button>
-                        @endunless
+                                <x-icon name="receipt" class="w-4 h-4 text-[#E63946]" />
+                                <span>Billing</span>
+                            </a>
+
+                            {{-- Reassign toggle for already-assigned jobs --}}
+                            @unless ($isUnassigned)
+                                <button
+                                    type="button"
+                                    @click="showForm = !showForm"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#457B9D] border border-[#457B9D]/30 rounded-xl hover:bg-[#457B9D]/10 transition-colors duration-200"
+                                >
+                                    <x-icon name="wrench" class="w-4 h-4" />
+                                    <span x-text="showForm ? 'Cancel' : 'Reassign'"></span>
+                                </button>
+                            @endunless
+                        </div>
                     </div>
 
                     {{-- Details Grid --}}

@@ -19,13 +19,13 @@ class JobCompletedNotification extends BaseNotification
             : route('customer.track', ['booking_id' => $this->jobOrder->booking_id]);
 
         return [
-            'type'        => NotificationType::JOB_COMPLETED->value,
-            'title'       => 'Service Completed',
-            'message'     => "Job order #{$this->jobOrder->job_number} has been completed.",
-            'action_url'  => $actionUrl,
-            'icon'        => 'check-circle',
+            'type' => NotificationType::JOB_COMPLETED->value,
+            'title' => 'Service Completed',
+            'message' => "Job order #{$this->jobOrder->job_number} has been completed.",
+            'action_url' => $actionUrl,
+            'icon' => 'check-circle',
             'entity_type' => 'job',
-            'entity_id'   => $this->jobOrder->id,
+            'entity_id' => $this->jobOrder->id,
         ];
     }
 }

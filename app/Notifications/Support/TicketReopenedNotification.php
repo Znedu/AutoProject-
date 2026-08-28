@@ -13,13 +13,13 @@ class TicketReopenedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::TICKET_REOPENED->value,
-            'title'       => 'Support Ticket Reopened',
-            'message'     => "Support ticket #{$this->ticket->ticket_number} was reopened by customer.",
-            'action_url'  => route('staff.assistance'),
-            'icon'        => 'message-square',
+            'type' => NotificationType::TICKET_REOPENED->value,
+            'title' => 'Support Ticket Reopened',
+            'message' => "Support ticket #{$this->ticket->ticket_number} was reopened by customer.",
+            'action_url' => route('staff.assistance'),
+            'icon' => 'message-square',
             'entity_type' => 'ticket',
-            'entity_id'   => $this->ticket->id,
+            'entity_id' => $this->ticket->id,
         ];
     }
 }

@@ -12,7 +12,7 @@ class BookingNumberGenerator
         $year = now()->year;
         $prefix = sprintf('BK-%d-', $year);
 
-        return DB::transaction(function () use ($prefix, $year): string {
+        return DB::transaction(function () use ($prefix): string {
             $latest = Booking::withTrashed()
                 ->where('booking_number', 'like', $prefix.'%')
                 ->lockForUpdate()

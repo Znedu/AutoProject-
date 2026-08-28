@@ -13,13 +13,13 @@ class PaymentRejectedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::PAYMENT_REJECTED->value,
-            'title'       => 'Payment Proof Rejected',
-            'message'     => "Payment proof for booking #{$this->booking->booking_number} was rejected: {$this->reason}. Please resubmit proof.",
-            'action_url'  => route('customer.payment', $this->booking->id),
-            'icon'        => 'info',
+            'type' => NotificationType::PAYMENT_REJECTED->value,
+            'title' => 'Payment Proof Rejected',
+            'message' => "Payment proof for booking #{$this->booking->booking_number} was rejected: {$this->reason}. Please resubmit proof.",
+            'action_url' => route('customer.payment', $this->booking->id),
+            'icon' => 'info',
             'entity_type' => 'payment',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

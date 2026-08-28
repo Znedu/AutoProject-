@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\RoleSlug;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,7 +25,7 @@ class AdminUserManagementTest extends TestCase
     {
         parent::setUp();
 
-        $this->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
+        $this->withoutMiddleware([ValidateCsrfToken::class]);
 
         $this->adminRole = Role::firstOrCreate(
             ['slug' => RoleSlug::Administrator->value],
@@ -43,7 +44,7 @@ class AdminUserManagementTest extends TestCase
 
         $this->admin = User::factory()->create([
             'role_id' => $this->adminRole->id,
-            'status'  => User::STATUS_ACTIVE,
+            'status' => User::STATUS_ACTIVE,
         ]);
     }
 
@@ -58,12 +59,12 @@ class AdminUserManagementTest extends TestCase
     public function test_admin_can_create_new_user(): void
     {
         $response = $this->actingAs($this->admin)->postJson(route('admin.users.store'), [
-            'name'                  => 'John Staff',
-            'email'                 => 'johnstaff@example.com',
-            'phone'                 => '09123456789',
-            'role'                  => RoleSlug::Staff->value,
-            'status'                => 'active',
-            'password'              => 'password123',
+            'name' => 'John Staff',
+            'email' => 'johnstaff@example.com',
+            'phone' => '09123456789',
+            'role' => RoleSlug::Staff->value,
+            'status' => 'active',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
@@ -71,7 +72,7 @@ class AdminUserManagementTest extends TestCase
         $response->assertJson(['success' => true]);
 
         $this->assertDatabaseHas('users', [
-            'email'   => 'johnstaff@example.com',
+            'email' => 'johnstaff@example.com',
             'role_id' => $this->staffRole->id,
         ]);
     }
@@ -80,16 +81,16 @@ class AdminUserManagementTest extends TestCase
     {
         $user = User::factory()->create([
             'role_id' => $this->customerRole->id,
-            'name'    => 'Old Name',
-            'email'   => 'oldemail@example.com',
-            'status'  => User::STATUS_ACTIVE,
+            'name' => 'Old Name',
+            'email' => 'oldemail@example.com',
+            'status' => User::STATUS_ACTIVE,
         ]);
 
         $response = $this->actingAs($this->admin)->putJson(route('admin.users.update', $user), [
-            'name'   => 'Updated Name',
-            'email'  => 'newemail@example.com',
-            'phone'  => '09987654321',
-            'role'   => RoleSlug::Staff->value,
+            'name' => 'Updated Name',
+            'email' => 'newemail@example.com',
+            'phone' => '09987654321',
+            'role' => RoleSlug::Staff->value,
             'status' => 'inactive',
         ]);
 
@@ -97,11 +98,11 @@ class AdminUserManagementTest extends TestCase
         $response->assertJson(['success' => true]);
 
         $this->assertDatabaseHas('users', [
-            'id'      => $user->id,
-            'name'    => 'Updated Name',
-            'email'   => 'newemail@example.com',
+            'id' => $user->id,
+            'name' => 'Updated Name',
+            'email' => 'newemail@example.com',
             'role_id' => $this->staffRole->id,
-            'status'  => User::STATUS_INACTIVE,
+            'status' => User::STATUS_INACTIVE,
         ]);
     }
 
@@ -129,7 +130,7 @@ class AdminUserManagementTest extends TestCase
         $response->assertJson(['success' => false]);
 
         $this->assertDatabaseHas('users', [
-            'id'         => $this->admin->id,
+            'id' => $this->admin->id,
             'deleted_at' => null,
         ]);
     }

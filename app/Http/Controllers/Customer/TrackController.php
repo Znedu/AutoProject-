@@ -34,7 +34,7 @@ class TrackController extends Controller
                 ->first();
         }
 
-        if (!$booking) {
+        if (! $booking) {
             // Prefer the most recent active booking
             $booking = Booking::forUser($userId)
                 ->active()
@@ -43,7 +43,7 @@ class TrackController extends Controller
                 ->first();
 
             // Fallback to any recent booking
-            if (!$booking) {
+            if (! $booking) {
                 $booking = Booking::forUser($userId)
                     ->with(['services', 'vehicle', 'jobOrder.stageProgress.serviceStage', 'jobOrder.serviceUpdates.photos', 'jobOrder.serviceUpdates.user'])
                     ->latest()
@@ -53,22 +53,22 @@ class TrackController extends Controller
 
         // Build the booking selector list
         $bookingSelector = $allBookings->map(fn ($b) => [
-            'id'             => $b->id,
+            'id' => $b->id,
             'booking_number' => $b->booking_number,
-            'service'        => $b->services->first()?->name ?? 'Custom Service',
-            'vehicle'        => $b->vehicle ? "{$b->vehicle->make} {$b->vehicle->model} {$b->vehicle->year}" : 'Unknown',
-            'status'         => $b->status,
+            'service' => $b->services->first()?->name ?? 'Custom Service',
+            'vehicle' => $b->vehicle ? "{$b->vehicle->make} {$b->vehicle->model} {$b->vehicle->year}" : 'Unknown',
+            'status' => $b->status,
         ])->toArray();
 
         // Build empty fallback if no booking found at all
-        if (!$booking) {
+        if (! $booking) {
             $trackingData = [
-                'service'             => null,
-                'vehicle'             => null,
-                'bookingId'           => null,
-                'currentStage'        => 0,
-                'progress'            => 0,
-                'stages'              => [
+                'service' => null,
+                'vehicle' => null,
+                'bookingId' => null,
+                'currentStage' => 0,
+                'progress' => 0,
+                'stages' => [
                     ['name' => 'Booking Confirmed', 'date' => 'Confirmed',  'completed' => false],
                     ['name' => 'Received',          'date' => 'Pending',    'completed' => false],
                     ['name' => 'Inspection',        'date' => 'Pending',    'completed' => false],
@@ -76,21 +76,21 @@ class TrackController extends Controller
                     ['name' => 'Quality Check',     'date' => 'Pending',    'completed' => false],
                     ['name' => 'Ready for Pickup',  'date' => 'Pending',    'completed' => false],
                 ],
-                'notes'               => [],
+                'notes' => [],
                 'estimated_completion' => null,
                 'selected_booking_id' => null,
             ];
         } else {
-            $jobOrder        = $booking->jobOrder;
-            $dbStages        = ServiceStage::orderBy('sort_order')->get();
+            $jobOrder = $booking->jobOrder;
+            $dbStages = ServiceStage::orderBy('sort_order')->get();
 
             // "Booking Confirmed" is a static pre-mechanic stage — always completed
             // once the customer can see the tracking page (booking is active/confirmed).
             $confirmedAt = $booking->updated_at ?? $booking->created_at;
             $stages = [
                 [
-                    'name'      => 'Booking Confirmed',
-                    'date'      => $confirmedAt->format('M d, Y - g:i A'),
+                    'name' => 'Booking Confirmed',
+                    'date' => $confirmedAt->format('M d, Y - g:i A'),
                     'completed' => true,
                 ],
             ];
@@ -103,7 +103,7 @@ class TrackController extends Controller
                     : null;
 
                 $completed = $progress ? (bool) $progress->is_completed : false;
-                $isCurrent = $progress ? (bool) $progress->is_current  : false;
+                $isCurrent = $progress ? (bool) $progress->is_current : false;
 
                 if ($isCurrent) {
                     // +1 because index 0 is the static 'Booking Confirmed' stage
@@ -113,8 +113,8 @@ class TrackController extends Controller
                 $isJobCompleted = $jobOrder && $jobOrder->status === JobOrder::STATUS_COMPLETED;
 
                 $stages[] = [
-                    'name'      => $stage->name,
-                    'date'      => $progress && $progress->completed_at
+                    'name' => $stage->name,
+                    'date' => $progress && $progress->completed_at
                         ? $progress->completed_at->format('M d, Y - g:i A')
                         : ($isCurrent ? 'In Progress' : 'Pending'),
                     'completed' => $completed || $isJobCompleted,
@@ -142,30 +142,30 @@ class TrackController extends Controller
                 foreach ($updates as $update) {
                     // Use model accessor for consistent URL resolution
                     $photos = $update->photos->map(fn ($photo) => [
-                        'url'     => $photo->url ?? asset($photo->file_path),
+                        'url' => $photo->url ?? asset($photo->file_path),
                         'caption' => $photo->caption ?? '',
                     ])->toArray();
 
                     $notes[] = [
-                        'date'    => $update->created_at->format('F d, Y'),
-                        'time'    => $update->created_at->format('g:i A'),
+                        'date' => $update->created_at->format('F d, Y'),
+                        'time' => $update->created_at->format('g:i A'),
                         'message' => $update->message,
-                        'author'  => 'Mechanic: ' . ($update->user?->name ?? 'Team Mechanic'),
-                        'photos'  => $photos,
+                        'author' => 'Mechanic: '.($update->user?->name ?? 'Team Mechanic'),
+                        'photos' => $photos,
                     ];
                 }
             }
 
             $trackingData = [
-                'service'             => $booking->services->first()?->name ?? 'Custom Service',
-                'vehicle'             => $booking->vehicle
+                'service' => $booking->services->first()?->name ?? 'Custom Service',
+                'vehicle' => $booking->vehicle
                     ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}"
                     : 'Unknown Vehicle',
-                'bookingId'           => $booking->booking_number,
-                'currentStage'        => $currentStageIndex,
-                'progress'            => $jobOrder ? (int) $jobOrder->progress_percent : 0,
-                'stages'              => $stages,
-                'notes'               => $notes,
+                'bookingId' => $booking->booking_number,
+                'currentStage' => $currentStageIndex,
+                'progress' => $jobOrder ? (int) $jobOrder->progress_percent : 0,
+                'stages' => $stages,
+                'notes' => $notes,
                 'estimated_completion' => $jobOrder && $jobOrder->estimated_completion_date
                     ? $jobOrder->estimated_completion_date->format('F d, Y')
                     : null,
@@ -174,7 +174,7 @@ class TrackController extends Controller
         }
 
         return view('customer.track', [
-            'trackingData'    => $trackingData,
+            'trackingData' => $trackingData,
             'bookingSelector' => $bookingSelector,
         ]);
     }
@@ -185,7 +185,7 @@ class TrackController extends Controller
      */
     public function refresh(Request $request)
     {
-        $userId    = auth()->id();
+        $userId = auth()->id();
         $bookingId = $request->query('booking_id');
 
         $booking = null;
@@ -196,7 +196,7 @@ class TrackController extends Controller
                 ->first();
         }
 
-        if (!$booking) {
+        if (! $booking) {
             $booking = Booking::forUser($userId)
                 ->active()
                 ->with(['services', 'vehicle', 'jobOrder.stageProgress.serviceStage', 'jobOrder.serviceUpdates.photos', 'jobOrder.serviceUpdates.user'])
@@ -204,29 +204,29 @@ class TrackController extends Controller
                 ->first();
         }
 
-        if (!$booking) {
+        if (! $booking) {
             return response()->json([
-                'service'              => null,
-                'vehicle'              => null,
-                'bookingId'            => null,
-                'currentStage'         => 0,
-                'progress'             => 0,
-                'stages'               => [],
-                'notes'                => [],
+                'service' => null,
+                'vehicle' => null,
+                'bookingId' => null,
+                'currentStage' => 0,
+                'progress' => 0,
+                'stages' => [],
+                'notes' => [],
                 'estimated_completion' => null,
-                'selected_booking_id'  => null,
+                'selected_booking_id' => null,
             ]);
         }
 
-        $jobOrder        = $booking->jobOrder;
-        $dbStages        = ServiceStage::orderBy('sort_order')->get();
+        $jobOrder = $booking->jobOrder;
+        $dbStages = ServiceStage::orderBy('sort_order')->get();
 
         // "Booking Confirmed" is a static pre-mechanic stage — always completed.
         $confirmedAt = $booking->updated_at ?? $booking->created_at;
         $stages = [
             [
-                'name'      => 'Booking Confirmed',
-                'date'      => $confirmedAt->format('M d, Y - g:i A'),
+                'name' => 'Booking Confirmed',
+                'date' => $confirmedAt->format('M d, Y - g:i A'),
                 'completed' => true,
             ],
         ];
@@ -238,7 +238,7 @@ class TrackController extends Controller
                 : null;
 
             $completed = $progress ? (bool) $progress->is_completed : false;
-            $isCurrent = $progress ? (bool) $progress->is_current  : false;
+            $isCurrent = $progress ? (bool) $progress->is_current : false;
 
             if ($isCurrent) {
                 $currentStageIndex = count($stages);
@@ -247,8 +247,8 @@ class TrackController extends Controller
             $isJobCompleted = $jobOrder && $jobOrder->status === JobOrder::STATUS_COMPLETED;
 
             $stages[] = [
-                'name'      => $stage->name,
-                'date'      => $progress && $progress->completed_at
+                'name' => $stage->name,
+                'date' => $progress && $progress->completed_at
                     ? $progress->completed_at->format('M d, Y - g:i A')
                     : ($isCurrent ? 'In Progress' : 'Pending'),
                 'completed' => $completed || $isJobCompleted,
@@ -273,34 +273,34 @@ class TrackController extends Controller
 
             foreach ($updates as $update) {
                 $photos = $update->photos->map(fn ($photo) => [
-                    'url'     => $photo->url ?? asset($photo->file_path),
+                    'url' => $photo->url ?? asset($photo->file_path),
                     'caption' => $photo->caption ?? '',
                 ])->toArray();
 
                 $notes[] = [
-                    'date'    => $update->created_at->format('F d, Y'),
-                    'time'    => $update->created_at->format('g:i A'),
+                    'date' => $update->created_at->format('F d, Y'),
+                    'time' => $update->created_at->format('g:i A'),
                     'message' => $update->message,
-                    'author'  => 'Mechanic: ' . ($update->user?->name ?? 'Team Mechanic'),
-                    'photos'  => $photos,
+                    'author' => 'Mechanic: '.($update->user?->name ?? 'Team Mechanic'),
+                    'photos' => $photos,
                 ];
             }
         }
 
         return response()->json([
-            'service'              => $booking->services->first()?->name ?? 'Custom Service',
-            'vehicle'              => $booking->vehicle
+            'service' => $booking->services->first()?->name ?? 'Custom Service',
+            'vehicle' => $booking->vehicle
                 ? "{$booking->vehicle->make} {$booking->vehicle->model} {$booking->vehicle->year}"
                 : 'Unknown Vehicle',
-            'bookingId'            => $booking->booking_number,
-            'currentStage'         => $currentStageIndex,
-            'progress'             => $jobOrder ? (int) $jobOrder->progress_percent : 0,
-            'stages'               => $stages,
-            'notes'                => $notes,
+            'bookingId' => $booking->booking_number,
+            'currentStage' => $currentStageIndex,
+            'progress' => $jobOrder ? (int) $jobOrder->progress_percent : 0,
+            'stages' => $stages,
+            'notes' => $notes,
             'estimated_completion' => $jobOrder && $jobOrder->estimated_completion_date
                 ? $jobOrder->estimated_completion_date->format('F d, Y')
                 : null,
-            'selected_booking_id'  => $booking->id,
+            'selected_booking_id' => $booking->id,
         ]);
     }
 }

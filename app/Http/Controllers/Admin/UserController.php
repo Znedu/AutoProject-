@@ -22,23 +22,23 @@ class UserController extends Controller
             ->get()
             ->map(function ($user) {
                 return [
-                    'id'        => $user->id,
-                    'name'      => $user->name,
-                    'email'     => $user->email,
-                    'phone'     => $user->phone ?? 'N/A',
-                    'role'      => $user->assignedRole?->name ?? 'User',
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? 'N/A',
+                    'role' => $user->assignedRole?->name ?? 'User',
                     'role_slug' => $user->assignedRole?->slug ?? 'customer',
-                    'status'    => ucfirst($user->status),
-                    'status_raw'=> $user->status,
-                    'joinDate'  => $user->created_at ? $user->created_at->format('M d, Y') : '',
+                    'status' => ucfirst($user->status),
+                    'status_raw' => $user->status,
+                    'joinDate' => $user->created_at ? $user->created_at->format('M d, Y') : '',
                 ];
             });
 
         $roles = Role::select('id', 'name', 'slug')->get();
 
         return view('admin.users', [
-            'users'         => $users,
-            'roles'         => $roles,
+            'users' => $users,
+            'roles' => $roles,
             'currentUserId' => Auth::id(),
         ]);
     }
@@ -48,12 +48,12 @@ class UserController extends Controller
         $role = Role::where('slug', $request->role)->firstOrFail();
 
         $user = User::create([
-            'name'              => $request->name,
-            'email'             => $request->email,
-            'phone'             => $request->phone,
-            'role_id'           => $role->id,
-            'status'            => $request->status,
-            'password'          => Hash::make($request->password),
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'role_id' => $role->id,
+            'status' => $request->status,
+            'password' => Hash::make($request->password),
             'email_verified_at' => now(),
         ]);
 
@@ -61,22 +61,22 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User created successfully.',
-                'user'    => [
-                    'id'        => $user->id,
-                    'name'      => $user->name,
-                    'email'     => $user->email,
-                    'phone'     => $user->phone ?? 'N/A',
-                    'role'      => $role->name,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? 'N/A',
+                    'role' => $role->name,
                     'role_slug' => $role->slug,
-                    'status'    => ucfirst($user->status),
-                    'status_raw'=> $user->status,
-                    'joinDate'  => $user->created_at ? $user->created_at->format('M d, Y') : now()->format('M d, Y'),
+                    'status' => ucfirst($user->status),
+                    'status_raw' => $user->status,
+                    'joinDate' => $user->created_at ? $user->created_at->format('M d, Y') : now()->format('M d, Y'),
                 ],
             ]);
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User ' . $user->name . ' created successfully.');
+            ->with('success', 'User '.$user->name.' created successfully.');
     }
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse|RedirectResponse
@@ -84,11 +84,11 @@ class UserController extends Controller
         $role = Role::where('slug', $request->role)->firstOrFail();
 
         $data = [
-            'name'    => $request->name,
-            'email'   => $request->email,
-            'phone'   => $request->phone,
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
             'role_id' => $role->id,
-            'status'  => $request->status,
+            'status' => $request->status,
         ];
 
         if ($request->filled('password')) {
@@ -102,22 +102,22 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully.',
-                'user'    => [
-                    'id'        => $user->id,
-                    'name'      => $user->name,
-                    'email'     => $user->email,
-                    'phone'     => $user->phone ?? 'N/A',
-                    'role'      => $user->assignedRole?->name ?? 'User',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? 'N/A',
+                    'role' => $user->assignedRole?->name ?? 'User',
                     'role_slug' => $user->assignedRole?->slug ?? 'customer',
-                    'status'    => ucfirst($user->status),
-                    'status_raw'=> $user->status,
-                    'joinDate'  => $user->created_at ? $user->created_at->format('M d, Y') : '',
+                    'status' => ucfirst($user->status),
+                    'status_raw' => $user->status,
+                    'joinDate' => $user->created_at ? $user->created_at->format('M d, Y') : '',
                 ],
             ]);
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User ' . $user->name . ' updated successfully.');
+            ->with('success', 'User '.$user->name.' updated successfully.');
     }
 
     public function destroy(Request $request, User $user): JsonResponse|RedirectResponse
@@ -141,11 +141,11 @@ class UserController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'User ' . $userName . ' deleted successfully.',
+                'message' => 'User '.$userName.' deleted successfully.',
             ]);
         }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User ' . $userName . ' deleted successfully.');
+            ->with('success', 'User '.$userName.' deleted successfully.');
     }
 }

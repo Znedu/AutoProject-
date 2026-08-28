@@ -22,7 +22,7 @@ class BookingCancellationService
             throw new InvalidArgumentException('You may only cancel your own bookings.');
         }
 
-        if (!$booking->is_cancellable) {
+        if (! $booking->is_cancellable) {
             throw new InvalidArgumentException('This booking cannot be cancelled in its current status.');
         }
 

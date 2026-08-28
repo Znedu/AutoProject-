@@ -21,7 +21,7 @@ class EmailVerificationCode extends Model
     {
         return [
             'expires_at' => 'datetime',
-            'attempts'   => 'integer',
+            'attempts' => 'integer',
         ];
     }
 

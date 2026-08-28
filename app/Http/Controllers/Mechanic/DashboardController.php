@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Mechanic;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use App\Models\JobOrder;
+use App\Models\ServiceStage;
 use App\Models\ServiceUpdate;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -33,7 +32,7 @@ class DashboardController extends Controller
             ->map(function ($job) {
                 $booking = $job->booking;
                 $vehicle = $booking?->vehicle;
-                
+
                 // Find the active service stage ID
                 $currentStageId = $job->stageProgress->where('is_current', true)->first()?->service_stage_id;
 
@@ -47,16 +46,16 @@ class DashboardController extends Controller
                 // Map service updates
                 $serviceUpdates = $job->serviceUpdates->map(function ($update) {
                     $photos = $update->photos->map(fn ($p) => [
-                        'url'     => $p->url ?? '/storage/' . $p->file_path,
-                        'caption' => $p->caption ?? ''
+                        'url' => $p->url ?? '/storage/'.$p->file_path,
+                        'caption' => $p->caption ?? '',
                     ])->values()->toArray();
 
                     return [
-                        'id'       => $update->id,
-                        'message'  => $update->message,
-                        'date'     => $update->created_at->format('M d, Y - g:i A'),
+                        'id' => $update->id,
+                        'message' => $update->message,
+                        'date' => $update->created_at->format('M d, Y - g:i A'),
                         'mechanic' => $update->user?->name ?? 'Mechanic',
-                        'photos'   => $photos
+                        'photos' => $photos,
                     ];
                 })->values()->toArray();
 
@@ -84,7 +83,7 @@ class DashboardController extends Controller
                 $booking = $job?->booking;
                 $serviceName = $booking?->services->first()?->name ?? 'Custom Service';
                 $vehicleLabel = $booking?->vehicle ? "{$booking->vehicle->make} {$booking->vehicle->model}" : 'Vehicle';
-                
+
                 return [
                     'message' => $update->message,
                     'job' => "{$serviceName} - {$vehicleLabel}",
@@ -92,7 +91,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $stages = \App\Models\ServiceStage::orderBy('sort_order')->get();
+        $stages = ServiceStage::orderBy('sort_order')->get();
 
         return view('mechanic.dashboard', [
             'assignedJobsCount' => $assignedJobsCount,
@@ -105,4 +104,3 @@ class DashboardController extends Controller
         ]);
     }
 }
-

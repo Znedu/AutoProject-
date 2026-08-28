@@ -2,7 +2,6 @@
 
 namespace App\Services\Booking;
 
-use App\Enums\RoleSlug;
 use App\Models\JobOrder;
 use App\Models\User;
 use App\Notifications\Job\JobAssignedNotification;
@@ -36,13 +35,13 @@ class JobAssignmentService
         }
 
         $job->update([
-            'mechanic_id'               => $mechanic->id,
-            'assigned_by'               => $admin->id,
-            'assigned_at'               => now(),
-            'status'                    => JobOrder::STATUS_ASSIGNED,
-            'priority'                  => $data['priority'] ?? $job->priority,
+            'mechanic_id' => $mechanic->id,
+            'assigned_by' => $admin->id,
+            'assigned_at' => now(),
+            'status' => JobOrder::STATUS_ASSIGNED,
+            'priority' => $data['priority'] ?? $job->priority,
             'estimated_completion_date' => $data['estimated_completion_date'] ?? $job->estimated_completion_date,
-            'internal_notes'            => $data['internal_notes'] ?? $job->internal_notes,
+            'internal_notes' => $data['internal_notes'] ?? $job->internal_notes,
         ]);
 
         $freshJob = $job->fresh(['mechanic', 'booking.user']);
@@ -75,7 +74,7 @@ class JobAssignmentService
             'mechanic_id' => null,
             'assigned_by' => null,
             'assigned_at' => null,
-            'status'      => JobOrder::STATUS_PENDING,
+            'status' => JobOrder::STATUS_PENDING,
         ]);
 
         $freshJob = $job->fresh();

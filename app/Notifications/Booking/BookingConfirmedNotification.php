@@ -13,13 +13,13 @@ class BookingConfirmedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'type'        => NotificationType::BOOKING_CONFIRMED->value,
-            'title'       => 'Booking Confirmed',
-            'message'     => "Your booking #{$this->booking->booking_number} is confirmed.",
-            'action_url'  => route('customer.track', ['booking_id' => $this->booking->id]),
-            'icon'        => 'check-circle',
+            'type' => NotificationType::BOOKING_CONFIRMED->value,
+            'title' => 'Booking Confirmed',
+            'message' => "Your booking #{$this->booking->booking_number} is confirmed.",
+            'action_url' => route('customer.track', ['booking_id' => $this->booking->id]),
+            'icon' => 'check-circle',
             'entity_type' => 'booking',
-            'entity_id'   => $this->booking->id,
+            'entity_id' => $this->booking->id,
         ];
     }
 }

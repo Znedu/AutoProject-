@@ -6,7 +6,6 @@ use App\Models\AppointmentSlotConfig;
 use App\Models\Booking;
 use App\Models\BusinessClosureDate;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 class ScheduleAvailabilityService
 {

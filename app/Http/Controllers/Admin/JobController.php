@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\AssignJobRequest;
+use App\Models\Booking;
 use App\Models\JobOrder;
 use App\Models\User;
 use App\Services\Booking\JobAssignmentService;
@@ -26,9 +27,9 @@ class JobController extends Controller
                 'mechanic',
                 'assigner',
             ])
-            ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
+            ->whereHas('booking', fn ($q) => $q->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_CONFIRMED]))
             ->when($filter === 'unassigned', fn ($q) => $q->where('status', JobOrder::STATUS_PENDING))
-            ->when($filter === 'assigned',   fn ($q) => $q->where('status', JobOrder::STATUS_ASSIGNED))
+            ->when($filter === 'assigned', fn ($q) => $q->where('status', JobOrder::STATUS_ASSIGNED))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -41,20 +42,20 @@ class JobController extends Controller
             ->get();
 
         $stats = [
-            'unassigned'    => JobOrder::where('status', JobOrder::STATUS_PENDING)
-                ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
+            'unassigned' => JobOrder::where('status', JobOrder::STATUS_PENDING)
+                ->whereHas('booking', fn ($q) => $q->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_CONFIRMED]))
                 ->count(),
-            'assigned'      => JobOrder::where('status', JobOrder::STATUS_ASSIGNED)
-                ->whereHas('booking', fn ($q) => $q->whereIn('status', [\App\Models\Booking::STATUS_APPROVED, \App\Models\Booking::STATUS_CONFIRMED]))
+            'assigned' => JobOrder::where('status', JobOrder::STATUS_ASSIGNED)
+                ->whereHas('booking', fn ($q) => $q->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_CONFIRMED]))
                 ->count(),
-            'in_progress'   => JobOrder::where('status', JobOrder::STATUS_IN_PROGRESS)->count(),
+            'in_progress' => JobOrder::where('status', JobOrder::STATUS_IN_PROGRESS)->count(),
             'mechanics_available' => User::mechanics()->active()->count(),
         ];
 
         return view('admin.jobs.index', [
-            'jobs'           => $jobs,
-            'mechanics'      => $mechanics,
-            'stats'          => $stats,
+            'jobs' => $jobs,
+            'mechanics' => $mechanics,
+            'stats' => $stats,
             'selectedFilter' => $filter,
         ]);
     }

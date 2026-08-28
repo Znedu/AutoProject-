@@ -34,10 +34,10 @@ class EmailVerificationService
         $plainCode = (string) random_int(100000, 999999);
 
         EmailVerificationCode::create([
-            'user_id'    => $user->id,
-            'code'       => Hash::make($plainCode),
+            'user_id' => $user->id,
+            'code' => Hash::make($plainCode),
             'expires_at' => now()->addMinutes(self::EXPIRY_MINUTES),
-            'attempts'   => 0,
+            'attempts' => 0,
         ]);
 
         $user->notify(new EmailVerificationCodeNotification($plainCode));
@@ -65,6 +65,7 @@ class EmailVerificationService
 
             if ($record->isExpired()) {
                 $record->delete();
+
                 return [
                     'success' => false,
                     'message' => 'Verification code has expired. Please request a new code.',
@@ -73,6 +74,7 @@ class EmailVerificationService
 
             if ($record->attempts >= self::MAX_ATTEMPTS) {
                 $record->delete();
+
                 return [
                     'success' => false,
                     'message' => 'Too many failed attempts. This code is no longer valid. Please request a new code.',
@@ -84,6 +86,7 @@ class EmailVerificationService
 
                 if ($record->attempts >= self::MAX_ATTEMPTS) {
                     $record->delete();
+
                     return [
                         'success' => false,
                         'message' => 'Too many failed attempts (5/5). Please request a new verification code.',
@@ -91,6 +94,7 @@ class EmailVerificationService
                 }
 
                 $remaining = self::MAX_ATTEMPTS - $record->attempts;
+
                 return [
                     'success' => false,
                     'message' => "Invalid verification code. {$remaining} attempts remaining.",

@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RoleSlug;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\Role;
-use App\Enums\RoleSlug;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -149,7 +149,7 @@ class CustomerVehicleTest extends TestCase
             ->deleteJson(route('customer.vehicles.destroy', $vehicle));
 
         $response->assertStatus(200);
-        
+
         // Assert it is soft-deleted
         $this->assertSoftDeleted('vehicles', [
             'id' => $vehicle->id,
