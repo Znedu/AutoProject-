@@ -181,7 +181,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach ($services as $service)
-                    <div class="group relative overflow-hidden rounded-2xl glass-card glass-hover cursor-pointer h-80">
+                    <a href="{{ url('/register') }}" class="group relative overflow-hidden rounded-2xl glass-card glass-hover cursor-pointer h-80 block">
                         {{-- Background Image --}}
                         <div
                             class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
@@ -198,12 +198,12 @@
                             </div>
                             <h3 class="text-2xl font-bold text-white mb-3">{{ $service['title'] }}</h3>
                             <p class="text-[#B8B8B8] mb-4">{{ $service['description'] }}</p>
-                            <button class="flex items-center gap-2 text-[#E63946] font-semibold group-hover:gap-4 transition-all duration-300 cursor-pointer">
+                            <span class="inline-flex items-center gap-2 text-[#E63946] font-semibold group-hover:gap-4 transition-all duration-300">
                                 Learn More
                                 <x-icon name="chevron-right" class="w-5 h-5" />
-                            </button>
+                            </span>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </div>

@@ -92,36 +92,66 @@
                     </div>
 
                     {{-- New Password --}}
-                    <div>
+                    <div x-data="{ showPassword: false }">
                         <label for="password" class="block text-sm font-medium text-white mb-1.5">
                             New Password <span class="text-[#E63946]">*</span>
                         </label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Enter new password (min. 8 characters)"
-                            required
-                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
+                        <div class="relative">
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                name="password"
+                                placeholder="Enter new password (min. 8 characters)"
+                                required
+                                class="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1"
+                                :title="showPassword ? 'Hide password' : 'Show password'"
+                            >
+                                <template x-if="showPassword">
+                                    <x-icon name="eye-off" class="w-5 h-5 text-[#E63946]" />
+                                </template>
+                                <template x-if="!showPassword">
+                                    <x-icon name="eye" class="w-5 h-5" />
+                                </template>
+                            </button>
+                        </div>
                         @error('password')
                             <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
                     {{-- Password Confirmation --}}
-                    <div>
+                    <div x-data="{ showConfirmPassword: false }">
                         <label for="password_confirmation" class="block text-sm font-medium text-white mb-1.5">
                             Confirm New Password <span class="text-[#E63946]">*</span>
                         </label>
-                        <input
-                            id="password_confirmation"
-                            type="password"
-                            name="password_confirmation"
-                            placeholder="Confirm new password"
-                            required
-                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
+                        <div class="relative">
+                            <input
+                                id="password_confirmation"
+                                :type="showConfirmPassword ? 'text' : 'password'"
+                                name="password_confirmation"
+                                placeholder="Confirm new password"
+                                required
+                                class="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
+                            />
+                            <button
+                                type="button"
+                                @click="showConfirmPassword = !showConfirmPassword"
+                                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1"
+                                :title="showConfirmPassword ? 'Hide password' : 'Show password'"
+                            >
+                                <template x-if="showConfirmPassword">
+                                    <x-icon name="eye-off" class="w-5 h-5 text-[#E63946]" />
+                                </template>
+                                <template x-if="!showConfirmPassword">
+                                    <x-icon name="eye" class="w-5 h-5" />
+                                </template>
+                            </button>
+                        </div>
                     </div>
 
                     {{-- Submit Button --}}

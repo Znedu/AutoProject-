@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\BookingApprovalController;
 use App\Http\Controllers\Admin\BookingBillingController as AdminBookingBillingController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Customer\BookingBillingController as CustomerBookingBillingController;
 use App\Http\Controllers\Customer\BookingController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Customer\InventoryController as CustomerInventoryController;
 use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController;
 // Import Customer Controllers
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
@@ -25,6 +27,7 @@ use App\Http\Controllers\Customer\SupportController as CustomerSupportController
 use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
 use App\Http\Controllers\Customer\VehicleController as CustomerVehicleController;
 use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardController;
+use App\Http\Controllers\Mechanic\InventoryController as MechanicInventoryController;
 // Import Staff Controllers
 use App\Http\Controllers\Mechanic\JobController as MechanicJobController;
 use App\Http\Controllers\Mechanic\NoteController as MechanicNoteController;
@@ -42,6 +45,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('landing');
 })->name('landing');
+
+Route::get('/terms', function () {
+    return view('terms');
+})->name('terms');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
@@ -185,6 +192,27 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/products/search', [ProductController::class, 'search'])
                 ->middleware('permission:billing.manage')
                 ->name('products.search');
+
+            // Admin Inventory Management
+            Route::get('/inventory', [AdminInventoryController::class, 'index'])
+                ->middleware('permission:inventory.view')
+                ->name('inventory.index');
+
+            Route::post('/inventory', [AdminInventoryController::class, 'store'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.store');
+
+            Route::put('/inventory/{product}', [AdminInventoryController::class, 'update'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.update');
+
+            Route::post('/inventory/{product}/adjust', [AdminInventoryController::class, 'adjustStock'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.adjust');
+
+            Route::delete('/inventory/{product}', [AdminInventoryController::class, 'destroy'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.destroy');
         });
 
     Route::prefix('customer')
@@ -271,6 +299,11 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/bookings/{booking}/billing', [CustomerBookingBillingController::class, 'show'])
                 ->middleware('permission:billing.view')
                 ->name('bookings.billing');
+
+            // Customer Inventory Catalog
+            Route::get('/inventory', [CustomerInventoryController::class, 'index'])
+                ->middleware('permission:inventory.view')
+                ->name('inventory.index');
         });
 
     Route::prefix('staff')
@@ -361,6 +394,27 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/products/search', [ProductController::class, 'search'])
                 ->middleware('permission:billing.manage')
                 ->name('products.search');
+
+            // Staff Inventory Management
+            Route::get('/inventory', [AdminInventoryController::class, 'index'])
+                ->middleware('permission:inventory.view')
+                ->name('inventory.index');
+
+            Route::post('/inventory', [AdminInventoryController::class, 'store'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.store');
+
+            Route::put('/inventory/{product}', [AdminInventoryController::class, 'update'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.update');
+
+            Route::post('/inventory/{product}/adjust', [AdminInventoryController::class, 'adjustStock'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.adjust');
+
+            Route::delete('/inventory/{product}', [AdminInventoryController::class, 'destroy'])
+                ->middleware('permission:inventory.manage')
+                ->name('inventory.destroy');
         });
 
     Route::prefix('mechanic')
@@ -388,5 +442,10 @@ Route::middleware(['auth', 'active'])->group(function () {
 
             Route::post('/notes', [MechanicNoteController::class, 'store'])
                 ->middleware('permission:service-notes.view');
+
+            // Mechanic Inventory Read-Only Lookup
+            Route::get('/inventory', [MechanicInventoryController::class, 'index'])
+                ->middleware('permission:inventory.view')
+                ->name('inventory.index');
         });
 });

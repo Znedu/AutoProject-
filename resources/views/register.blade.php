@@ -71,44 +71,207 @@
                     </div>
 
                     {{-- Password --}}
-                    <div>
+                    <div x-data="{ showPassword: false }">
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
                             Password <span class="text-[#E63946]">*</span>
                         </label>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Create a strong password"
-                            required
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
+                        <div class="relative">
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                name="password"
+                                placeholder="Create a strong password"
+                                required
+                                class="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none cursor-pointer p-1"
+                                :title="showPassword ? 'Hide password' : 'Show password'"
+                            >
+                                <template x-if="showPassword">
+                                    <x-icon name="eye-off" class="w-5 h-5 text-[#E63946]" />
+                                </template>
+                                <template x-if="!showPassword">
+                                    <x-icon name="eye" class="w-5 h-5" />
+                                </template>
+                            </button>
+                        </div>
                         @error('password')
                             <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
                     {{-- Confirm Password --}}
-                    <div>
+                    <div x-data="{ showConfirmPassword: false }">
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1.5">
                             Confirm Password <span class="text-[#E63946]">*</span>
                         </label>
-                        <input
-                            id="password_confirmation"
-                            type="password"
-                            name="password_confirmation"
-                            placeholder="Re-enter your password"
-                            required
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
+                        <div class="relative">
+                            <input
+                                id="password_confirmation"
+                                :type="showConfirmPassword ? 'text' : 'password'"
+                                name="password_confirmation"
+                                placeholder="Re-enter your password"
+                                required
+                                class="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
+                            />
+                            <button
+                                type="button"
+                                @click="showConfirmPassword = !showConfirmPassword"
+                                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none cursor-pointer p-1"
+                                :title="showConfirmPassword ? 'Hide password' : 'Show password'"
+                            >
+                                <template x-if="showConfirmPassword">
+                                    <x-icon name="eye-off" class="w-5 h-5 text-[#E63946]" />
+                                </template>
+                                <template x-if="!showConfirmPassword">
+                                    <x-icon name="eye" class="w-5 h-5" />
+                                </template>
+                            </button>
+                        </div>
                     </div>
 
-                    {{-- Terms Checkbox --}}
-                    <div class="flex items-start gap-2">
-                        <input type="checkbox" name="terms" required class="mt-1 accent-[#E63946]" />
-                        <label class="text-sm text-gray-600">
-                            I agree to the Terms of Service and Privacy Policy
+                    {{-- Terms Checkbox & Modal Trigger --}}
+                    <div class="flex items-start gap-2 pt-1" x-data="{ showTermsModal: false, agreedTerms: false }">
+                        <input 
+                            type="checkbox" 
+                            id="terms" 
+                            name="terms" 
+                            required 
+                            x-model="agreedTerms"
+                            class="mt-1 accent-[#E63946] w-4 h-4 rounded cursor-pointer" 
+                        />
+                        <label for="terms" class="text-sm text-gray-600">
+                            I agree to the 
+                            <button 
+                                type="button" 
+                                @click="showTermsModal = true" 
+                                class="text-[#E63946] font-semibold hover:underline cursor-pointer focus:outline-none"
+                            >
+                                Terms of Service
+                            </button> 
+                            and 
+                            <button 
+                                type="button" 
+                                @click="showTermsModal = true" 
+                                class="text-[#E63946] font-semibold hover:underline cursor-pointer focus:outline-none"
+                            >
+                                Privacy Policy
+                            </button>
                         </label>
+
+                        <!-- READABLE TERMS OF SERVICE & PRIVACY POLICY MODAL -->
+                        <div x-show="showTermsModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm text-left">
+                            <div @click.away="showTermsModal = false" class="w-full max-w-2xl bg-white dark:bg-[#121212] text-gray-900 dark:text-white rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh]">
+                                
+                                <!-- Modal Header -->
+                                <div class="p-5 border-b border-gray-200 dark:border-white/10 flex items-center justify-between bg-gray-50 dark:bg-white/5">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="p-2 rounded-xl bg-[#E63946]/10 text-[#E63946]">
+                                            <x-icon name="file-text" class="w-5 h-5" />
+                                        </span>
+                                        <div>
+                                            <h3 class="text-lg font-bold">Terms of Service & Privacy Policy</h3>
+                                            <p class="text-xs text-gray-500 dark:text-white/60">AutoProject-D Custom Garage</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="showTermsModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1">
+                                        <x-icon name="x" class="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <!-- Modal Readable Document Content -->
+                                <div class="p-6 overflow-y-auto space-y-6 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                    
+                                    <!-- Terms of Service -->
+                                    <div class="space-y-3">
+                                        <h4 class="text-base font-bold text-[#E63946] flex items-center gap-2">
+                                            <x-icon name="shield" class="w-4 h-4" />
+                                            1. Terms of Service
+                                        </h4>
+
+                                        <div class="space-y-2 text-xs sm:text-sm">
+                                            <p class="font-semibold text-gray-900 dark:text-white">1.1 Account Registration & Security</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                By creating an account on AutoProject+, you agree to provide accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials.
+                                            </p>
+
+                                            <p class="font-semibold text-gray-900 dark:text-white mt-3">1.2 Service Bookings & Appointments</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                Service appointments scheduled online are subject to shop confirmation. AutoProject-D Custom Garage reserves the right to adjust schedule slots based on workshop capacity and parts availability.
+                                            </p>
+
+                                            <p class="font-semibold text-gray-900 dark:text-white mt-3">1.3 Cost Estimations & Final Invoicing</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                Online cost estimations are preliminary figures based on standard package rates. Final billing will reflect verified physical vehicle inspection, actual parts used, and approved custom modifications.
+                                            </p>
+
+                                            <p class="font-semibold text-gray-900 dark:text-white mt-3">1.4 Vehicle Care & Storage</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                Vehicles left for service are stored securely in workshop facilities. Customers are advised to remove personal valuables prior to surrendering vehicles.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Privacy Policy -->
+                                    <div class="space-y-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                                        <h4 class="text-base font-bold text-[#E63946] flex items-center gap-2">
+                                            <x-icon name="lock" class="w-4 h-4" />
+                                            2. Privacy Policy
+                                        </h4>
+
+                                        <div class="space-y-2 text-xs sm:text-sm">
+                                            <p class="font-semibold text-gray-900 dark:text-white">2.1 Information We Collect</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                We collect customer details (Name, Email Address, Contact Info) and vehicle information (Make, Model, Year, Plate Number) necessary to fulfill garage service bookings and invoices.
+                                            </p>
+
+                                            <p class="font-semibold text-gray-900 dark:text-white mt-3">2.2 Data Protection</p>
+                                            <p class="text-gray-600 dark:text-white/70">
+                                                Your personal and vehicle information is encrypted and securely stored. We do not sell or share customer data with unauthorized third parties.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-3 rounded-xl bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-white/70 flex justify-between items-center">
+                                        <span>Want to view full page document?</span>
+                                        <a href="{{ route('terms') }}" target="_blank" class="text-[#E63946] font-semibold hover:underline flex items-center gap-1">
+                                            Open Full Page Terms
+                                            <x-icon name="arrow-right" class="w-3.5 h-3.5" />
+                                        </a>
+                                    </div>
+
+                                </div>
+
+                                <!-- Modal Footer Action -->
+                                <div class="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <span class="text-xs text-gray-500 dark:text-white/60">
+                                        Clicking agree will automatically check the acceptance box.
+                                    </span>
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <button 
+                                            type="button" 
+                                            @click="showTermsModal = false" 
+                                            class="w-full sm:w-auto px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-white/80 text-xs font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                        >
+                                            Close
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            @click="agreedTerms = true; showTermsModal = false" 
+                                            class="w-full sm:w-auto px-5 py-2 rounded-xl bg-[#E63946] hover:bg-[#E63946]/90 text-white text-xs font-semibold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                            <x-icon name="check-circle" class="w-4 h-4" />
+                                            I Have Read & Agree
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
 
                     {{-- Submit Button --}}

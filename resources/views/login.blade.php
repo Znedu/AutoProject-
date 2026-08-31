@@ -82,7 +82,7 @@
                     </div>
 
                     {{-- Password --}}
-                    <div>
+                    <div x-data="{ showPassword: false }">
                         <div class="flex items-center justify-between mb-1.5">
                             <label for="password" class="block text-sm font-medium text-white">
                                 Password <span class="text-[#E63946]">*</span>
@@ -91,14 +91,29 @@
                                 Forgot Password?
                             </a>
                         </div>
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            placeholder="Enter your password"
-                            required
-                            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
-                        />
+                        <div class="relative">
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                name="password"
+                                placeholder="Enter your password"
+                                required
+                                class="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-[#666666] focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1"
+                                :title="showPassword ? 'Hide password' : 'Show password'"
+                            >
+                                <template x-if="showPassword">
+                                    <x-icon name="eye-off" class="w-5 h-5 text-[#E63946]" />
+                                </template>
+                                <template x-if="!showPassword">
+                                    <x-icon name="eye" class="w-5 h-5" />
+                                </template>
+                            </button>
+                        </div>
                         @error('password')
                             <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
                         @enderror

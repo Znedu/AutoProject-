@@ -52,6 +52,7 @@
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/customer'],
                 ['icon' => 'calendar', 'label' => 'Book Service', 'path' => '/customer/book-service'],
                 ['icon' => 'clipboard-list', 'label' => 'My Bookings', 'path' => '/customer/bookings'],
+                ['icon' => 'box', 'label' => 'Parts & Catalog', 'path' => '/customer/inventory'],
                 ['icon' => 'car', 'label' => 'My Vehicles', 'path' => '/customer/vehicles'],
                 ['icon' => 'map-pin', 'label' => 'Track Service', 'path' => '/customer/track'],
                 ['icon' => 'message-square', 'label' => 'Support Tickets', 'path' => '/customer/support'],
@@ -60,12 +61,14 @@
             'mechanic' => [
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/mechanic'],
                 ['icon' => 'wrench', 'label' => 'Assigned Jobs', 'path' => '/mechanic/jobs'],
+                ['icon' => 'box', 'label' => 'Shop Inventory', 'path' => '/mechanic/inventory'],
                 ['icon' => 'clipboard-list', 'label' => 'Service Notes', 'path' => '/mechanic/notes'],
             ],
             'staff' => [
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard',           'path' => '/staff'],
                 ['icon' => 'clipboard-list',   'label' => 'Booking Queue',        'path' => '/staff/booking-queue'],
                 ['icon' => 'user-plus',         'label' => 'Walk-In Booking',      'path' => '/staff/walk-in-booking'],
+                ['icon' => 'box',               'label' => 'Inventory Control',    'path' => '/staff/inventory'],
                 ['icon' => 'calendar',          'label' => 'Schedule',             'path' => '/staff/schedule'],
                 ['icon' => 'users',             'label' => 'Customers',            'path' => '/staff/customers'],
                 ['icon' => 'wrench',            'label' => 'Job Orders',           'path' => '/staff/jobs'],
@@ -74,6 +77,7 @@
             'admin' => [
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard', 'path' => '/admin'],
                 ['icon' => 'users', 'label' => 'User Management', 'path' => '/admin/users'],
+                ['icon' => 'box', 'label' => 'Inventory System', 'path' => '/admin/inventory'],
                 ['icon' => 'check-square', 'label' => 'Booking Approval', 'path' => '/admin/approvals'],
                 ['icon' => 'wrench', 'label' => 'Job Assignment', 'path' => '/admin/jobs'],
                 ['icon' => 'clipboard-list', 'label' => 'Booking History', 'path' => '/admin/bookings/history'],

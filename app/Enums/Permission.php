@@ -47,6 +47,10 @@ enum Permission: string
     case ReportsView = 'reports.view';
     case ReportsExport = 'reports.export';
 
+    // Inventory management
+    case InventoryView = 'inventory.view';
+    case InventoryManage = 'inventory.manage';
+
     public function group(): string
     {
         return match ($this) {
@@ -87,7 +91,9 @@ enum Permission: string
             self::ApprovalsManage,
             self::ApprovalsAdjustCost,
             self::ReportsView,
-            self::ReportsExport => 'admin',
+            self::ReportsExport,
+            self::InventoryView,
+            self::InventoryManage => 'admin',
         };
     }
 
@@ -110,6 +116,7 @@ enum Permission: string
                 self::ProfileView,
                 self::ProfileUpdate,
                 self::BillingView,
+                self::InventoryView,
             ],
             RoleSlug::Staff => [
                 self::ViewStaffDashboard,
@@ -125,6 +132,8 @@ enum Permission: string
                 self::SupportResolve,
                 self::BillingView,
                 self::BillingManage,
+                self::InventoryView,
+                self::InventoryManage,
             ],
             RoleSlug::Mechanic => [
                 self::ViewMechanicDashboard,
@@ -136,8 +145,10 @@ enum Permission: string
                 self::ServiceNotesView,
                 self::ServiceNotesCreate,
                 self::BillingView,
+                self::InventoryView,
             ],
             RoleSlug::Administrator => self::cases(),
         };
     }
 }
+
