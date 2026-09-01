@@ -32,7 +32,7 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen bg-white dark:bg-[#0B0B0B] text-gray-900 dark:text-white transition-colors duration-200" x-data="{ sidebarOpen: false }">
+<body class="min-h-screen bg-white dark:bg-[#0B0B0B] text-gray-900 dark:text-white transition-colors duration-200 overflow-x-hidden" x-data="{ sidebarOpen: false }">
 
     @php
         // Dynamically resolve the user's role: prop > authentication > default
@@ -89,22 +89,6 @@
         $items = $menuItems[$resolvedRole] ?? [];
     @endphp
 
-    <!-- Mobile Menu Toggle Button -->
-    <button
-        class="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white dark:glass-card text-gray-900 dark:text-white shadow-lg border border-gray-300 dark:border-white/10 cursor-pointer transition-transform active:scale-95"
-        @click="sidebarOpen = !sidebarOpen"
-        aria-label="Toggle Menu"
-    >
-        <!-- Menu Hamburger (shown when sidebar closed) -->
-        <svg x-show="!sidebarOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-        <!-- X Icon (shown when sidebar open) -->
-        <svg x-show="sidebarOpen" class="w-6 h-6" x-cloak fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-    </button>
-
     <!-- Mobile Navigation Overlay -->
     <div
         x-show="sidebarOpen"
@@ -116,103 +100,131 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         @click="sidebarOpen = false"
-        class="lg:hidden fixed inset-0 bg-black bg-opacity-70 z-30 backdrop-blur-sm"
+        class="lg:hidden fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
     ></div>
 
     <!-- Sidebar Frame -->
     <aside
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed top-0 left-0 h-full w-64 bg-white dark:glass-card border-r border-gray-300 dark:border-white/10 text-gray-900 dark:text-white z-40 transform transition-transform duration-300 ease-in-out shadow-2xl lg:translate-x-0"
+        class="fixed top-0 left-0 h-full w-72 max-w-[85vw] lg:w-64 bg-white dark:bg-[#121212] border-r border-gray-200 dark:border-white/10 text-gray-900 dark:text-white z-50 transform transition-transform duration-300 ease-in-out shadow-2xl lg:translate-x-0 overflow-y-auto"
     >
-        <div class="p-6 h-full flex flex-col">
-            <!-- Brand Logo -->
-            <div class="mb-8">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-wider">
-                    AUTO<span class="text-[#E63946]">PROJECT</span>+
-                </h1>
-                <p class="text-xs text-gray-600 dark:text-white/60 mt-1 uppercase tracking-wider">
-                    {{ $resolvedRole }} Portal
-                </p>
-            </div>
+        <div class="p-5 sm:p-6 min-h-full flex flex-col justify-between">
+            <div>
+                <!-- Brand Logo & Mobile Close Header -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-white/10 lg:border-none lg:pb-0">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-wider">
+                            AUTO<span class="text-[#E63946]">PROJECT</span>+
+                        </h1>
+                        <p class="text-xs text-gray-500 dark:text-white/60 mt-0.5 uppercase tracking-wider">
+                            {{ $resolvedRole }} Portal
+                        </p>
+                    </div>
+                    <button
+                        class="lg:hidden p-2.5 rounded-xl text-gray-500 hover:text-gray-900 dark:text-white/70 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 touch-target flex items-center justify-center cursor-pointer"
+                        @click="sidebarOpen = false"
+                        aria-label="Close sidebar"
+                    >
+                        <x-icon name="x" class="w-6 h-6" />
+                    </button>
+                </div>
 
-            @if ($currentUser)
-                <div class="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#E63946] text-sm font-semibold text-white">
-                            {{ $currentUser->initials }}
-                        </div>
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $displayName }}</p>
-                            <p class="truncate text-xs text-gray-600 dark:text-white/60">{{ $displayRole }}</p>
+                @if ($currentUser)
+                    <div class="mb-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3.5 sm:p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E63946] text-sm font-semibold text-white">
+                                {{ $currentUser->initials }}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $displayName }}</p>
+                                <p class="truncate text-xs text-gray-500 dark:text-white/60">{{ $displayRole }}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endif
+                @endif
 
-            <!-- Role-Specific Navigation Menu -->
-            <nav class="space-y-1 flex-1">
-                @foreach ($items as $item)
-                    @php
-                        $path = trim($item['path'], '/');
-                        // Highlight dashboard strictly if matching base segment, otherwise check sub-routes
-                        if (in_array($path, ['customer', 'staff', 'mechanic', 'admin'])) {
-                            $isActive = request()->is($path);
-                        } else {
-                            $isActive = request()->is($path) || request()->is($path . '/*');
-                        }
-                    @endphp
-                    <a
-                        href="{{ url($item['path']) }}"
-                        @click="sidebarOpen = false"
-                        class="flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group {{ $isActive ? 'bg-[#E63946] text-white shadow-lg shadow-[#E63946]/20' : 'text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white' }}"
-                    >
-                        <x-icon name="{{ $item['icon'] }}" class="w-5 h-5 {{ $isActive ? '' : 'group-hover:scale-110 transition-transform duration-300' }}" />
-                        <span class="font-medium">{{ $item['label'] }}</span>
-                    </a>
-                @endforeach
-            </nav>
+                <!-- Role-Specific Navigation Menu -->
+                <nav class="space-y-1">
+                    @foreach ($items as $item)
+                        @php
+                            $path = trim($item['path'], '/');
+                            if (in_array($path, ['customer', 'staff', 'mechanic', 'admin'])) {
+                                $isActive = request()->is($path);
+                            } else {
+                                $isActive = request()->is($path) || request()->is($path . '/*');
+                            }
+                        @endphp
+                        <a
+                            href="{{ url($item['path']) }}"
+                            @click="sidebarOpen = false"
+                            class="flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group touch-target {{ $isActive ? 'bg-[#E63946] text-white shadow-lg shadow-[#E63946]/20' : 'text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white' }}"
+                        >
+                            <x-icon name="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $isActive ? '' : 'group-hover:scale-110 transition-transform duration-300' }}" />
+                            <span class="font-medium text-sm truncate">{{ $item['label'] }}</span>
+                        </a>
+                    @endforeach
+                </nav>
+            </div>
 
-            <!-- Light/Dark Mode Theme Switcher -->
-            <button
-                @click="$store.theme.toggle()"
-                class="flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 w-full text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 mb-2 cursor-pointer"
-            >
-                <!-- Sun Icon: Visible in Dark Mode -->
-                <span x-show="$store.theme.isDark" class="flex items-center gap-4" x-cloak>
-                    <x-icon name="sun" class="w-5 h-5" />
-                    <span class="font-medium">Light Mode</span>
-                </span>
-                <!-- Moon Icon: Visible in Light Mode -->
-                <span x-show="!$store.theme.isDark" class="flex items-center gap-4">
-                    <x-icon name="moon" class="w-5 h-5" />
-                    <span class="font-medium">Dark Mode</span>
-                </span>
-            </button>
+            <div class="pt-6 mt-6 border-t border-gray-200 dark:border-white/10 space-y-2">
+                <!-- Light/Dark Mode Theme Switcher -->
+                <button
+                    @click="$store.theme.toggle()"
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 w-full text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-white/10 touch-target cursor-pointer"
+                >
+                    <span x-show="$store.theme.isDark" class="flex items-center gap-3.5" x-cloak>
+                        <x-icon name="sun" class="w-5 h-5 shrink-0" />
+                        <span class="font-medium text-sm">Light Mode</span>
+                    </span>
+                    <span x-show="!$store.theme.isDark" class="flex items-center gap-3.5">
+                        <x-icon name="moon" class="w-5 h-5 shrink-0" />
+                        <span class="font-medium text-sm">Dark Mode</span>
+                    </span>
+                </button>
 
-            <!-- Authentication Logout Controls -->
-            <form id="logout-form" action="{{ Route::has('logout') ? route('logout') : url('/login') }}" method="{{ Route::has('logout') ? 'POST' : 'GET' }}" class="hidden">
-                @csrf
-            </form>
-            <button
-                onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                class="flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 w-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-300 border border-red-300 dark:border-red-500/20 hover:border-red-400 dark:hover:border-red-500/40 cursor-pointer"
-            >
-                <x-icon name="log-out" class="w-5 h-5" />
-                <span class="font-medium">Logout</span>
-            </button>
+                <!-- Authentication Logout Controls -->
+                <form id="logout-form" action="{{ Route::has('logout') ? route('logout') : url('/login') }}" method="{{ Route::has('logout') ? 'POST' : 'GET' }}" class="hidden">
+                    @csrf
+                </form>
+                <button
+                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                    class="flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 w-full text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 border border-red-200 dark:border-red-500/20 touch-target cursor-pointer"
+                >
+                    <x-icon name="log-out" class="w-5 h-5 shrink-0" />
+                    <span class="font-medium text-sm">Logout</span>
+                </button>
+            </div>
         </div>
     </aside>
 
     <!-- Main View Content Area -->
-    <div class="lg:ml-64">
+    <div class="lg:ml-64 min-h-screen flex flex-col overflow-x-hidden">
         <!-- Sticky Top Header Bar -->
-        <header class="sticky top-0 z-20 flex items-center justify-end h-16 px-6 bg-white/80 dark:bg-[#0B0B0B]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
+        <header class="sticky top-0 z-30 flex items-center justify-between lg:justify-end h-16 px-4 sm:px-6 bg-white/90 dark:bg-[#0B0B0B]/90 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
+            <!-- Mobile Menu Hamburger Button -->
+            <button
+                class="lg:hidden p-2.5 rounded-xl text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 touch-target flex items-center justify-center cursor-pointer"
+                @click="sidebarOpen = true"
+                aria-label="Open menu"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+
+            <!-- Brand Logo visible on Mobile header center -->
+            <div class="lg:hidden">
+                <span class="text-lg font-bold text-gray-900 dark:text-white tracking-wider">
+                    AUTO<span class="text-[#E63946]">PROJECT</span>+
+                </span>
+            </div>
+
             <div class="flex items-center gap-3">
                 <x-notification-bell />
             </div>
         </header>
 
-        <main class="p-6 lg:p-8">
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-full overflow-x-hidden">
             @if (isset($slot))
                 {{ $slot }}
             @else

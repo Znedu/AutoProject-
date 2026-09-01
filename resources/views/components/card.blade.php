@@ -13,7 +13,7 @@
         ? 'hover:shadow-xl dark:hover:shadow-[0_8px_32px_0_rgba(230,57,70,0.2)] hover:border-[#E63946]/30 dark:hover:border-[#E63946]/50 hover:-translate-y-0.5' 
         : '';
 
-    $classes = 'rounded-xl p-6 transition-all duration-300 ' . ($variantClasses[$variant] ?? $variantClasses['glass']) . ' ' . $hoverClasses;
+    $classes = 'rounded-xl p-4 sm:p-6 transition-all duration-300 break-words overflow-hidden ' . ($variantClasses[$variant] ?? $variantClasses['glass']) . ' ' . $hoverClasses;
 @endphp
 
 <div {{ $attributes->merge(['class' => $classes]) }}>

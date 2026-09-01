@@ -280,45 +280,45 @@
         <input type="checkbox" name="agreed_to_terms" value="1" />
     </form>
     {{-- Progress Indicator --}}
-    <div class="flex items-center justify-center gap-3 mb-6">
-        <div class="flex items-center gap-2">
+    <div class="flex items-center justify-center gap-1.5 sm:gap-3 mb-6 flex-wrap sm:flex-nowrap">
+        <div class="flex items-center gap-1.5 sm:gap-2">
             <div 
                 :class="currentStep === 1 ? 'bg-[#E63946] text-white' : 'bg-green-500 text-white'"
-                class="w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 shrink-0"
             >
                 <template x-if="currentStep === 1"><span>1</span></template>
                 <template x-if="currentStep > 1">
-                    <x-icon name="check-square" class="w-5 h-5 text-white" />
+                    <x-icon name="check-square" class="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </template>
             </div>
-            <span :class="currentStep === 1 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-sm">
+            <span :class="currentStep === 1 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-xs sm:text-sm">
                 Services
             </span>
         </div>
-        <div class="w-12 h-1 bg-gray-300 dark:bg-gray-700"></div>
-        <div class="flex items-center gap-2">
+        <div class="w-6 sm:w-12 h-0.5 sm:h-1 bg-gray-300 dark:bg-gray-700"></div>
+        <div class="flex items-center gap-1.5 sm:gap-2">
             <div 
                 :class="currentStep === 2 ? 'bg-[#E63946] text-white' : (currentStep > 2 ? 'bg-green-500 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400')"
-                class="w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 shrink-0"
             >
                 <template x-if="currentStep <= 2"><span>2</span></template>
                 <template x-if="currentStep > 2">
-                    <x-icon name="check-square" class="w-5 h-5 text-white" />
+                    <x-icon name="check-square" class="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </template>
             </div>
-            <span :class="currentStep === 2 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-sm">
+            <span :class="currentStep === 2 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-xs sm:text-sm">
                 Details
             </span>
         </div>
-        <div class="w-12 h-1 bg-gray-300 dark:bg-gray-700"></div>
-        <div class="flex items-center gap-2">
+        <div class="w-6 sm:w-12 h-0.5 sm:h-1 bg-gray-300 dark:bg-gray-700"></div>
+        <div class="flex items-center gap-1.5 sm:gap-2">
             <div 
                 :class="currentStep === 3 ? 'bg-[#E63946] text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
-                class="w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300"
+                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 shrink-0"
             >
                 <span>3</span>
             </div>
-            <span :class="currentStep === 3 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-sm">
+            <span :class="currentStep === 3 ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'" class="font-medium text-xs sm:text-sm">
                 Payment
             </span>
         </div>

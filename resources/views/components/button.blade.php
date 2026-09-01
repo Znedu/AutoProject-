@@ -4,7 +4,7 @@
 ])
 
 @php
-    $baseStyles = 'inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+    $baseStyles = 'inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[44px] touch-target';
 
     $variants = [
         'primary' => 'bg-gray-200 dark:bg-[#151515] text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 hover:border-[#E63946] hover:shadow-lg hover:shadow-[#E63946]/20',

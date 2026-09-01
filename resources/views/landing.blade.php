@@ -20,9 +20,9 @@
     {{-- Navigation --}}
     <nav class="fixed w-full top-0 z-50 glass-card border-b border-white/10" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
+            <div class="flex justify-between items-center h-16 sm:h-20">
                 <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-white tracking-wider">
+                    <h1 class="text-xl sm:text-2xl font-bold text-white tracking-wider">
                         AUTO<span class="text-[#E63946]">PROJECT</span>+
                     </h1>
                 </div>
@@ -32,83 +32,111 @@
                     <a href="#features" class="text-[#B8B8B8] hover:text-white transition-colors duration-300">Features</a>
                     <a href="#about" class="text-[#B8B8B8] hover:text-white transition-colors duration-300">About</a>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 sm:gap-4">
                     @auth
                         <a href="{{ \App\Services\Auth\DashboardRedirectService::pathFor(auth()->user()) }}">
-                            <button class="px-6 py-2.5 bg-gradient-red text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer">
+                            <button class="px-3.5 py-2 sm:px-6 sm:py-2.5 bg-gradient-red text-white text-xs sm:text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer touch-target">
                                 Dashboard
                             </button>
                         </a>
                     @elseif (session('verification_email'))
                         <a href="{{ route('verification.notice') }}">
-                            <button class="px-6 py-2.5 bg-gradient-red text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer flex items-center gap-2">
+                            <button class="px-3.5 py-2 sm:px-6 sm:py-2.5 bg-gradient-red text-white text-xs sm:text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer flex items-center gap-2 touch-target">
                                 <x-icon name="mail" class="w-4 h-4" />
-                                Verify Email
+                                <span class="hidden xs:inline">Verify Email</span>
                             </button>
                         </a>
                     @else
                         <a href="{{ url('/login') }}">
-                            <button class="px-6 py-2.5 text-white border border-white/20 rounded-lg hover:border-[#E63946] hover:text-[#E63946] transition-all duration-300 cursor-pointer">
+                            <button class="px-3 py-2 sm:px-5 sm:py-2.5 text-white text-xs sm:text-sm border border-white/20 rounded-lg hover:border-[#E63946] hover:text-[#E63946] transition-all duration-300 cursor-pointer touch-target">
                                 Login
                             </button>
                         </a>
                         <a href="{{ url('/register') }}">
-                            <button class="px-6 py-2.5 bg-gradient-red text-white rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer">
+                            <button class="px-3 py-2 sm:px-5 sm:py-2.5 bg-gradient-red text-white text-xs sm:text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-[#E63946]/50 transition-all duration-300 glow-red-hover cursor-pointer touch-target">
                                 Get Started
                             </button>
                         </a>
                     @endauth
+
+                    <!-- Mobile Menu Hamburger Button -->
+                    <button
+                        @click="mobileOpen = !mobileOpen"
+                        class="md:hidden p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 touch-target flex items-center justify-center cursor-pointer"
+                        aria-label="Toggle navigation menu"
+                    >
+                        <x-icon name="menu" class="w-6 h-6" x-show="!mobileOpen" />
+                        <x-icon name="x" class="w-6 h-6" x-show="mobileOpen" x-cloak />
+                    </button>
                 </div>
             </div>
+        </div>
+
+        <!-- Mobile Slide-down Menu -->
+        <div
+            x-show="mobileOpen"
+            x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-2"
+            class="md:hidden glass-card border-t border-white/10 px-4 pt-3 pb-6 space-y-3"
+        >
+            <a href="#home" @click="mobileOpen = false" class="block py-2.5 px-4 text-[#B8B8B8] hover:text-white hover:bg-white/5 rounded-lg font-medium">Home</a>
+            <a href="#services" @click="mobileOpen = false" class="block py-2.5 px-4 text-[#B8B8B8] hover:text-white hover:bg-white/5 rounded-lg font-medium">Services</a>
+            <a href="#features" @click="mobileOpen = false" class="block py-2.5 px-4 text-[#B8B8B8] hover:text-white hover:bg-white/5 rounded-lg font-medium">Features</a>
+            <a href="#about" @click="mobileOpen = false" class="block py-2.5 px-4 text-[#B8B8B8] hover:text-white hover:bg-white/5 rounded-lg font-medium">About</a>
         </div>
     </nav>
 
     {{-- Hero Section --}}
     <section
         id="home"
-        class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20"
+        class="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16 px-4"
         style="background-image: url('https://images.unsplash.com/photo-1763087978864-fe5b2778c9f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920'); background-size: cover; background-position: center; background-attachment: fixed;"
     >
         {{-- Dark Overlay --}}
         <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/90"></div>
 
         {{-- Content --}}
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="relative z-10 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 text-center">
             <div class="max-w-4xl mx-auto">
-                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
+                <h1 class="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
                     Smart Automotive
                     <br />
                     <span class="text-glow text-[#E63946]">Service Management</span>
                 </h1>
-                <p class="text-xl sm:text-2xl text-[#B8B8B8] mb-12 max-w-3xl mx-auto leading-relaxed">
+                <p class="text-base sm:text-xl lg:text-2xl text-[#B8B8B8] mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed">
                     Manage bookings, customization services, and vehicle maintenance efficiently with
                     <span class="text-white font-semibold"> AutoProject+</span>
                 </p>
-                <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-md sm:max-w-none mx-auto">
                     @auth
-                        <a href="{{ url('/customer/book-service') }}">
-                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                        <a href="{{ url('/customer/book-service') }}" class="w-full sm:w-auto">
+                            <button class="group w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-red text-white rounded-xl text-base sm:text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer touch-target">
                                 Book a Service
                                 <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </a>
                     @elseif (session('verification_email'))
-                        <a href="{{ route('verification.notice') }}">
-                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                        <a href="{{ route('verification.notice') }}" class="w-full sm:w-auto">
+                            <button class="group w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-red text-white rounded-xl text-base sm:text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer touch-target">
                                 Verify Email to Continue
                                 <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </a>
                     @else
-                        <a href="{{ url('/register') }}">
-                            <button class="group px-10 py-4 bg-gradient-red text-white rounded-xl text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer">
+                        <a href="{{ url('/register') }}" class="w-full sm:w-auto">
+                            <button class="group w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-red text-white rounded-xl text-base sm:text-lg font-semibold hover:shadow-2xl hover:shadow-[#E63946]/50 transition-all duration-300 glow-red flex items-center justify-center gap-3 cursor-pointer touch-target">
                                 Book a Service
                                 <x-icon name="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </a>
                     @endauth
-                    <a href="#services">
-                        <button class="px-10 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl text-lg font-semibold border border-white/20 hover:bg-white/20 hover:border-[#E63946] transition-all duration-300 cursor-pointer">
+                    <a href="#services" class="w-full sm:w-auto">
+                        <button class="w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl text-base sm:text-lg font-semibold border border-white/20 hover:bg-white/20 hover:border-[#E63946] transition-all duration-300 cursor-pointer touch-target">
                             Explore Services
                         </button>
                     </a>
@@ -116,7 +144,7 @@
             </div>
 
             {{-- Scroll Indicator --}}
-            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <div class="hidden sm:block absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
                 <x-icon name="chevron-right" class="w-8 h-8 text-white/50 rotate-90" />
             </div>
         </div>

@@ -90,11 +90,19 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                             <div>
                                 <p class="text-gray-600 dark:text-gray-400">Date</p>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ $booking->preferred_date->format('F j, Y') }}</p>
+                                <p class="font-medium text-gray-900 dark:text-white">
+                                    {{ $booking->preferred_date ? $booking->preferred_date->format('F j, Y') : 'N/A' }}
+                                </p>
                             </div>
                             <div>
                                 <p class="text-gray-600 dark:text-gray-400">Time</p>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($booking->preferred_time)->format('h:i A') }}</p>
+                                <p class="font-medium text-gray-900 dark:text-white">
+                                    @if ($booking->preferred_time)
+                                        {{ is_string($booking->preferred_time) ? \Carbon\Carbon::parse($booking->preferred_time)->format('h:i A') : $booking->preferred_time->format('h:i A') }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </p>
                             </div>
                             <div>
                                 <p class="text-gray-600 dark:text-gray-400">Estimated Cost</p>
@@ -107,7 +115,11 @@
                         <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
                             <div class="flex items-center gap-2 text-sm">
                                 @php
-                                    $resFee = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
+                                    try {
+                                        $resFee = \App\Models\BusinessSetting::getValue('reservation_fee', 200.00);
+                                    } catch (\Throwable $e) {
+                                        $resFee = 200.00;
+                                    }
                                 @endphp
                                 <span class="text-gray-700 dark:text-gray-300">Reservation Fee (₱{{ number_format((float) $resFee) }}):</span>
                                 @if ($payment && $payment->is_verified)
