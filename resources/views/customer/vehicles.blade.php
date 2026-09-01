@@ -218,22 +218,37 @@
             },
 
             handleAddVehicle() {
-                fetch('/customer/vehicles', {
+                fetch("{{ route('customer.vehicles.store') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(this.newVehicle)
                 })
-                .then(res => {
-                    if (!res.ok) return res.json().then(err => { throw err; });
-                    return res.json();
+                .then(async res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    let data = {};
+                    if (contentType.includes('application/json')) {
+                        data = await res.json();
+                    } else {
+                        throw new Error(`Server error (${res.status}). Please try again.`);
+                    }
+
+                    if (!res.ok) {
+                        let errMsg = data.message || 'Failed to add vehicle.';
+                        if (data.errors) {
+                            errMsg = Object.values(data.errors).flat().join(' ');
+                        }
+                        throw new Error(errMsg);
+                    }
+                    return data;
                 })
                 .then(data => {
                     if (data.success) {
                         this.vehicles.unshift(data.vehicle);
-                        showToast.success(data.message);
+                        showToast.success(data.message || 'Vehicle added successfully!');
                         this.showAddForm = false;
                         this.resetNewVehicle();
                     } else {
@@ -241,8 +256,7 @@
                     }
                 })
                 .catch(err => {
-                    const msg = err.message || (err.errors ? Object.values(err.errors).flat().join('\n') : 'An error occurred.');
-                    showToast.error(msg);
+                    showToast.error(err.message || 'An error occurred.');
                 });
             },
 
@@ -252,31 +266,45 @@
             },
 
             handleUpdateVehicle() {
-                fetch(`/customer/vehicles/${this.editingVehicle.id}`, {
+                fetch("{{ url('/customer/vehicles') }}/" + this.editingVehicle.id, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(this.editingVehicle)
                 })
-                .then(res => {
-                    if (!res.ok) return res.json().then(err => { throw err; });
-                    return res.json();
+                .then(async res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    let data = {};
+                    if (contentType.includes('application/json')) {
+                        data = await res.json();
+                    } else {
+                        throw new Error(`Server error (${res.status}). Please try again.`);
+                    }
+
+                    if (!res.ok) {
+                        let errMsg = data.message || 'Failed to update vehicle.';
+                        if (data.errors) {
+                            errMsg = Object.values(data.errors).flat().join(' ');
+                        }
+                        throw new Error(errMsg);
+                    }
+                    return data;
                 })
                 .then(data => {
                     if (data.success) {
                         const idx = this.vehicles.findIndex(v => v.id === this.editingVehicle.id);
                         if (idx !== -1) this.vehicles[idx] = data.vehicle;
-                        showToast.success(data.message);
+                        showToast.success(data.message || 'Vehicle updated successfully!');
                         this.showEditModal = false;
                     } else {
                         showToast.error(data.message || 'Failed to update vehicle.');
                     }
                 })
                 .catch(err => {
-                    const msg = err.message || (err.errors ? Object.values(err.errors).flat().join('\n') : 'An error occurred.');
-                    showToast.error(msg);
+                    showToast.error(err.message || 'An error occurred.');
                 });
             },
 
@@ -287,21 +315,32 @@
                     confirmText: 'Remove Vehicle',
                     variant: 'danger',
                     onConfirm: () => {
-                        fetch(`/customer/vehicles/${id}`, {
+                        fetch("{{ url('/customer/vehicles') }}/" + id, {
                             method: 'DELETE',
                             headers: {
                                 'Content-Type': 'application/json',
+                                'Accept': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             }
                         })
-                        .then(res => {
-                            if (!res.ok) return res.json().then(err => { throw err; });
-                            return res.json();
+                        .then(async res => {
+                            const contentType = res.headers.get('content-type') || '';
+                            let data = {};
+                            if (contentType.includes('application/json')) {
+                                data = await res.json();
+                            } else {
+                                throw new Error(`Server error (${res.status}). Please try again.`);
+                            }
+
+                            if (!res.ok) {
+                                throw new Error(data.message || 'Failed to delete vehicle.');
+                            }
+                            return data;
                         })
                         .then(data => {
                             if (data.success) {
                                 this.vehicles = this.vehicles.filter(v => v.id !== id);
-                                showToast.success(data.message);
+                                showToast.success(data.message || 'Vehicle removed successfully!');
                             } else {
                                 showToast.error(data.message || 'Failed to delete vehicle.');
                             }
