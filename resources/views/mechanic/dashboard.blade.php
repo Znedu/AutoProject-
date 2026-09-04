@@ -41,26 +41,6 @@
         />
     </div>
 
-    {{-- Quick Actions --}}
-    <x-card>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-        <div class="flex flex-wrap gap-4 mb-4">
-            <a href="{{ url('/mechanic/jobs') }}">
-                <x-button variant="accent">View All Jobs</x-button>
-            </a>
-            <a href="{{ url('/mechanic/notes') }}">
-                <x-button variant="secondary">Add Service Note</x-button>
-            </a>
-        </div>
-        <div class="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl">
-            <div class="flex items-start gap-2">
-                <x-icon name="message-square" class="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0 w-5 h-5" />
-                <p class="text-sm text-blue-800 dark:text-blue-200">
-                    <strong>Photo Updates:</strong> Click "Update Progress" on any in-progress job to send photos and updates to customers. This builds trust and keeps them informed!
-                </p>
-            </div>
-        </div>
-    </x-card>
 
     {{-- Current Assigned Jobs --}}
     <x-card>

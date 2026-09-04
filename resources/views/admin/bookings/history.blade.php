@@ -4,14 +4,9 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Booking History</h1>
-            <p class="text-gray-600 dark:text-gray-400">Complete record of all customer booking requests.</p>
-        </div>
-        <a href="{{ route('admin.approvals.index') }}">
-            <x-button variant="secondary">Pending Approvals</x-button>
-        </a>
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Booking History</h1>
+        <p class="text-gray-600 dark:text-gray-400">Complete record of all customer booking requests.</p>
     </div>
 
     <x-card>

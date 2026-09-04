@@ -5,22 +5,9 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Payment Verification</h1>
-            <p class="text-gray-600 dark:text-gray-400">Review customer reservation fee payments and confirm bookings.</p>
-        </div>
-        <div class="flex gap-3">
-            <a href="{{ route('admin.jobs.index') }}">
-                <x-button variant="primary">
-                    <x-icon name="wrench" class="w-4 h-4 mr-2" />
-                    Job Assignment
-                </x-button>
-            </a>
-            <a href="{{ route('admin.bookings.history') }}">
-                <x-button variant="secondary">Booking History</x-button>
-            </a>
-        </div>
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Payment Verification</h1>
+        <p class="text-gray-600 dark:text-gray-400">Review customer reservation fee payments and confirm bookings.</p>
     </div>
 
     {{-- Stats --}}
@@ -140,6 +127,44 @@
                             <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Preferred Schedule</h4>
                             <p class="font-semibold text-gray-900 dark:text-white text-sm">{{ $booking->preferred_date->format('F j, Y') }}</p>
                             <p class="text-gray-500 text-sm">{{ \Carbon\Carbon::parse($booking->preferred_time)->format('h:i A') }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Selected Services & Preferred Brands --}}
+                    <div class="space-y-2 pb-5 border-b border-gray-200 dark:border-white/10">
+                        <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Services & Brand Preferences</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach ($booking->bookingServices as $bs)
+                                @php
+                                    $brandObj = $bs->service?->brands->first(fn($b) => strtolower(trim($b->name)) === strtolower(trim($bs->preferred_brand ?? '')));
+                                @endphp
+                                <div class="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/5 flex items-start justify-between gap-3">
+                                    <div class="space-y-1">
+                                        <p class="font-bold text-gray-900 dark:text-white text-sm">{{ $bs->service?->name }}</p>
+                                        @if ($bs->preferred_brand)
+                                            <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1.5">
+                                                <span>Brand: {{ $bs->preferred_brand }}</span>
+                                            </p>
+                                            @if ($brandObj && $brandObj->short_description)
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 leading-tight">{{ $brandObj->short_description }}</p>
+                                            @endif
+                                        @else
+                                            <p class="text-xs text-gray-400 italic">No specific brand preference selected</p>
+                                        @endif
+                                    </div>
+                                    <div class="text-right flex-shrink-0">
+                                        @if ($brandObj && (float)$brandObj->price > 0)
+                                            <span class="inline-block font-mono font-bold text-[#E63946] text-xs bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">
+                                                ₱{{ number_format($brandObj->price, 2) }}
+                                            </span>
+                                        @else
+                                            <span class="inline-block font-mono text-xs text-gray-500 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-lg">
+                                                ₱{{ number_format($bs->unit_min_snapshot, 2) }} - ₱{{ number_format($bs->unit_max_snapshot, 2) }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
 

@@ -76,19 +76,40 @@
                                             @endif
                                         </div>
                                         @if ($item->brand_preference)
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Brand: <span class="text-gray-700 dark:text-gray-300 font-medium">{{ $item->brand_preference }}</span></p>
+                                            @php
+                                                $brandDetail = $item->service?->brands?->first(fn($b) => strtolower(trim($b->name)) === strtolower(trim($item->brand_preference)));
+                                            @endphp
+                                            <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5 flex items-center gap-1.5">
+                                                <span>Brand: {{ $item->brand_preference }}</span>
+                                                @if ($brandDetail && (float)$brandDetail->price > 0)
+                                                    <span class="font-mono text-[11px] bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 text-blue-700 dark:text-blue-300">
+                                                        ₱{{ number_format($brandDetail->price, 2) }}
+                                                    </span>
+                                                @endif
+                                            </p>
+                                            @if ($brandDetail && $brandDetail->short_description)
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 italic mt-0.5">{{ $brandDetail->short_description }}</p>
+                                            @endif
                                         @endif
                                         @if ($item->notes)
                                             <p class="text-xs text-gray-500 italic mt-0.5">{{ $item->notes }}</p>
                                         @endif
                                     </td>
                                     <td class="py-3 px-4 text-center text-gray-700 dark:text-gray-300 font-mono">
-                                        {{ (float) $item->quantity == (int) $item->quantity ? (int) $item->quantity : number_format((float) $item->quantity, 2) }}
+                                        @if ($item->item_type === \App\Models\QuotationLineItem::ITEM_TYPE_LABOR)
+                                            {{ (float) $item->quantity == (int) $item->quantity ? (int) $item->quantity : number_format((float) $item->quantity, 2) }} hrs
+                                        @elseif ($item->item_type === \App\Models\QuotationLineItem::ITEM_TYPE_DISCOUNT && $item->notes && str_contains($item->notes, '%'))
+                                            <span class="text-red-600 font-semibold">{{ $item->notes }}</span>
+                                        @else
+                                            {{ (float) $item->quantity == (int) $item->quantity ? (int) $item->quantity : number_format((float) $item->quantity, 2) }}
+                                        @endif
                                     </td>
                                     <td class="py-3 px-4 text-right text-gray-700 dark:text-gray-300 font-mono">
                                         @if ($item->unit_final !== null)
                                             @if ($item->item_type === \App\Models\QuotationLineItem::ITEM_TYPE_DISCOUNT)
                                                 <span class="text-red-600 font-medium">-₱{{ number_format((float) $item->unit_final, 2) }}</span>
+                                            @elseif ($item->item_type === \App\Models\QuotationLineItem::ITEM_TYPE_LABOR)
+                                                ₱{{ number_format((float) $item->unit_final, 2) }}/hr
                                             @else
                                                 ₱{{ number_format((float) $item->unit_final, 2) }}
                                             @endif
@@ -179,7 +200,7 @@
 
                 @if ($summary->feesSubtotal > 0)
                     <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>Fees & Surcharges</span>
+                        <span>Online Booking & Surcharges Fee</span>
                         <span class="font-mono text-gray-900 dark:text-white">₱{{ number_format($summary->feesSubtotal, 2) }}</span>
                     </div>
                 @endif
@@ -192,7 +213,7 @@
                 @endif
 
                 <div class="pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-baseline">
-                    <span class="text-base font-bold text-gray-900 dark:text-white">Final Total Charges</span>
+                    <span class="text-base font-bold text-gray-900 dark:text-white">Total Charges</span>
                     <span class="text-2xl font-bold font-mono text-[#E63946]">₱{{ number_format($summary->finalTotal, 2) }}</span>
                 </div>
             </div>
@@ -228,7 +249,9 @@
                                                 {{ str_replace('_', ' ', $payment->type) }}
                                                 <span class="text-xs font-normal text-gray-500 uppercase">({{ $payment->method }})</span>
                                                 @if ($payment->type === \App\Models\Payment::TYPE_RESERVATION_FEE)
-                                                    <span class="ml-1 text-[11px] font-normal px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">Slot Booking Fee (Separate)</span>
+                                                    <span class="ml-1 text-[11px] font-normal px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                                        ✓ Credited Toward Bill
+                                                    </span>
                                                 @endif
                                             </p>
                                             <p class="text-xs text-gray-500">
@@ -261,15 +284,31 @@
                             Billing Settlement Status
                         </p>
 
-                        <div class="mt-4 space-y-3">
+                        <div class="mt-4 space-y-2.5">
                             <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                <span>Final Total</span>
+                                <span>Total Charges</span>
                                 <span class="font-mono font-semibold text-gray-900 dark:text-white">₱{{ number_format($summary->finalTotal, 2) }}</span>
                             </div>
-                            <div class="flex justify-between text-sm text-green-600">
-                                <span>Bill Payments Credited</span>
-                                <span class="font-mono font-semibold">₱{{ number_format($summary->totalPaid, 2) }}</span>
+
+                            @if ($summary->reservationFeePaid > 0)
+                                <div class="flex justify-between text-xs text-blue-600 dark:text-blue-400">
+                                    <span>Prepaid Fee Credited (GCash)</span>
+                                    <span class="font-mono font-semibold">-₱{{ number_format($summary->reservationFeePaid, 2) }}</span>
+                                </div>
+                            @endif
+
+                            @if ($summary->depositsPaid + $summary->finalPaymentsPaid > 0)
+                                <div class="flex justify-between text-xs text-green-600 dark:text-green-400">
+                                    <span>Additional Payments Credited</span>
+                                    <span class="font-mono font-semibold">-₱{{ number_format($summary->depositsPaid + $summary->finalPaymentsPaid, 2) }}</span>
+                                </div>
+                            @endif
+
+                            <div class="flex justify-between text-sm text-green-600 font-medium pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
+                                <span>Total Payments Credited</span>
+                                <span class="font-mono font-bold">₱{{ number_format($summary->totalPaid, 2) }}</span>
                             </div>
+
                             <div class="pt-3 border-t border-gray-200 dark:border-white/10">
                                 <p class="text-xs text-gray-500">Remaining Balance Due</p>
                                 <p class="text-3xl font-bold font-mono mt-1 {{ $summary->balanceDue <= 0 ? 'text-green-600 dark:text-green-400' : 'text-[#E63946]' }}">

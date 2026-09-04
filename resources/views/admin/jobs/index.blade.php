@@ -6,17 +6,9 @@
 <div class="space-y-6">
 
     {{-- Page Header --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Job Assignment</h1>
-            <p class="text-gray-600 dark:text-gray-400">Assign mechanics to approved bookings and manage job priorities.</p>
-        </div>
-        <a href="{{ route('admin.approvals.index') }}">
-            <x-button variant="secondary">
-                <x-icon name="check-square" class="w-4 h-4 mr-2" />
-                Booking Approvals
-            </x-button>
-        </a>
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Job Assignment</h1>
+        <p class="text-gray-600 dark:text-gray-400">Assign mechanics to approved bookings and manage job priorities.</p>
     </div>
 
     {{-- Stats Row --}}

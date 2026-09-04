@@ -142,7 +142,7 @@ class BookingFinalPaymentTest extends TestCase
         $this->assertEquals($this->admin->id, $payment->verified_by);
 
         $this->finalQuotation->refresh();
-        $this->assertEquals(5000.00, (float) $this->finalQuotation->amount_paid_snapshot);
+        $this->assertEquals(5200.00, (float) $this->finalQuotation->amount_paid_snapshot);
         $this->assertEquals(0.00, (float) $this->finalQuotation->balance_due_snapshot);
     }
 

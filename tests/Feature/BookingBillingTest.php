@@ -213,6 +213,48 @@ class BookingBillingTest extends TestCase
         $this->assertCount(4, $draft->lineItems); // 1 initial service line + 3 added
     }
 
+    public function test_admin_can_add_decimal_labor_hours_and_percentage_discount_lines(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.bookings.billing.show', $this->booking));
+
+        // Add Labor Line with decimal hours (2.5 hrs @ 500/hr)
+        $resLabor = $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'labor',
+                'description' => 'Surface Prep & Sanding',
+                'quantity' => 2.5,
+                'unit_final' => 500.00,
+            ]);
+
+        $resLabor->assertRedirect();
+        $resLabor->assertSessionHas('success');
+
+        // Add Percentage Discount Line (Senior Citizen Discount, -5% in notes)
+        $resDiscount = $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'discount',
+                'description' => 'Senior Citizen Discount',
+                'quantity' => 1,
+                'unit_final' => 2750.00,
+                'notes' => '-5%',
+            ]);
+
+        $resDiscount->assertRedirect();
+        $resDiscount->assertSessionHas('success');
+
+        $laborItem = $this->booking->finalQuotation->lineItems()->where('item_type', 'labor')->first();
+        $this->assertNotNull($laborItem);
+        $this->assertEquals(2.5, (float) $laborItem->quantity);
+        $this->assertEquals(500.00, (float) $laborItem->unit_final);
+        $this->assertEquals(1250.00, (float) $laborItem->line_total_computed);
+
+        $discountItem = $this->booking->finalQuotation->lineItems()->where('item_type', 'discount')->first();
+        $this->assertNotNull($discountItem);
+        $this->assertEquals('-5%', $discountItem->notes);
+        $this->assertEquals(2750.00, (float) $discountItem->unit_final);
+    }
+
     public function test_admin_can_finalize_billing_with_unit_finals_set(): void
     {
         $this->actingAs($this->admin)

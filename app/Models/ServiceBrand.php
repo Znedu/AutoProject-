@@ -17,6 +17,8 @@ class ServiceBrand extends Model
     protected $fillable = [
         'service_id',
         'name',
+        'price',
+        'short_description',
         'sort_order',
         'is_active',
     ];
@@ -39,6 +41,7 @@ class ServiceBrand extends Model
     protected function casts(): array
     {
         return [
+            'price' => 'decimal:2',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];

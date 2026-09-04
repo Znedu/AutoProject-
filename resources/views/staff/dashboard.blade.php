@@ -38,32 +38,6 @@
         />
     </div>
 
-    {{-- Quick Actions --}}
-    <x-card>
-        <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
-        <div class="flex flex-wrap gap-4">
-            <a href="{{ url('/staff/walk-in-booking') }}">
-                <x-button variant="accent">
-                    New Walk-In Booking
-                </x-button>
-            </a>
-            <a href="{{ url('/staff/booking-queue') }}">
-                <x-button variant="secondary">
-                    View Booking Queue
-                </x-button>
-            </a>
-            <a href="{{ url('/staff/schedule') }}">
-                <x-button variant="secondary">
-                    View Schedule
-                </x-button>
-            </a>
-            <a href="{{ url('/staff/assistance') }}">
-                <x-button variant="ghost">
-                    Customer Assistance
-                </x-button>
-            </a>
-        </div>
-    </x-card>
 
     {{-- Pending Bookings Approval --}}
     <x-card>

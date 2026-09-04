@@ -13,7 +13,7 @@ return new class extends Migration
         BusinessSetting::query()->updateOrCreate(
             ['key' => 'reservation_fee_credits_toward_total'],
             [
-                'value' => 'false',
+                'value' => 'true',
                 'type' => 'boolean',
                 'group' => 'booking',
                 'description' => 'Whether reservation fee is credited toward the final billing total',

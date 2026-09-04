@@ -68,8 +68,6 @@ class BookingBillingCalculatorService
             ->where('item_type', QuotationLineItem::ITEM_TYPE_FEE)
             ->sum(fn (QuotationLineItem $item) => $item->line_total_computed ?? 0);
 
-        $finalTotal = round(max(0, $servicesSubtotal + $productsSubtotal + $laborSubtotal + $feesSubtotal - $discountsTotal), 2);
-
         // Payments
         $payments = $booking->relationLoaded('payments')
             ? $booking->payments
@@ -80,6 +78,20 @@ class BookingBillingCalculatorService
         $reservationFeePaid = (float) $verifiedPayments
             ->where('type', Payment::TYPE_RESERVATION_FEE)
             ->sum('amount');
+
+        // Check if explicit fee line item exists in quotation line items
+        $hasFeeLineItem = $lineItems->contains(function (QuotationLineItem $item) {
+            $desc = strtolower($item->description);
+            return $item->item_type === QuotationLineItem::ITEM_TYPE_FEE
+                || str_contains($desc, 'convenience')
+                || str_contains($desc, 'reservation');
+        });
+
+        if (! $hasFeeLineItem && $reservationFeePaid > 0) {
+            $feesSubtotal += $reservationFeePaid;
+        }
+
+        $finalTotal = round(max(0, $servicesSubtotal + $productsSubtotal + $laborSubtotal + $feesSubtotal - $discountsTotal), 2);
 
         $depositsPaid = (float) $verifiedPayments
             ->where('type', Payment::TYPE_DEPOSIT)
@@ -93,7 +105,7 @@ class BookingBillingCalculatorService
             ->where('type', Payment::TYPE_REFUND)
             ->sum('amount');
 
-        $creditsReservationFee = (bool) filter_var(BusinessSetting::getValue('reservation_fee_credits_toward_total', false), FILTER_VALIDATE_BOOLEAN);
+        $creditsReservationFee = (bool) filter_var(BusinessSetting::getValue('reservation_fee_credits_toward_total', true), FILTER_VALIDATE_BOOLEAN);
 
         $creditablePaid = round(max(0, ($creditsReservationFee ? $reservationFeePaid : 0) + $depositsPaid + $finalPaymentsPaid - $refundsTotal), 2);
         $balanceDue = round(max(0, $finalTotal - $creditablePaid), 2);
@@ -122,6 +134,7 @@ class BookingBillingCalculatorService
             lineItemsGrouped: $grouped,
             paymentsBreakdown: $sortedVerifiedPayments,
             isFinalized: $isFinalized,
+            creditsReservationFee: $creditsReservationFee,
             finalQuotation: $finalQuotation,
             initialQuotation: $initialQuotation,
         );

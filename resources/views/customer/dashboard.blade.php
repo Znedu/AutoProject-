@@ -36,21 +36,6 @@
         </x-stat-card>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="rounded-2xl p-6 bg-gray-100 dark:bg-[#151515]/80 backdrop-blur-md border border-gray-300 dark:border-[#E63946]/20">
-        <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
-        <div class="flex flex-wrap gap-4">
-            <a href="{{ url('/customer/book-service') }}">
-                <x-button variant="accent" class="text-white">Book New Service</x-button>
-            </a>
-            <a href="{{ url('/customer/track') }}">
-                <x-button variant="secondary">Track Service</x-button>
-            </a>
-            <a href="{{ url('/customer/support') }}">
-                <x-button variant="outline">Create Support Ticket</x-button>
-            </a>
-        </div>
-    </div>
 
     {{-- Available Services Overview --}}
     <div class="rounded-2xl p-6 bg-white dark:bg-[#151515]/60 backdrop-blur-md border border-gray-300 dark:border-gray-800 shadow-lg">

@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\Billing\BookingBillingService;
 use Illuminate\Support\Collection;
 
+use App\Models\ServiceBrand;
+
 class QuotationBuilderService
 {
     /**
@@ -21,31 +23,60 @@ class QuotationBuilderService
         Collection $services,
         array $brandPreferences = [],
     ): Quotation {
-        $minTotal = $services->sum('min_cost');
-        $maxTotal = $services->sum('max_cost');
+        $services->loadMissing('brands');
+
+        $minTotal = 0;
+        $maxTotal = 0;
+        $lineData = [];
+
+        foreach ($services->values() as $index => $service) {
+            $brandName = $brandPreferences[$service->id] ?? null;
+            $selectedBrand = null;
+
+            if ($brandName) {
+                $selectedBrand = $service->brands->first(fn (ServiceBrand $b) => strtolower(trim($b->name)) === strtolower(trim($brandName)));
+            }
+
+            if ($selectedBrand && (float) $selectedBrand->price > 0) {
+                $unitMin = (float) $selectedBrand->price;
+                $unitMax = (float) $selectedBrand->price;
+                $unitFinal = (float) $selectedBrand->price;
+            } else {
+                $unitMin = (float) $service->min_cost;
+                $unitMax = (float) $service->max_cost;
+                $unitFinal = null;
+            }
+
+            $minTotal += $unitMin;
+            $maxTotal += $unitMax;
+
+            $lineData[] = [
+                'service_id' => $service->id,
+                'description' => $service->name,
+                'brand_preference' => $brandName,
+                'quantity' => 1,
+                'unit_min' => $unitMin,
+                'unit_max' => $unitMax,
+                'unit_final' => $unitFinal,
+                'sort_order' => $index + 1,
+            ];
+        }
 
         $quotation = Quotation::create([
             'booking_id' => $booking->id,
             'version' => 1,
             'type' => Quotation::TYPE_INITIAL_ESTIMATE,
             'status' => Quotation::STATUS_PENDING,
-            'min_total' => $minTotal,
-            'max_total' => $maxTotal,
+            'min_total' => round($minTotal, 2),
+            'max_total' => round($maxTotal, 2),
             'currency' => 'PHP',
-            'notes' => 'Auto-generated from customer service selection.',
+            'notes' => 'Auto-generated from customer service & brand selection.',
         ]);
 
-        foreach ($services->values() as $index => $service) {
-            QuotationLineItem::create([
+        foreach ($lineData as $item) {
+            QuotationLineItem::create(array_merge($item, [
                 'quotation_id' => $quotation->id,
-                'service_id' => $service->id,
-                'description' => $service->name,
-                'brand_preference' => $brandPreferences[$service->id] ?? null,
-                'quantity' => 1,
-                'unit_min' => $service->min_cost,
-                'unit_max' => $service->max_cost,
-                'sort_order' => $index + 1,
-            ]);
+            ]));
         }
 
         return $quotation->load('lineItems');

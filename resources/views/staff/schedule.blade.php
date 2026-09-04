@@ -111,15 +111,6 @@
         @endforeach
     </div>
 
-    {{-- Quick actions --}}
-    <div class="flex gap-4">
-        <a href="{{ route('staff.walk-in-booking') }}">
-            <x-button variant="accent">New Walk-In Booking</x-button>
-        </a>
-        <a href="{{ route('staff.booking-queue') }}">
-            <x-button variant="secondary">Booking Queue</x-button>
-        </a>
-    </div>
 
 </div>
 @endsection

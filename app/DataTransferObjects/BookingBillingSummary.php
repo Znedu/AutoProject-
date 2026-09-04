@@ -32,6 +32,7 @@ class BookingBillingSummary
         public readonly array $lineItemsGrouped,
         public readonly Collection $paymentsBreakdown,
         public readonly bool $isFinalized,
+        public readonly bool $creditsReservationFee = true,
         public readonly ?Quotation $finalQuotation = null,
         public readonly ?Quotation $initialQuotation = null,
     ) {}

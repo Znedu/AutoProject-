@@ -32,6 +32,14 @@ class DatabaseSeeder extends Seeder
 
         $users = [
             [
+                'name' => 'Demo User (Customer)',
+                'email' => 'demouser@gmail.com',
+                'phone' => '+63 917 111 0000',
+                'role_id' => $roles[RoleSlug::Customer->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
+            ],
+            [
                 'name' => 'Carlos Customer',
                 'email' => 'customer@gmail.com',
                 'phone' => '+63 915 222 3333',

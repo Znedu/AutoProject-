@@ -210,12 +210,12 @@ class BookingBillingCalculatorTest extends TestCase
         // Final total = 4700 + 4600 + 1000 + 250 - 500 = 10050
         $this->assertEquals(10050.00, $summary->finalTotal);
 
-        // Total paid credited toward bill = 2000 (deposit), reservation fee is separate
+        // Total paid credited toward bill = 2000 (deposit) + 200 (reservation fee) = 2200
         $this->assertEquals(200.00, $summary->reservationFeePaid);
         $this->assertEquals(2000.00, $summary->depositsPaid);
-        $this->assertEquals(2000.00, $summary->totalPaid);
+        $this->assertEquals(2200.00, $summary->totalPaid);
 
-        // Balance due = 10050 - 2000 = 8050
-        $this->assertEquals(8050.00, $summary->balanceDue);
+        // Balance due = 10050 - 2200 = 7850
+        $this->assertEquals(7850.00, $summary->balanceDue);
     }
 }

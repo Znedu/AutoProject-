@@ -10,7 +10,12 @@
         'category' => $service->category->slug,
         'estimatedPrice' => ['min' => (float) $service->min_cost, 'max' => (float) $service->max_cost],
         'description' => $service->description,
-        'brands' => $service->brands->pluck('name')->values(),
+        'brands' => $service->brands->map(fn ($b) => [
+            'id' => $b->id,
+            'name' => $b->name,
+            'price' => (float) $b->price,
+            'short_description' => $b->short_description,
+        ])->values(),
     ])->values();
 
     $categoriesPayload = $serviceCategories->map(fn ($category) => [
@@ -113,25 +118,64 @@
             }
         },
 
-        handleBrandSelection(serviceId, brand) {
-            this.selectedBrands[serviceId] = brand;
+        handleBrandSelection(serviceId, brandName) {
+            if (this.selectedBrands[serviceId] === brandName) {
+                delete this.selectedBrands[serviceId];
+            } else {
+                this.selectedBrands[serviceId] = brandName;
+            }
+        },
+
+        getSelectedBrandObj(serviceId) {
+            const brandName = this.selectedBrands[serviceId];
+            if (!brandName) return null;
+            const svc = this.services.find(s => s.id === serviceId);
+            return svc && svc.brands ? svc.brands.find(b => b.name === brandName) : null;
+        },
+
+        getSelectedBrandPrice(serviceId) {
+            const b = this.getSelectedBrandObj(serviceId);
+            return b ? Number(b.price).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '0.00';
+        },
+
+        getSelectedBrandDesc(serviceId) {
+            const b = this.getSelectedBrandObj(serviceId);
+            return b ? (b.short_description || '') : '';
         },
 
         getEstimatedCost() {
             if (this.selectedServices.length === 0) return null;
             let min = 0;
             let max = 0;
+
             this.selectedServices.forEach(id => {
                 let svc = this.services.find(s => s.id === id);
                 if (svc) {
-                    min += svc.estimatedPrice.min;
-                    max += svc.estimatedPrice.max;
+                    let brandObj = this.getSelectedBrandObj(id);
+                    if (brandObj && Number(brandObj.price) > 0) {
+                        min += Number(brandObj.price);
+                        max += Number(brandObj.price);
+                    } else {
+                        min += svc.estimatedPrice.min;
+                        max += svc.estimatedPrice.max;
+                    }
                 }
             });
+
+            if (min === max) {
+                return {
+                    min: min,
+                    max: max,
+                    display: '₱' + min.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                    isExact: true
+                };
+            }
+
             return {
                 min: min,
                 max: max,
-                display: '₱' + min.toLocaleString() + ' - ₱' + max.toLocaleString()
+                display: '₱' + min.toLocaleString('en-US') + ' - ₱' + max.toLocaleString('en-US'),
+                isExact: false
             };
         },
 
@@ -450,40 +494,62 @@
         {{-- Brand Selection --}}
         <template x-if="selectedServices.length > 0 && services.filter(s => selectedServices.includes(s.id) && s.brands && s.brands.length > 0).length > 0">
             <x-card class="border-2 border-[#457B9D]">
-                <div class="flex items-center gap-2 mb-4">
+                <div class="flex items-center gap-2 mb-2">
                     <x-icon name="shield" class="text-[#457B9D] w-6 h-6" />
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Select Preferred Brands (Optional)</h2>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Choose your preferred brands for the selected services. If no brand is selected, our staff will recommend the best option based on your vehicle and budget.
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Select your preferred brand to view its specs, price, and automatically calculate your estimated bill total.
                 </p>
 
                 <div class="space-y-6">
                     <template x-for="service in services.filter(s => selectedServices.includes(s.id) && s.brands && s.brands.length > 0)" :key="service.id">
-                        <div class="bg-gray-50 dark:bg-[#151515] rounded-xl p-4">
-                            <div class="flex items-start gap-3 mb-3">
+                        <div class="bg-gray-50 dark:bg-[#151515] rounded-xl p-4 border border-gray-200 dark:border-white/5 space-y-3">
+                            <div class="flex items-start gap-3">
                                 <x-icon name="check-square" class="text-[#457B9D] flex-shrink-0 mt-0.5 w-5 h-5" />
                                 <div class="flex-1">
-                                    <h4 class="font-bold text-gray-900 dark:text-white mb-1" x-text="service.name"></h4>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">Available brands:</p>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-base" x-text="service.name"></h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Available brands for this service:</p>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap gap-2 ml-8">
-                                <template x-for="brand in service.brands" :key="brand">
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pl-0 sm:pl-8">
+                                <template x-for="brand in service.brands" :key="brand.name">
                                     <button
                                         type="button"
-                                        @click="handleBrandSelection(service.id, brand)"
-                                        class="px-3 py-2 rounded-lg text-sm border-2 transition-all cursor-pointer"
-                                        :class="selectedBrands[service.id] === brand ? 'bg-[#457B9D] text-white border-[#457B9D]' : 'bg-white dark:bg-[#0B0B0B] text-gray-700 dark:text-gray-300 border-gray-300 dark:border-white/20 hover:border-[#457B9D]'"
-                                        x-text="brand"
-                                    ></button>
+                                        @click="handleBrandSelection(service.id, brand.name)"
+                                        class="text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between"
+                                        :class="selectedBrands[service.id] === brand.name ? 'border-[#457B9D] bg-blue-50/80 dark:bg-blue-950/40 ring-2 ring-[#457B9D]/30' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B0B0B] hover:border-gray-300 dark:hover:border-white/20'"
+                                    >
+                                        <div class="space-y-1.5">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="font-bold text-gray-900 dark:text-white text-sm" x-text="brand.name"></span>
+                                                <span class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20">
+                                                    ₱<span x-text="Number(brand.price).toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+                                                </span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed" x-text="brand.short_description || 'Branded performance component'"></p>
+                                        </div>
+
+                                        <div class="mt-3 pt-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between text-[11px]">
+                                            <span class="font-semibold" :class="selectedBrands[service.id] === brand.name ? 'text-[#457B9D]' : 'text-gray-400'" x-text="selectedBrands[service.id] === brand.name ? '✓ Selected Brand' : 'Click to select'"></span>
+                                            <x-icon name="check-circle" class="w-4 h-4 text-[#457B9D]" x-show="selectedBrands[service.id] === brand.name" />
+                                        </div>
+                                    </button>
                                 </template>
                             </div>
+
                             <template x-if="selectedBrands[service.id]">
-                                <div class="ml-8 mt-3 p-2 bg-blue-50 dark:bg-blue-950/30 border-l-4 border-[#457B9D] rounded">
-                                    <p class="text-xs text-gray-700 dark:text-gray-300">
-                                        <strong>Selected:</strong> <span x-text="selectedBrands[service.id]"></span>
-                                    </p>
+                                <div class="sm:ml-8 p-3 bg-blue-50 dark:bg-blue-950/40 border-l-4 border-[#457B9D] rounded-xl flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs text-gray-700 dark:text-gray-300">
+                                            <strong>Selected Brand:</strong> <span class="font-bold text-gray-900 dark:text-white" x-text="selectedBrands[service.id]"></span>
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="getSelectedBrandDesc(service.id)"></p>
+                                    </div>
+                                    <div class="text-right font-mono font-bold text-sm text-[#E63946] pl-4">
+                                        ₱<span x-text="getSelectedBrandPrice(service.id)"></span>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -500,26 +566,39 @@
                         <x-icon name="dollar-sign" class="w-8 h-8 text-white" />
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-lg font-bold mb-2">Estimated Total Cost Range</h3>
+                        <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+                            <h3 class="text-lg font-bold">Estimated Total Cost</h3>
+                            <span x-show="getEstimatedCost().isExact" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white border border-white/30 uppercase tracking-wider">
+                                Exact Brand Pricing Calculated
+                            </span>
+                        </div>
                         <p class="text-3xl font-extrabold mb-3" x-text="getEstimatedCost().display"></p>
                         <div class="bg-white/20 rounded-xl p-3 text-sm space-y-2">
                             <p class="font-medium mb-1">Selected Services (<span x-text="selectedServices.length"></span>):</p>
-                            <ul class="space-y-1 opacity-90">
+                            <ul class="space-y-1.5 divide-y divide-white/10">
                                 <template x-for="id in selectedServices" :key="id">
-                                    <li class="flex items-start gap-2">
-                                        <span>•</span>
-                                        <div class="flex-1">
-                                            <span x-text="services.find(s => s.id === id).name"></span>
+                                    <li class="pt-1.5 flex items-center justify-between text-xs sm:text-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span>•</span>
+                                            <span class="font-medium" x-text="services.find(s => s.id === id).name"></span>
                                             <template x-if="selectedBrands[id]">
-                                                <span class="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded" x-text="selectedBrands[id]"></span>
+                                                <span class="ml-1 text-[11px] bg-white/20 px-2 py-0.5 rounded font-semibold" x-text="selectedBrands[id]"></span>
+                                            </template>
+                                        </div>
+                                        <div class="font-mono font-bold">
+                                            <template x-if="getSelectedBrandObj(id) && Number(getSelectedBrandObj(id).price) > 0">
+                                                <span x-text="'₱' + Number(getSelectedBrandObj(id).price).toLocaleString('en-US', { minimumFractionDigits: 2 })"></span>
+                                            </template>
+                                            <template x-if="!getSelectedBrandObj(id) || Number(getSelectedBrandObj(id).price) === 0">
+                                                <span x-text="'₱' + services.find(s => s.id === id).estimatedPrice.min.toLocaleString() + ' - ₱' + services.find(s => s.id === id).estimatedPrice.max.toLocaleString()"></span>
                                             </template>
                                         </div>
                                     </li>
                                 </template>
                             </ul>
                         </div>
-                        <p class="text-sm mt-3 text-white/90">
-                            ⚠️ Final pricing will be determined after vehicle inspection by our qualified staff. Prices include quality branded parts and labor.
+                        <p class="text-xs mt-3 text-white/90">
+                            ⚠️ Prices include selected brand parts, materials, and labor. Final billing will be locked upon service inspection.
                         </p>
                     </div>
                 </div>

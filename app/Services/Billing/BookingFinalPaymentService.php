@@ -93,6 +93,7 @@ class BookingFinalPaymentService
                 ->first();
 
             if ($finalQuotation) {
+                $booking->unsetRelation('payments');
                 $newSummary = $this->calculator->calculate($booking);
                 $finalQuotation->update([
                     'amount_paid_snapshot' => $newSummary->totalPaid,

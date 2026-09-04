@@ -157,69 +157,28 @@
         </x-card>
     </div>
 
-    {{-- Charts Row 2 --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Service Distribution --}}
-        <x-card>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Service Popularity</h2>
-            <div x-data="{
-                init() {
-                    const ctx = document.getElementById('serviceDistributionChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'pie',
-                        data: {
-                            labels: @js($serviceLabels),
-                            datasets: [{
-                                data: @js($serviceCounts),
-                                backgroundColor: ['#E63946', '#457B9D', '#1F2937', '#F59E0B', '#10B981'],
-                                borderWidth: 2,
-                                borderColor: document.documentElement.classList.contains('dark') ? '#151515' : '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'right',
-                                    labels: {
-                                        color: '#6b7280',
-                                        boxWidth: 12,
-                                        font: { size: 12 }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }" class="h-[300px] relative">
-                <canvas id="serviceDistributionChart"></canvas>
-            </div>
-        </x-card>
-
-        {{-- Recent Bookings --}}
-        <x-card>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Recent Booking Requests</h2>
-            <div class="space-y-4">
-                @foreach ($recentBookings as $booking)
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10 last:border-0">
-                        <div class="flex-1">
-                            <p class="font-semibold text-gray-900 dark:text-white">{{ $booking['customer'] }}</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $booking['service'] }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ $booking['date'] }}</p>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold {{
-                            $booking['status'] === 'approved' 
-                                ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                                : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                        }}">
-                            {{ ucfirst($booking['status']) }}
-                        </span>
+    {{-- Recent Bookings --}}
+    <x-card>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Recent Booking Requests</h2>
+        <div class="space-y-4">
+            @foreach ($recentBookings as $booking)
+                <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-white/10 last:border-0">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ $booking['customer'] }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $booking['service'] }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ $booking['date'] }}</p>
                     </div>
-                @endforeach
-            </div>
-        </x-card>
-    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold {{
+                        $booking['status'] === 'approved' 
+                            ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                            : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
+                    }}">
+                        {{ ucfirst($booking['status']) }}
+                    </span>
+                </div>
+            @endforeach
+        </div>
+    </x-card>
 
     {{-- Quick Stats Grid --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
