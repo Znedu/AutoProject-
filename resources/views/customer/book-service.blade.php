@@ -135,21 +135,47 @@
             };
         },
 
+        init() {
+            this.$watch('formData.preferredDate', (newDate) => {
+                this.selectedTimeSlot = '';
+                this.formData.preferredTime = '';
+                if (newDate) this.fetchAvailability(newDate);
+            });
+            if (this.formData.preferredDate) {
+                this.fetchAvailability(this.formData.preferredDate);
+            }
+        },
+
         async fetchAvailability(date) {
             if (!date) return;
-            const response = await fetch(`{{ route('customer.schedule.availability') }}?date=${date}`);
-            this.slotAvailability[date] = await response.json();
+            try {
+                const response = await fetch(`{{ route('customer.schedule.availability') }}?date=${date}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.slotAvailability = { ...this.slotAvailability, [date]: data };
+                    if (this.selectedTimeSlot && data.booked_slots && data.booked_slots.includes(this.selectedTimeSlot)) {
+                        this.selectedTimeSlot = '';
+                        this.formData.preferredTime = '';
+                        showToast.error('The selected time slot is already booked on this date. Please select an available slot.');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch schedule availability', e);
+            }
         },
 
         getDateAvailability(date) {
             const data = this.slotAvailability[date];
             if (!data) {
-                return { isFullyBooked: false, availableSlots: this.timeSlots, bookedSlots: [] };
+                return { isFullyBooked: false, availableSlots: this.timeSlots, bookedSlots: [], isLoading: true };
             }
             return {
-                isFullyBooked: data.is_fully_booked,
-                availableSlots: data.available_slots,
-                bookedSlots: data.booked_slots
+                isFullyBooked: data.is_fully_booked || (data.available_slots && data.available_slots.length === 0),
+                availableSlots: data.available_slots || [],
+                bookedSlots: data.booked_slots || [],
+                isLoading: false
             };
         },
 
@@ -165,6 +191,9 @@
                 return;
             }
             this.currentStep = 2;
+            if (this.formData.preferredDate) {
+                this.fetchAvailability(this.formData.preferredDate);
+            }
             window.scrollTo(0, 0);
         },
 
@@ -616,28 +645,33 @@
 
                         <template x-if="formData.preferredDate">
                             <div 
-                                class="mt-3 p-3 rounded-xl border"
-                                :class="isSunday(formData.preferredDate) || getDateAvailability(formData.preferredDate).isFullyBooked ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'"
+                                class="mt-3 p-3 rounded-xl border transition-all"
+                                :class="isSunday(formData.preferredDate) || getDateAvailability(formData.preferredDate).isFullyBooked ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' : (getDateAvailability(formData.preferredDate).isLoading ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800')"
                             >
                                 <div class="flex items-start gap-2">
-                                    <span class="w-5 h-5 mt-0.5 flex-shrink-0" x-bind:class="isSunday(formData.preferredDate) || getDateAvailability(formData.preferredDate).isFullyBooked ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'">
+                                    <span class="w-5 h-5 mt-0.5 flex-shrink-0" :class="isSunday(formData.preferredDate) || getDateAvailability(formData.preferredDate).isFullyBooked ? 'text-red-600 dark:text-red-400' : (getDateAvailability(formData.preferredDate).isLoading ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400')">
                                         <x-icon name="info" class="w-5 h-5" />
                                     </span>
                                     <div class="text-sm">
-                                        <template x-if="isSunday(formData.preferredDate)">
+                                        <template x-if="getDateAvailability(formData.preferredDate).isLoading">
+                                            <p class="text-amber-700 dark:text-amber-300 font-medium animate-pulse">Checking schedule availability for selected date...</p>
+                                        </template>
+                                        <template x-if="!getDateAvailability(formData.preferredDate).isLoading && isSunday(formData.preferredDate)">
                                             <p class="text-red-600 dark:text-red-400 font-medium">We are closed on Sundays. Please select a weekday (Monday-Saturday).</p>
                                         </template>
-                                        <template x-if="!isSunday(formData.preferredDate)">
+                                        <template x-if="!getDateAvailability(formData.preferredDate).isLoading && !isSunday(formData.preferredDate)">
                                             <div>
                                                 <template x-if="getDateAvailability(formData.preferredDate).isFullyBooked">
-                                                    <p class="text-red-600 dark:text-red-400 font-medium">This date is fully booked. Please select another date.</p>
+                                                    <p class="text-red-600 dark:text-red-400 font-medium">⛔ This date is fully booked. All time slots have been reserved by other customers. Please select another date.</p>
                                                 </template>
                                                 <template x-if="!getDateAvailability(formData.preferredDate).isFullyBooked">
                                                     <div class="text-blue-800 dark:text-blue-200">
-                                                        <p class="font-medium mb-1"><span x-text="getDateAvailability(formData.preferredDate).availableSlots.length"></span> time slots available</p>
+                                                        <p class="font-medium mb-1">
+                                                            ✓ <span x-text="getDateAvailability(formData.preferredDate).availableSlots.length"></span> time slots available
+                                                        </p>
                                                         <template x-if="getDateAvailability(formData.preferredDate).bookedSlots.length > 0">
                                                             <p class="text-xs text-blue-700 dark:text-blue-300">
-                                                                <span x-text="getDateAvailability(formData.preferredDate).bookedSlots.length"></span> slots already booked
+                                                                ℹ️ <span x-text="getDateAvailability(formData.preferredDate).bookedSlots.length"></span> slot(s) already booked on this day
                                                             </p>
                                                         </template>
                                                     </div>
@@ -651,10 +685,10 @@
                     </div>
 
                     {{-- Time Slots --}}
-                    <template x-if="formData.preferredDate && !isSunday(formData.preferredDate) && !getDateAvailability(formData.preferredDate).isFullyBooked">
+                    <template x-if="formData.preferredDate && !isSunday(formData.preferredDate) && !getDateAvailability(formData.preferredDate).isFullyBooked && !getDateAvailability(formData.preferredDate).isLoading">
                         <div>
                             <label class="block text-sm font-medium mb-3 text-gray-900 dark:text-white">Select Preferred Time Slot *</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                                 <template x-for="slot in timeSlots" :key="slot">
                                     @php
                                         $bookedCheck = "getDateAvailability(formData.preferredDate).bookedSlots.includes(slot)";
@@ -663,18 +697,22 @@
                                         type="button"
                                         @click="if (!{{ $bookedCheck }}) { selectedTimeSlot = slot; formData.preferredTime = slot; }"
                                         :disabled="{{ $bookedCheck }}"
-                                        class="p-3 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1"
-                                        :class="{{ $bookedCheck }} ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed' : (selectedTimeSlot === slot ? 'bg-green-600 border-green-600 text-white' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-[#457B9D] hover:bg-blue-50 dark:hover:bg-blue-950/30')"
+                                        class="p-3 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 shadow-sm"
+                                        :class="{{ $bookedCheck }} ? 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-900/40 text-red-400 dark:text-red-500/70 cursor-not-allowed opacity-80' : (selectedTimeSlot === slot ? 'bg-green-600 border-green-600 text-white shadow-green-600/30 shadow-md' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-[#457B9D] hover:bg-blue-50 dark:hover:bg-blue-950/30')"
                                     >
                                         <div class="flex items-center gap-1">
                                             <x-icon name="calendar" class="w-4 h-4" />
                                             <span x-text="slot"></span>
                                         </div>
                                         <template x-if="{{ $bookedCheck }}">
-                                            <span class="text-xs text-red-500 font-bold">Booked</span>
+                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 font-extrabold border border-red-200 dark:border-red-800">
+                                                Booked
+                                            </span>
                                         </template>
                                         <template x-if="selectedTimeSlot === slot">
-                                            <span class="text-xs text-white">Selected</span>
+                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded bg-green-700 text-white font-extrabold">
+                                                Selected
+                                            </span>
                                         </template>
                                     </button>
                                 </template>

@@ -142,17 +142,27 @@ class ScheduleAvailabilityService
 
     protected function bookedCountForSlot(string $date, string $normalizedTime, ?int $excludeBookingId = null): int
     {
+        $shortTime = substr($normalizedTime, 0, 5); // e.g. "08:00"
+
         return Booking::query()
             ->when($excludeBookingId, fn ($query) => $query->where('id', '!=', $excludeBookingId))
             ->whereIn('status', self::OCCUPYING_STATUSES)
-            ->where(function ($query) use ($date, $normalizedTime) {
-                $query->where(function ($scheduled) use ($date, $normalizedTime) {
+            ->where(function ($query) use ($date, $normalizedTime, $shortTime) {
+                $query->where(function ($scheduled) use ($date, $normalizedTime, $shortTime) {
                     $scheduled->whereDate('scheduled_date', $date)
-                        ->whereTime('scheduled_time', $normalizedTime);
-                })->orWhere(function ($preferred) use ($date, $normalizedTime) {
+                        ->where(function ($q) use ($normalizedTime, $shortTime) {
+                            $q->whereTime('scheduled_time', $normalizedTime)
+                              ->orWhere('scheduled_time', $normalizedTime)
+                              ->orWhere('scheduled_time', $shortTime);
+                        });
+                })->orWhere(function ($preferred) use ($date, $normalizedTime, $shortTime) {
                     $preferred->whereNull('scheduled_date')
                         ->whereDate('preferred_date', $date)
-                        ->whereTime('preferred_time', $normalizedTime);
+                        ->where(function ($q) use ($normalizedTime, $shortTime) {
+                            $q->whereTime('preferred_time', $normalizedTime)
+                              ->orWhere('preferred_time', $normalizedTime)
+                              ->orWhere('preferred_time', $shortTime);
+                        });
                 });
             })
             ->count();
