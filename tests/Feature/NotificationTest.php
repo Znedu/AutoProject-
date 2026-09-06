@@ -406,4 +406,40 @@ class NotificationTest extends TestCase
 
         Notification::assertNotSentTo($inactiveCustomer, BookingConfirmedNotification::class);
     }
+
+    public function test_user_can_view_notifications_page_delete_single_and_clear_all(): void
+    {
+        $booking = Booking::create([
+            'booking_number' => 'BK-PAGE-001',
+            'user_id' => $this->customer->id,
+            'vehicle_id' => $this->vehicle->id,
+            'status' => Booking::STATUS_CONFIRMED,
+            'preferred_date' => today()->addDays(2),
+            'preferred_time' => '10:00:00',
+            'customer_name' => $this->customer->name,
+            'contact_number' => '09123456789',
+            'terms_accepted_at' => now(),
+        ]);
+
+        $this->customer->notify(new BookingConfirmedNotification($booking));
+
+        // Test view notifications page
+        $pageResponse = $this->actingAs($this->customer)->get('/notifications/all');
+        $pageResponse->assertOk();
+        $pageResponse->assertSee('Notifications Center');
+
+        // Test delete single notification
+        $notificationId = $this->customer->notifications()->first()->id;
+        $deleteResponse = $this->actingAs($this->customer)->deleteJson("/notifications/{$notificationId}");
+        $deleteResponse->assertOk()->assertJson(['success' => true]);
+
+        // Verify notification was deleted
+        $this->assertEquals(0, $this->customer->notifications()->count());
+
+        // Notify again & clear all
+        $this->customer->notify(new BookingConfirmedNotification($booking));
+        $clearResponse = $this->actingAs($this->customer)->postJson('/notifications/clear-all');
+        $clearResponse->assertOk()->assertJson(['success' => true]);
+        $this->assertEquals(0, $this->customer->notifications()->count());
+    }
 }
