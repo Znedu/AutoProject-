@@ -60,4 +60,13 @@ class NotificationDispatcherService
 
         $this->notifyUsers($admins, $notification);
     }
+
+    /**
+     * Notify all active administrators and staff members.
+     */
+    public function notifyAdminsAndStaff(Notification $notification): void
+    {
+        $this->notifyAdmins($notification);
+        $this->notifyStaff($notification);
+    }
 }

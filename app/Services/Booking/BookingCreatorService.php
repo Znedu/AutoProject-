@@ -128,6 +128,7 @@ class BookingCreatorService
         });
 
         $this->dispatcher->notifyAdminsWithPermission('approvals.manage', new NewBookingNotification($booking));
+        $this->dispatcher->notifyStaff(new NewBookingNotification($booking));
 
         return $booking;
     }

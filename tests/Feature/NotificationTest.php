@@ -162,6 +162,7 @@ class NotificationTest extends TestCase
         $creator->create($this->customer, $bookingData);
 
         Notification::assertSentTo($this->admin, NewBookingNotification::class);
+        Notification::assertSentTo($this->staff, NewBookingNotification::class);
     }
 
     public function test_payment_confirm_sends_booking_confirmed_and_job_order_created_notifications(): void

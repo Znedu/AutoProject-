@@ -177,6 +177,7 @@ class WalkInBookingController extends Controller
 
             $dispatcher = app(NotificationDispatcherService::class);
             $dispatcher->notifyAdmins(new WalkInBookingCreatedNotification($booking));
+            $dispatcher->notifyStaff(new WalkInBookingCreatedNotification($booking));
             $dispatcher->notifyUser($customer, new WalkInBookingCreatedNotification($booking));
 
             return redirect()

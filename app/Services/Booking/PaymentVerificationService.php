@@ -120,6 +120,7 @@ class PaymentVerificationService
         $jobOrder = $booking->jobOrder ?? $booking->fresh(['jobOrder'])->jobOrder;
         if ($jobOrder) {
             $this->dispatcher->notifyAdmins(new JobOrderCreatedNotification($jobOrder));
+            $this->dispatcher->notifyStaff(new JobOrderCreatedNotification($jobOrder));
         }
 
         return $booking;
@@ -196,6 +197,7 @@ class PaymentVerificationService
                 $this->dispatcher->notifyUser($booking->user, new BookingAutoCancelledNotification($booking));
             }
             $this->dispatcher->notifyAdmins(new BookingAutoCancelledNotification($booking));
+            $this->dispatcher->notifyStaff(new BookingAutoCancelledNotification($booking));
         } else {
             if ($booking->user) {
                 $this->dispatcher->notifyUser($booking->user, new PaymentRejectedNotification($booking, $reason));
@@ -271,6 +273,7 @@ class PaymentVerificationService
         });
 
         $this->dispatcher->notifyAdminsWithPermission('approvals.manage', new PaymentResubmittedNotification($booking));
+        $this->dispatcher->notifyStaff(new PaymentResubmittedNotification($booking));
 
         return $payment;
     }
