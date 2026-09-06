@@ -342,6 +342,9 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:bookings.queue.view')
                 ->name('schedule');
 
+            Route::get('/schedule/availability', \App\Http\Controllers\Customer\ScheduleAvailabilityController::class)
+                ->name('schedule.availability');
+
             // Customer Management (read-only)
             Route::get('/customers', [StaffCustomerController::class, 'index'])
                 ->middleware('permission:customers.view')
@@ -394,27 +397,6 @@ Route::middleware(['auth', 'active'])->group(function () {
             Route::get('/products/search', [ProductController::class, 'search'])
                 ->middleware('permission:billing.manage')
                 ->name('products.search');
-
-            // Staff Inventory Management
-            Route::get('/inventory', [AdminInventoryController::class, 'index'])
-                ->middleware('permission:inventory.view')
-                ->name('inventory.index');
-
-            Route::post('/inventory', [AdminInventoryController::class, 'store'])
-                ->middleware('permission:inventory.manage')
-                ->name('inventory.store');
-
-            Route::put('/inventory/{product}', [AdminInventoryController::class, 'update'])
-                ->middleware('permission:inventory.manage')
-                ->name('inventory.update');
-
-            Route::post('/inventory/{product}/adjust', [AdminInventoryController::class, 'adjustStock'])
-                ->middleware('permission:inventory.manage')
-                ->name('inventory.adjust');
-
-            Route::delete('/inventory/{product}', [AdminInventoryController::class, 'destroy'])
-                ->middleware('permission:inventory.manage')
-                ->name('inventory.destroy');
         });
 
     Route::prefix('mechanic')

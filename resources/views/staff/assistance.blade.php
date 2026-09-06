@@ -86,9 +86,6 @@
                         <div class="space-y-2">
                             <div class="flex items-start justify-between gap-2">
                                 <h3 class="font-bold text-gray-900 dark:text-white text-sm truncate" x-text="ticket.subject"></h3>
-                                <x-status-badge ::status="ticket.status">
-                                    <span x-text="ticket.status === 'open' ? 'Open' : (ticket.status === 'in_progress' ? 'In Progress' : (ticket.status === 'resolved' ? 'Resolved' : 'Closed'))"></span>
-                                </x-status-badge>
                             </div>
                             <p class="text-xs text-gray-600 dark:text-gray-400" x-text="ticket.customer"></p>
                             <p class="text-xs text-gray-500" x-text="ticket.date"></p>

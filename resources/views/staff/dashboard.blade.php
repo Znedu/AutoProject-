@@ -57,7 +57,7 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ $booking['date'] }}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <x-status-badge :status="$booking['status']">Pending</x-status-badge>
+                        <x-status-badge :status="$booking['status']" />
                         <a href="{{ url('/staff/booking-queue?id=' . $booking['id']) }}">
                             <x-button size="sm" variant="secondary">Review</x-button>
                         </a>
@@ -86,8 +86,7 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400">Customer: {{ $ticket['customer'] }}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ $ticket['date'] }}</p>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <x-status-badge :status="$ticket['status']">Open</x-status-badge>
+                    <div>
                         <a href="{{ url('/staff/assistance?id=' . $ticket['id']) }}">
                             <x-button size="sm" variant="secondary">Respond</x-button>
                         </a>
@@ -113,7 +112,7 @@
                         <p class="font-medium text-gray-900 dark:text-white truncate">{{ $schedule['service'] }}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ $schedule['customer'] }} - {{ $schedule['vehicle'] }}</p>
                     </div>
-                    <x-status-badge :status="$schedule['status']">Confirmed</x-status-badge>
+                    <x-status-badge :status="$schedule['status']" />
                 </div>
             @empty
                 <p class="text-gray-600 dark:text-gray-400 text-sm">No services scheduled for today.</p>

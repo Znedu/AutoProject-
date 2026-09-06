@@ -68,7 +68,6 @@
                 ['icon' => 'layout-dashboard', 'label' => 'Dashboard',           'path' => '/staff'],
                 ['icon' => 'clipboard-list',   'label' => 'Booking Queue',        'path' => '/staff/booking-queue'],
                 ['icon' => 'user-plus',         'label' => 'Walk-In Booking',      'path' => '/staff/walk-in-booking'],
-                ['icon' => 'box',               'label' => 'Inventory Control',    'path' => '/staff/inventory'],
                 ['icon' => 'calendar',          'label' => 'Schedule',             'path' => '/staff/schedule'],
                 ['icon' => 'users',             'label' => 'Customers',            'path' => '/staff/customers'],
                 ['icon' => 'wrench',            'label' => 'Job Orders',           'path' => '/staff/jobs'],

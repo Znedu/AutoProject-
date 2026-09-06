@@ -20,7 +20,12 @@ class DashboardController extends Controller
             ->count();
 
         // ──────── Pending Bookings (awaiting schedule) ────────
-        $pendingBookings = Booking::pending()
+        $pendingBookings = Booking::whereIn('status', [
+            Booking::STATUS_PENDING,
+            Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
+            Booking::STATUS_WAITING_PAYMENT,
+            Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
+        ])
             ->with(['services', 'user'])
             ->latest()
             ->limit(5)

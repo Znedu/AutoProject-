@@ -7,6 +7,7 @@ use App\Exceptions\Booking\ScheduleNotAvailableException;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BusinessSetting;
+use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\Role;
 use App\Models\Service;
@@ -75,8 +76,8 @@ class WalkInBookingController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'contact_number' => ['required', 'string', 'max:50'],
             // New customer fields
-            'new_email' => ['required_if:booking_type,new', 'nullable', 'email', 'max:255', 'unique:users,email'],
-            'new_password' => ['required_if:booking_type,new', 'nullable', 'string', 'min:8'],
+            'new_email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'new_password' => ['nullable', 'string', 'min:6'],
             // Vehicle
             'vehicle_make' => ['required', 'string', 'max:100'],
             'vehicle_model' => ['required', 'string', 'max:100'],
@@ -90,21 +91,41 @@ class WalkInBookingController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        if (\Carbon\Carbon::parse($request->preferred_date)->isSunday()) {
+            return back()->withInput()->withErrors(['preferred_date' => 'We are closed on Sundays. Please select a weekday (Monday-Saturday).']);
+        }
+
         try {
             DB::beginTransaction();
 
             // Resolve or create the customer
             if ($request->booking_type === 'new') {
                 $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
+
+                $cleanPhone = preg_replace('/\D/', '', $request->contact_number);
+                $email = $request->filled('new_email')
+                    ? trim($request->new_email)
+                    : 'customer_'.($cleanPhone ?: Str::lower(Str::random(8))).'@autoproject.ph';
+
+                if (User::where('email', $email)->exists()) {
+                    $email = 'customer_'.($cleanPhone ?: Str::lower(Str::random(4))).'_'.Str::lower(Str::random(4)).'@autoproject.ph';
+                }
+
+                $password = $request->filled('new_password')
+                    ? $request->new_password
+                    : Str::random(10);
+
                 $customer = User::create([
-                    'name' => $request->customer_name,
-                    'email' => $request->new_email,
-                    'phone' => $request->contact_number,
+                    'name' => trim($request->customer_name),
+                    'email' => $email,
+                    'phone' => trim($request->contact_number),
                     'role_id' => $customerRole->id,
                     'status' => User::STATUS_ACTIVE,
-                    'password' => $request->new_password,
+                    'password' => $password,
                     'email_verified_at' => now(),
                 ]);
+
+                \App\Models\CustomerProfile::firstOrCreate(['user_id' => $customer->id]);
             } else {
                 $customer = User::findOrFail($request->customer_id);
             }
@@ -159,7 +180,7 @@ class WalkInBookingController extends Controller
             $dispatcher->notifyUser($customer, new WalkInBookingCreatedNotification($booking));
 
             return redirect()
-                ->route('staff.booking-queue')
+                ->route('staff.booking-queue', ['id' => $booking->id])
                 ->with('success', "Walk-in booking #{$booking->booking_number} created successfully for {$customer->name}.");
         } catch (ScheduleNotAvailableException $e) {
             DB::rollBack();

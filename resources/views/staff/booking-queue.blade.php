@@ -16,13 +16,13 @@
     {{-- Filters --}}
     <x-card>
         <div class="flex flex-wrap gap-2">
-            <template x-for="filter in ['all', 'pending', 'confirmed', 'rejected']" :key="filter">
+            <template x-for="filter in ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rejected']" :key="filter">
                 <button
                     type="button"
                     @click="selectedFilter = filter"
                     class="inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer px-4 py-2 text-sm capitalize"
                     :class="(selectedFilter === filter ? 'bg-gray-200 dark:bg-[#151515] text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 hover:border-[#E63946] hover:shadow-lg hover:shadow-[#E63946]/20' : 'text-gray-600 dark:text-[#B8B8B8] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5')"
-                    x-text="filter === 'all' ? 'All Bookings' : (filter === 'pending' ? 'Pending Review' : (filter === 'confirmed' ? 'Confirmed' : filter))"
+                    x-text="filter === 'all' ? 'All Bookings' : (filter === 'pending' ? 'Pending' : (filter === 'confirmed' ? 'Confirmed' : (filter === 'in_progress' ? 'In Progress' : filter)))"
                 ></button>
             </template>
         </div>
@@ -222,12 +222,12 @@
     {{-- Stats Summary --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <x-card class="text-center p-4">
-            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Pending Review</p>
-            <p class="text-3xl font-extrabold text-[#E63946]" x-text="bookings.filter(b => b.status === 'pending').length"></p>
+            <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Pending</p>
+            <p class="text-3xl font-extrabold text-[#E63946]" x-text="bookings.filter(b => ['pending', 'pending_payment_verification', 'waiting_payment', 'payment_requires_resubmission'].includes(b.status)).length"></p>
         </x-card>
         <x-card class="text-center p-4">
             <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">Confirmed</p>
-            <p class="text-3xl font-extrabold text-blue-500" x-text="bookings.filter(b => b.status === 'confirmed').length"></p>
+            <p class="text-3xl font-extrabold text-blue-500" x-text="bookings.filter(b => ['confirmed', 'approved', 'scheduled'].includes(b.status)).length"></p>
         </x-card>
         <x-card class="text-center p-4">
             <p class="text-xs mb-1 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-semibold">In Progress</p>
@@ -245,7 +245,7 @@
 <script>
     function bookingQueue() {
         return {
-            selectedFilter: new URLSearchParams(window.location.search).get('id') ? 'pending' : 'all',
+            selectedFilter: 'all',
             selectedBookingId: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
             bookings: @json($bookings),
             showSchedulerId: null,
@@ -254,6 +254,16 @@
 
             init() {
                 if (this.selectedBookingId) {
+                    const target = this.bookings.find(b => b.id === this.selectedBookingId);
+                    if (target) {
+                        if (['pending', 'pending_payment_verification', 'waiting_payment', 'payment_requires_resubmission'].includes(target.status)) {
+                            this.selectedFilter = 'pending';
+                        } else if (['confirmed', 'approved', 'scheduled'].includes(target.status)) {
+                            this.selectedFilter = 'confirmed';
+                        } else {
+                            this.selectedFilter = 'all';
+                        }
+                    }
                     this.$nextTick(() => {
                         const el = document.getElementById('booking-' + this.selectedBookingId);
                         if (el) {
@@ -304,6 +314,12 @@
 
             getFilteredBookings() {
                 if (this.selectedFilter === 'all') return this.bookings;
+                if (this.selectedFilter === 'pending') {
+                    return this.bookings.filter(b => ['pending', 'pending_payment_verification', 'waiting_payment', 'payment_requires_resubmission'].includes(b.status));
+                }
+                if (this.selectedFilter === 'confirmed') {
+                    return this.bookings.filter(b => ['confirmed', 'approved', 'scheduled'].includes(b.status));
+                }
                 return this.bookings.filter(b => b.status === this.selectedFilter);
             }
         };

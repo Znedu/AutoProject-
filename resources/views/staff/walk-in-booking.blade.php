@@ -8,6 +8,8 @@
          bookingType: 'existing',
          selectedCustomer: null,
          customerSearch: '',
+         customerName: '{{ old('customer_name', '') }}',
+         contactNumber: '{{ old('contact_number', '') }}',
          customerResults: [],
          isSearching: false,
          vehicles: [],
@@ -27,6 +29,8 @@
          async selectCustomer(c) {
              this.selectedCustomer = c;
              this.customerSearch = c.name;
+             this.customerName = c.name;
+             this.contactNumber = c.phone || '';
              this.customerResults = [];
              this.vehicles = [];
              this.selectedVehicle = null;
@@ -193,21 +197,24 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block mb-2 text-gray-700 dark:text-[#B8B8B8] font-medium">
-                            Email <span class="text-[#E63946] ml-1">*</span>
+                            Email <span class="text-gray-400 font-normal text-sm">(Optional)</span>
                         </label>
-                        <input type="email" name="new_email" placeholder="customer@email.com"
+                        <input type="email" name="new_email" placeholder="customer@email.com (Auto-generated if left blank)"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all">
                         @error('new_email') <p class="mt-2 text-sm text-red-500">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block mb-2 text-gray-700 dark:text-[#B8B8B8] font-medium">
-                            Temporary Password <span class="text-[#E63946] ml-1">*</span>
+                            Temporary Password <span class="text-gray-400 font-normal text-sm">(Optional)</span>
                         </label>
-                        <input type="password" name="new_password"
+                        <input type="password" name="new_password" placeholder="Leave blank to auto-generate"
                             class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all">
                         @error('new_password') <p class="mt-2 text-sm text-red-500">{{ $message }}</p> @enderror
                     </div>
                 </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    💡 A new customer profile will be created and saved in the <strong>Customers</strong> database automatically.
+                </p>
             </div>
 
             {{-- Common: Customer Name & Contact --}}
@@ -216,7 +223,7 @@
                     <label class="block mb-2 text-gray-700 dark:text-[#B8B8B8] font-medium">
                         Customer Name <span class="text-[#E63946] ml-1">*</span>
                     </label>
-                    <input type="text" name="customer_name" value="{{ old('customer_name') }}" required
+                    <input type="text" name="customer_name" x-model="customerName" required
                         placeholder="Full name"
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all">
                     @error('customer_name') <p class="mt-2 text-sm text-red-500">{{ $message }}</p> @enderror
@@ -225,7 +232,7 @@
                     <label class="block mb-2 text-gray-700 dark:text-[#B8B8B8] font-medium">
                         Contact Number <span class="text-[#E63946] ml-1">*</span>
                     </label>
-                    <input type="text" name="contact_number" value="{{ old('contact_number') }}" required
+                    <input type="text" name="contact_number" x-model="contactNumber" required
                         placeholder="09XX XXX XXXX"
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#666666] focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all">
                     @error('contact_number') <p class="mt-2 text-sm text-red-500">{{ $message }}</p> @enderror
@@ -371,38 +378,83 @@
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Preferred Schedule</h2>
             </div>
 
-            <div class="space-y-5">
+            <div class="space-y-5" x-data="{
+                preferredDate: '{{ old('preferred_date', date('Y-m-d')) }}',
+                selectedTimeSlot: '{{ old('preferred_time', '') }}',
+                slotData: { available_slots: [], booked_slots: [], past_slots: [] },
+                isSunday(d) {
+                    if (!d) return false;
+                    const date = new Date(d + 'T00:00:00');
+                    return date.getDay() === 0;
+                },
+                async fetchAvailability() {
+                    if (!this.preferredDate) return;
+                    try {
+                        const res = await fetch(`{{ route('staff.schedule.availability') }}?date=${this.preferredDate}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        if (res.ok) {
+                            this.slotData = await res.json();
+                        }
+                    } catch (e) {}
+                },
+                init() {
+                    if (this.isSunday(this.preferredDate)) {
+                        this.selectedTimeSlot = '';
+                    }
+                    this.fetchAvailability();
+                }
+            }">
                 {{-- Date --}}
                 <div>
                     <label class="block mb-2 text-gray-700 dark:text-[#B8B8B8] font-medium">
                         Date <span class="text-[#E63946] ml-1">*</span>
                     </label>
-                    <input type="date" name="preferred_date" value="{{ old('preferred_date', date('Y-m-d')) }}" required
+                    <input type="date" name="preferred_date" x-model="preferredDate" @change="selectedTimeSlot = ''; if (isSunday(preferredDate)) { selectedTimeSlot = ''; } fetchAvailability();" required
                         min="{{ date('Y-m-d') }}"
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent transition-all">
                     @error('preferred_date') <p class="mt-2 text-sm text-red-500">{{ $message }}</p> @enderror
+
+                    <template x-if="isSunday(preferredDate)">
+                        <div class="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                            <x-icon name="info" class="w-5 h-5 flex-shrink-0 text-red-600 dark:text-red-400" />
+                            <span>We are closed on Sundays. Please select a weekday (Monday-Saturday).</span>
+                        </div>
+                    </template>
                 </div>
 
                 {{-- Time Slot Grid --}}
-                <div x-data="{ selectedTimeSlot: '{{ old('preferred_time', '') }}' }">
+                <div>
                     <label class="block mb-3 text-gray-700 dark:text-[#B8B8B8] font-medium">
                         Time Slot <span class="text-[#E63946] ml-1">*</span>
                     </label>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                         @foreach (['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'] as $timeOption)
-                            @php $label = \Carbon\Carbon::createFromFormat('H:i', $timeOption)->format('g:i A'); @endphp
+                            @php $label = \Carbon\Carbon::createFromFormat('H:i', $timeOption)->format('h:i A'); @endphp
                             <button
                                 type="button"
-                                @click="selectedTimeSlot = '{{ $timeOption }}'"
-                                :class="selectedTimeSlot === '{{ $timeOption }}'
+                                @click="if (!isSunday(preferredDate)) selectedTimeSlot = '{{ $timeOption }}'"
+                                :disabled="isSunday(preferredDate) || slotData.past_slots?.includes('{{ $label }}') || slotData.booked_slots?.includes('{{ $label }}')"
+                                :class="selectedTimeSlot === '{{ $timeOption }}' && !isSunday(preferredDate)
                                     ? 'bg-[#E63946] border-[#E63946] text-white shadow-lg shadow-[#E63946]/30'
-                                    : 'bg-white dark:bg-[#1F1F1F] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white hover:border-[#E63946]/60 hover:bg-[#E63946]/5 dark:hover:bg-[#E63946]/10'"
-                                class="p-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-1"
+                                    : (isSunday(preferredDate) || slotData.past_slots?.includes('{{ $label }}') || slotData.booked_slots?.includes('{{ $label }}')
+                                        ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/5 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60'
+                                        : 'bg-white dark:bg-[#1F1F1F] border-gray-200 dark:border-white/10 text-gray-900 dark:text-white hover:border-[#E63946]/60 hover:bg-[#E63946]/5 dark:hover:bg-[#E63946]/10')"
+                                class="p-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 flex flex-col items-center justify-center gap-1"
                             >
                                 <x-icon name="clock" class="w-4 h-4" />
-                                <span>{{ $label }}</span>
-                                <template x-if="selectedTimeSlot === '{{ $timeOption }}'">
+                                <span>{{ \Carbon\Carbon::createFromFormat('H:i', $timeOption)->format('g:i A') }}</span>
+                                <template x-if="selectedTimeSlot === '{{ $timeOption }}' && !isSunday(preferredDate)">
                                     <span class="text-xs text-white/80 font-normal">Selected</span>
+                                </template>
+                                <template x-if="isSunday(preferredDate)">
+                                    <span class="text-[10px] text-red-500 font-normal">Closed</span>
+                                </template>
+                                <template x-if="!isSunday(preferredDate) && slotData.past_slots?.includes('{{ $label }}')">
+                                    <span class="text-[10px] text-gray-400 font-normal">Past Slot</span>
+                                </template>
+                                <template x-if="!isSunday(preferredDate) && slotData.booked_slots?.includes('{{ $label }}')">
+                                    <span class="text-[10px] text-red-400 font-normal">Booked</span>
                                 </template>
                             </button>
                         @endforeach
@@ -417,6 +469,10 @@
                         <div class="flex items-center gap-2">
                             <div class="w-4 h-4 rounded bg-[#E63946]"></div>
                             <span class="text-xs text-gray-600 dark:text-gray-400">Selected</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded bg-gray-200 dark:bg-white/5 border border-gray-300 opacity-60"></div>
+                            <span class="text-xs text-gray-500">Unavailable / Booked</span>
                         </div>
                     </div>
 
