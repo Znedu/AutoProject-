@@ -55,9 +55,37 @@ class BookingApprovalController extends Controller
     {
         $status = $request->query('status', 'all');
 
-        $bookings = $this->bookingQuery()
-            ->when($status !== 'all', fn ($query) => $query->status($status))
-            ->latest()
+        $query = $this->bookingQuery();
+
+        if ($status === 'pending') {
+            $query->whereIn('status', [
+                Booking::STATUS_PENDING,
+                Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
+                Booking::STATUS_WAITING_PAYMENT,
+                Booking::STATUS_PAYMENT_REQUIRES_RESUBMISSION,
+            ]);
+        } elseif ($status === 'approved') {
+            $query->whereIn('status', [
+                Booking::STATUS_APPROVED,
+                Booking::STATUS_CONFIRMED,
+                Booking::STATUS_SCHEDULED,
+                Booking::STATUS_IN_PROGRESS,
+            ]);
+        } elseif ($status === 'rejected') {
+            $query->whereIn('status', [
+                Booking::STATUS_REJECTED,
+            ]);
+        } elseif ($status === 'cancelled') {
+            $query->whereIn('status', [
+                Booking::STATUS_CANCELLED,
+            ]);
+        } elseif ($status === 'completed') {
+            $query->whereIn('status', [
+                Booking::STATUS_COMPLETED,
+            ]);
+        }
+
+        $bookings = $query->latest()
             ->paginate(20)
             ->withQueryString();
 

@@ -298,20 +298,7 @@
                 </div>
             </div>
 
-            <div class="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-3">
-                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Change Password (Optional)</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <x-input type="password" x-model="editForm.password" placeholder="New password" />
-                        <template x-if="editForm.errors.password">
-                            <p class="text-red-500 text-xs mt-1" x-text="editForm.errors.password[0]"></p>
-                        </template>
-                    </div>
-                    <div>
-                        <x-input type="password" x-model="editForm.password_confirmation" placeholder="Confirm new password" />
-                    </div>
-                </div>
-            </div>
+
 
             <div class="pt-4 flex justify-end gap-3 border-t border-gray-200 dark:border-white/10">
                 <x-button type="button" variant="ghost" @click="$dispatch('close-modal', { name: 'edit-user-modal' })">Cancel</x-button>

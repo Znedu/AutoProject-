@@ -18,7 +18,7 @@
                         size="sm"
                         class="capitalize"
                     >
-                        {{ $filter === 'all' ? 'All Bookings' : $filter }}
+                        {{ $filter === 'all' ? 'All Bookings' : ucfirst($filter) }}
                     </x-button>
                 </a>
             @endforeach
