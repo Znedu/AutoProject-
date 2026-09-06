@@ -42,6 +42,12 @@ class ScheduleAvailable implements DataAwareRule, ValidationRule
             return;
         }
 
+        if ($this->scheduleAvailability->isSlotPast($date, (string) $value)) {
+            $fail('The selected time slot has already passed. Please choose a future time slot.');
+
+            return;
+        }
+
         if (! $this->scheduleAvailability->isSlotAvailable($date, (string) $value)) {
             $fail('The selected time slot is no longer available. Please choose another time.');
         }

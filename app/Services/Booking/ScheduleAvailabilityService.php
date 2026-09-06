@@ -46,9 +46,18 @@ class ScheduleAvailabilityService
         return ! BusinessClosureDate::query()->onDate($date)->exists();
     }
 
+    public function isSlotPast(string $date, string $time): bool
+    {
+        return Carbon::parse($date . ' ' . $time)->isPast();
+    }
+
     public function isSlotAvailable(string $date, string $time, ?int $excludeBookingId = null): bool
     {
         if (! $this->isDateBookable($date)) {
+            return false;
+        }
+
+        if ($this->isSlotPast($date, $time)) {
             return false;
         }
 
@@ -61,7 +70,7 @@ class ScheduleAvailabilityService
     }
 
     /**
-     * @return array{is_fully_booked: bool, available_slots: list<string>, booked_slots: list<string>}
+     * @return array{is_fully_booked: bool, available_slots: list<string>, booked_slots: list<string>, past_slots: list<string>}
      */
     public function availabilityForDate(string $date): array
     {
@@ -70,18 +79,24 @@ class ScheduleAvailabilityService
                 'is_fully_booked' => true,
                 'available_slots' => [],
                 'booked_slots' => [],
+                'past_slots' => [],
             ];
         }
 
         $slots = $this->slotsForDate($date);
         $available = [];
         $booked = [];
+        $past = [];
 
         foreach ($slots as $slot) {
-            if ($this->isSlotAvailable($date, $slot)) {
-                $available[] = $this->formatSlotLabel($slot);
+            $label = $this->formatSlotLabel($slot);
+
+            if ($this->isSlotPast($date, $slot)) {
+                $past[] = $label;
+            } elseif ($this->isSlotAvailable($date, $slot)) {
+                $available[] = $label;
             } else {
-                $booked[] = $this->formatSlotLabel($slot);
+                $booked[] = $label;
             }
         }
 
@@ -89,6 +104,7 @@ class ScheduleAvailabilityService
             'is_fully_booked' => $available === [],
             'available_slots' => $available,
             'booked_slots' => $booked,
+            'past_slots' => $past,
         ];
     }
 
@@ -153,7 +169,8 @@ class ScheduleAvailabilityService
                         ->where(function ($q) use ($normalizedTime, $shortTime) {
                             $q->whereTime('scheduled_time', $normalizedTime)
                               ->orWhere('scheduled_time', $normalizedTime)
-                              ->orWhere('scheduled_time', $shortTime);
+                              ->orWhere('scheduled_time', $shortTime)
+                              ->orWhere('scheduled_time', 'like', $shortTime . '%');
                         });
                 })->orWhere(function ($preferred) use ($date, $normalizedTime, $shortTime) {
                     $preferred->whereNull('scheduled_date')
@@ -161,7 +178,8 @@ class ScheduleAvailabilityService
                         ->where(function ($q) use ($normalizedTime, $shortTime) {
                             $q->whereTime('preferred_time', $normalizedTime)
                               ->orWhere('preferred_time', $normalizedTime)
-                              ->orWhere('preferred_time', $shortTime);
+                              ->orWhere('preferred_time', $shortTime)
+                              ->orWhere('preferred_time', 'like', $shortTime . '%');
                         });
                 });
             })

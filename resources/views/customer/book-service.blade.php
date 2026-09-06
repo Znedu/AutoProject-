@@ -36,7 +36,10 @@
         'year'         => $v->year,
         'plate_number' => $v->plate_number,
         'display_name' => $v->display_name,
-    ])->values();
+    ]);
+
+    $preselectedServicesArray = old('service_ids', ($preselectedServiceId ?? null) ? [$preselectedServiceId] : []);
+    $preselectedBrandsArray = old('brands', (($preselectedServiceId ?? null) && ($preselectedBrandName ?? null)) ? [(int) $preselectedServiceId => $preselectedBrandName] : []);
 @endphp
 
 <div 
@@ -53,8 +56,8 @@
             preferredTime: @js(old('preferred_time', '')),
             notes: @js(old('notes', ''))
         },
-        selectedServices: @js(array_map('intval', old('service_ids', []))),
-        selectedBrands: @js(old('brands', [])),
+        selectedServices: @js(array_map('intval', $preselectedServicesArray)),
+        selectedBrands: @js($preselectedBrandsArray),
         expandedCategories: @js($categoriesPayload->take(2)->pluck('id')),
         paymentMethod: @js(old('payment_method', '')),
         referenceNumber: @js(old('reference_number', '')),
@@ -188,6 +191,17 @@
             if (this.formData.preferredDate) {
                 this.fetchAvailability(this.formData.preferredDate);
             }
+
+            const preselectedId = @js($preselectedServiceId);
+            if (preselectedId && this.selectedServices.includes(Number(preselectedId))) {
+                const svc = this.services.find(s => s.id == preselectedId);
+                if (svc && svc.category && !this.expandedCategories.includes(svc.category)) {
+                    this.expandedCategories.push(svc.category);
+                }
+                if (!@js(old('customer_name'))) {
+                    this.handleProceedToDetails();
+                }
+            }
         },
 
         async fetchAvailability(date) {
@@ -199,10 +213,13 @@
                 if (response.ok) {
                     const data = await response.json();
                     this.slotAvailability = { ...this.slotAvailability, [date]: data };
-                    if (this.selectedTimeSlot && data.booked_slots && data.booked_slots.includes(this.selectedTimeSlot)) {
+                    if (this.selectedTimeSlot && (
+                        (data.booked_slots && data.booked_slots.includes(this.selectedTimeSlot)) ||
+                        (data.past_slots && data.past_slots.includes(this.selectedTimeSlot))
+                    )) {
                         this.selectedTimeSlot = '';
                         this.formData.preferredTime = '';
-                        showToast.error('The selected time slot is already booked on this date. Please select an available slot.');
+                        showToast.error('The selected time slot is no longer available on this date. Please select an available slot.');
                     }
                 }
             } catch (e) {
@@ -213,12 +230,13 @@
         getDateAvailability(date) {
             const data = this.slotAvailability[date];
             if (!data) {
-                return { isFullyBooked: false, availableSlots: this.timeSlots, bookedSlots: [], isLoading: true };
+                return { isFullyBooked: false, availableSlots: this.timeSlots, bookedSlots: [], pastSlots: [], isLoading: true };
             }
             return {
                 isFullyBooked: data.is_fully_booked || (data.available_slots && data.available_slots.length === 0),
                 availableSlots: data.available_slots || [],
                 bookedSlots: data.booked_slots || [],
+                pastSlots: data.past_slots || [],
                 isLoading: false
             };
         },
@@ -619,6 +637,28 @@
 
     {{-- STEP 2: Booking Details --}}
     <div x-show="currentStep === 2" class="space-y-6">
+        @if ($selectedProduct)
+            <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 flex items-center justify-between flex-wrap gap-3 animate-fade-in">
+                <div class="flex items-center gap-3">
+                    <span class="p-2 rounded-lg bg-emerald-500 text-white shadow-sm">
+                        <x-icon name="box" class="w-5 h-5" />
+                    </span>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">
+                            Selected from Catalog: {{ $selectedProduct->name }}
+                        </p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                            Service installation for this part/accessory has been automatically selected for your booking.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 block">Catalog Unit Price</span>
+                    <span class="font-mono font-bold text-base text-[#E63946]">₱{{ number_format($selectedProduct->unit_price, 2) }}</span>
+                </div>
+            </div>
+        @endif
+
         <form @submit.prevent="handleProceedToPayment()" class="space-y-6">
             {{-- Customer Information --}}
             <x-card>
@@ -753,6 +793,11 @@
                                                                 ℹ️ <span x-text="getDateAvailability(formData.preferredDate).bookedSlots.length"></span> slot(s) already booked on this day
                                                             </p>
                                                         </template>
+                                                        <template x-if="getDateAvailability(formData.preferredDate).pastSlots.length > 0">
+                                                            <p class="text-xs text-blue-700 dark:text-blue-300">
+                                                                ⏰ <span x-text="getDateAvailability(formData.preferredDate).pastSlots.length"></span> time slot(s) have already passed
+                                                            </p>
+                                                        </template>
                                                     </div>
                                                 </template>
                                             </div>
@@ -771,13 +816,15 @@
                                 <template x-for="slot in timeSlots" :key="slot">
                                     @php
                                         $bookedCheck = "getDateAvailability(formData.preferredDate).bookedSlots.includes(slot)";
+                                        $pastCheck = "getDateAvailability(formData.preferredDate).pastSlots.includes(slot)";
+                                        $disabledCheck = "({$bookedCheck} || {$pastCheck})";
                                     @endphp
                                     <button
                                         type="button"
-                                        @click="if (!{{ $bookedCheck }}) { selectedTimeSlot = slot; formData.preferredTime = slot; }"
-                                        :disabled="{{ $bookedCheck }}"
+                                        @click="if (!{{ $disabledCheck }}) { selectedTimeSlot = slot; formData.preferredTime = slot; }"
+                                        :disabled="{{ $disabledCheck }}"
                                         class="p-3 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 shadow-sm"
-                                        :class="{{ $bookedCheck }} ? 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-900/40 text-red-400 dark:text-red-500/70 cursor-not-allowed opacity-80' : (selectedTimeSlot === slot ? 'bg-green-600 border-green-600 text-white shadow-green-600/30 shadow-md' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-[#457B9D] hover:bg-blue-50 dark:hover:bg-blue-950/30')"
+                                        :class="{{ $bookedCheck }} ? 'bg-red-50/80 dark:bg-red-950/30 border-red-200 dark:border-red-900/40 text-red-400 dark:text-red-500/70 cursor-not-allowed opacity-80' : ({{ $pastCheck }} ? 'bg-gray-100 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60' : (selectedTimeSlot === slot ? 'bg-green-600 border-green-600 text-white shadow-green-600/30 shadow-md' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-[#457B9D] hover:bg-blue-50 dark:hover:bg-blue-950/30'))"
                                     >
                                         <div class="flex items-center gap-1">
                                             <x-icon name="calendar" class="w-4 h-4" />
@@ -788,7 +835,12 @@
                                                 Booked
                                             </span>
                                         </template>
-                                        <template x-if="selectedTimeSlot === slot">
+                                        <template x-if="{{ $pastCheck }}">
+                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-extrabold border border-gray-300 dark:border-gray-600">
+                                                Unavailable
+                                            </span>
+                                        </template>
+                                        <template x-if="selectedTimeSlot === slot && !{{ $disabledCheck }}">
                                             <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded bg-green-700 text-white font-extrabold">
                                                 Selected
                                             </span>
@@ -811,8 +863,12 @@
                                 <span class="text-xs text-gray-700 dark:text-gray-300">Selected</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 rounded bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600"></div>
+                                <div class="w-4 h-4 rounded bg-red-100 dark:bg-red-900/50 border-2 border-red-200 dark:border-red-800"></div>
                                 <span class="text-xs text-gray-700 dark:text-gray-300">Booked</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600"></div>
+                                <span class="text-xs text-gray-700 dark:text-gray-300">Unavailable / Past</span>
                             </div>
                         </div>
                     </template>

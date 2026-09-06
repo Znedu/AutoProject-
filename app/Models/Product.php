@@ -126,6 +126,72 @@ class Product extends Model
         return $this->stock_quantity <= 0;
     }
 
+    /**
+     * Resolve the corresponding service for this product.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Service>  $services
+     */
+    public function getTargetService(\Illuminate\Support\Collection $services): ?Service
+    {
+        $name = strtolower($this->name);
+        $cat = strtolower($this->category);
+
+        foreach ($services as $service) {
+            $svcName = strtolower($service->name);
+            $svcCat = strtolower($service->category?->name ?? '');
+
+            if (str_contains($name, 'oil') || str_contains($cat, 'oil')) {
+                if (str_contains($svcName, 'oil')) return $service;
+            }
+            if (str_contains($name, 'brake') || str_contains($name, 'pad') || str_contains($name, 'coil') || str_contains($cat, 'brake')) {
+                if (str_contains($svcName, 'brake')) return $service;
+            }
+            if (str_contains($name, 'tire') || str_contains($name, 'wheel') || str_contains($cat, 'tire')) {
+                if (str_contains($svcName, 'tire') || str_contains($svcName, 'wheel')) return $service;
+            }
+            if (str_contains($name, 'paint') || str_contains($name, 'coat') || str_contains($cat, 'paint')) {
+                if (str_contains($svcName, 'paint') || str_contains($svcName, 'repaint')) return $service;
+            }
+            if (str_contains($name, 'wing') || str_contains($name, 'spoiler') || str_contains($name, 'body') || str_contains($cat, 'accessory')) {
+                if (str_contains($name, 'exhaust') || str_contains($name, 'catback')) {
+                    if (str_contains($svcName, 'exhaust')) return $service;
+                }
+                if (str_contains($svcName, 'body kit')) return $service;
+            }
+            if (str_contains($name, 'exhaust') || str_contains($name, 'muffler')) {
+                if (str_contains($svcName, 'exhaust')) return $service;
+            }
+            if (str_contains($name, 'spark') || str_contains($name, 'plug') || str_contains($cat, 'electrical')) {
+                if (str_contains($svcName, 'electrical') || str_contains($svcName, 'ignition') || str_contains($svcName, 'engine customization')) return $service;
+            }
+        }
+
+        return $services->first();
+    }
+
+    /**
+     * Resolve matching brand name for this product within a target service.
+     */
+    public function resolveMatchingBrandName(?Service $service): ?string
+    {
+        if (! $service || $service->brands->isEmpty()) {
+            return null;
+        }
+
+        $prodName = strtolower($this->name);
+
+        foreach ($service->brands as $brand) {
+            $brandNameLower = strtolower($brand->name);
+            // Clean brand name (remove parentheses like '(OE replacement)')
+            $cleanBrandName = preg_replace('/\s*\(.*?\)/', '', $brandNameLower);
+            if ($cleanBrandName && (str_contains($prodName, trim($cleanBrandName)) || str_contains(trim($cleanBrandName), explode(' ', $prodName)[0]))) {
+                return $brand->name;
+            }
+        }
+
+        return null;
+    }
+
     protected function casts(): array
     {
         return [

@@ -16,11 +16,6 @@
                 Browse available automotive parts, lubricants, performance upgrades, and accessories in real-time.
             </p>
         </div>
-
-        <a href="{{ route('customer.book-service') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#E63946]/90 text-white font-medium text-sm transition-all shadow-lg shadow-[#E63946]/20">
-            <x-icon name="calendar" class="w-4 h-4" />
-            Book Service Installation
-        </a>
     </div>
 
     <!-- Stats Bar -->

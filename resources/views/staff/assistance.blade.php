@@ -7,6 +7,44 @@
     x-data="customerAssistance()"
     class="space-y-6 animate-fade-in"
 >
+    {{-- Full Image Viewer Modal --}}
+    <div
+        x-show="activeImageModal"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        @keydown.escape.window="activeImageModal = null"
+        class="fixed inset-0 z-50 flex flex-col p-4 sm:p-6 bg-black/95 backdrop-blur-md overflow-hidden"
+        style="display: none;"
+    >
+        {{-- Top Navigation Bar with Back Button --}}
+        <div class="flex-none w-full max-w-7xl mx-auto flex items-center justify-between mb-4">
+            <button
+                type="button"
+                @click="activeImageModal = null"
+                class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-colors cursor-pointer"
+            >
+                <svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+                <span>Back</span>
+            </button>
+            <span class="text-sm text-gray-300 font-medium">Full Image View</span>
+        </div>
+
+        {{-- Full Image Container --}}
+        <div class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden">
+            <img
+                :src="activeImageModal"
+                alt="Full View Attachment"
+                class="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+            />
+        </div>
+    </div>
+
     {{-- Header --}}
     <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Customer Assistance</h1>
@@ -89,6 +127,25 @@
                         </div>
                         <div class="bg-gray-50 dark:bg-[#0B0B0B] rounded-xl p-4 border border-gray-200 dark:border-white/5">
                             <p class="text-gray-800 dark:text-gray-200" x-text="getSelectedTicketData().message"></p>
+                            <template x-if="getSelectedTicketData().attachment">
+                                <div class="mt-3">
+                                    <p class="text-xs font-semibold text-gray-500 mb-1.5 dark:text-gray-400">Attached Image (Click for full view):</p>
+                                    <div 
+                                        @click="activeImageModal = getSelectedTicketData().attachment" 
+                                        class="group relative inline-block cursor-pointer overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-black/5"
+                                    >
+                                        <img 
+                                            :src="getSelectedTicketData().attachment" 
+                                            alt="Ticket Attachment" 
+                                            class="max-h-60 rounded-xl object-contain transition-transform duration-300 group-hover:scale-105" 
+                                        />
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium text-sm gap-2">
+                                            <x-icon name="eye" class="w-5 h-5 text-white" />
+                                            <span>View Full Image</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </x-card>
 
@@ -178,6 +235,7 @@
     function customerAssistance() {
         return {
             selectedTicket: parseInt(new URLSearchParams(window.location.search).get('id')) || null,
+            activeImageModal: null,
             replyMessage: '',
             selectedFilter: 'all',
             tickets: @json($tickets),

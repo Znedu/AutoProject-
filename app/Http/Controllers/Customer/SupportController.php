@@ -19,7 +19,7 @@ class SupportController extends Controller
         $userId = auth()->id();
 
         $tickets = SupportTicket::where('user_id', $userId)
-            ->with('replies.user')
+            ->with(['replies.user', 'attachments'])
             ->latest()
             ->get()
             ->map(function ($ticket) {
@@ -30,6 +30,7 @@ class SupportController extends Controller
                     'status' => $ticket->status,
                     'date' => $ticket->created_at->format('F d, Y'),
                     'replies' => $ticket->replies->count(),
+                    'attachment' => $ticket->attachments->first()?->url,
                 ];
             });
 
@@ -61,6 +62,7 @@ class SupportController extends Controller
         $request->validate([
             'subject' => 'required|string|max:255',
             'message' => 'required|string',
+            'attachment' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         $ticket = SupportTicket::create([
@@ -70,6 +72,20 @@ class SupportController extends Controller
             'message' => $request->message,
             'status' => 'open',
         ]);
+
+        $attachmentUrl = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $path = $file->store('support_attachments', 'public');
+            $attachment = $ticket->attachments()->create([
+                'disk' => 'public',
+                'file_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size_bytes' => $file->getSize(),
+            ]);
+            $attachmentUrl = $attachment->url;
+        }
 
         app(NotificationDispatcherService::class)->notifyStaff(new TicketCreatedNotification($ticket));
 
@@ -82,6 +98,7 @@ class SupportController extends Controller
                 'status' => $ticket->status,
                 'date' => $ticket->created_at->format('F d, Y'),
                 'replies' => 0,
+                'attachment' => $attachmentUrl,
             ],
         ]);
     }

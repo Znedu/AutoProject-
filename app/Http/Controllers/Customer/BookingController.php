@@ -15,6 +15,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+use App\Models\Product;
+
 class BookingController extends Controller
 {
     public function create(Request $request): View
@@ -32,11 +34,38 @@ class BookingController extends Controller
             ->with(['category', 'brands'])
             ->get();
 
+        $selectedProductId = $request->query('product_id');
+        $selectedServiceId = $request->query('service_id');
+        $selectedBrandName = $request->query('brand');
+        $selectedProduct = null;
+
+        if ($selectedProductId) {
+            $selectedProduct = Product::find($selectedProductId);
+            if ($selectedProduct) {
+                $targetService = $selectedProduct->getTargetService($services);
+                if ($targetService) {
+                    $selectedServiceId = $targetService->id;
+                    $matchedBrand = $selectedProduct->resolveMatchingBrandName($targetService);
+                    if ($matchedBrand) {
+                        $selectedBrandName = $matchedBrand;
+                    }
+                }
+            }
+        } elseif ($selectedServiceId) {
+            $svc = $services->firstWhere('id', (int) $selectedServiceId);
+            if ($svc && ! $selectedBrandName && $svc->brands->isNotEmpty()) {
+                $selectedBrandName = $svc->brands->first()->name;
+            }
+        }
+
         return view('customer.book-service', [
             'user' => $user,
             'serviceCategories' => $serviceCategories,
             'services' => $services,
             'vehicles' => $user->vehicles()->latest()->get(),
+            'preselectedServiceId' => $selectedServiceId ? (int) $selectedServiceId : null,
+            'preselectedBrandName' => $selectedBrandName,
+            'selectedProduct' => $selectedProduct,
         ]);
     }
 

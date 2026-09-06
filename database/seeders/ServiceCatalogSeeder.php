@@ -226,6 +226,50 @@ class ServiceCatalogSeeder extends Seeder
                     ],
                 ],
             ],
+            [
+                'slug' => 'wheels',
+                'name' => 'Tires & Wheels Services',
+                'icon' => 'disc',
+                'color' => '#E63946',
+                'sort_order' => 7,
+                'services' => [
+                    [
+                        'code' => 'wheel-001',
+                        'name' => 'Tire Mounting & Wheel Alignment',
+                        'description' => 'Performance tire installation, high-speed balancing, and 3D precision alignment',
+                        'min' => 2500,
+                        'max' => 10500,
+                        'duration' => '1 day',
+                        'brands' => [
+                            ['name' => 'Michelin', 'price' => 10500, 'short_description' => 'Max performance summer & track tire mounting'],
+                            ['name' => 'Bridgestone', 'price' => 8500, 'short_description' => 'Potenza ultra high performance tire fitting'],
+                            ['name' => 'Pirelli', 'price' => 9500, 'short_description' => 'P Zero Italian luxury performance tire installation'],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'slug' => 'electrical',
+                'name' => 'Electrical & Lighting Upgrade',
+                'icon' => 'zap',
+                'color' => '#F77F00',
+                'sort_order' => 8,
+                'services' => [
+                    [
+                        'code' => 'elec-001',
+                        'name' => 'Electrical & Ignition Service',
+                        'description' => 'Performance spark plug replacement, ignition coil, and custom lighting retrofit',
+                        'min' => 2400,
+                        'max' => 8500,
+                        'duration' => '1 day',
+                        'brands' => [
+                            ['name' => 'NGK', 'price' => 2400, 'short_description' => 'NGK Laser Iridium high-ignitability spark plugs'],
+                            ['name' => 'Bosch', 'price' => 3200, 'short_description' => 'German precision ignition coils & automotive electronics'],
+                            ['name' => 'Denso', 'price' => 2800, 'short_description' => 'Japanese Iridium Power high-performance spark plugs'],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         foreach ($categories as $categoryData) {

@@ -14,7 +14,7 @@ class AssistanceController extends Controller
 {
     public function index()
     {
-        $tickets = SupportTicket::with(['replies.user', 'user'])
+        $tickets = SupportTicket::with(['replies.user', 'user', 'attachments'])
             ->latest()
             ->get()
             ->map(function ($ticket) {
@@ -33,6 +33,7 @@ class AssistanceController extends Controller
                     'message' => $ticket->message,
                     'status' => $ticket->status,
                     'date' => $ticket->created_at->format('F d, Y'),
+                    'attachment' => $ticket->attachments->first()?->url,
                     'replies' => $replies,
                 ];
             });

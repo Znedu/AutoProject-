@@ -32,9 +32,13 @@ class SupportTicketAttachment extends Model
 
     protected function url(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->file_path
-            ? Storage::disk($this->disk)->url($this->file_path)
-            : null);
+        return Attribute::get(function (): ?string {
+            if (!$this->file_path) return null;
+            if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+                return $this->file_path;
+            }
+            return asset('storage/' . ltrim($this->file_path, '/'));
+        });
     }
 
     protected function casts(): array

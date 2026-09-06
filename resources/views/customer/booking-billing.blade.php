@@ -22,21 +22,6 @@
                 Vehicle: <span class="font-semibold text-gray-900 dark:text-white">{{ $booking->vehicle?->make }} {{ $booking->vehicle?->model }} {{ $booking->vehicle?->year }}</span> • Plate: <span class="font-semibold text-gray-900 dark:text-white">{{ $booking->vehicle?->plate_number }}</span>
             </p>
         </div>
-
-        <div class="flex gap-3">
-            <a href="{{ route('customer.track', ['booking_id' => $booking->id]) }}">
-                <x-button variant="secondary">
-                    <x-icon name="activity" class="w-4 h-4 mr-2" />
-                    Track Job
-                </x-button>
-            </a>
-            <a href="{{ route('customer.support.index') }}?subject={{ urlencode('Billing Inquiry: Booking #'.$booking->booking_number) }}">
-                <x-button variant="secondary">
-                    <x-icon name="message-square" class="w-4 h-4 mr-2 text-gray-500" />
-                    Help & Support
-                </x-button>
-            </a>
-        </div>
     </div>
 
     @if (! $summary->isFinalized)
