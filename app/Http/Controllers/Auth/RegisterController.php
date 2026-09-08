@@ -35,23 +35,37 @@ class RegisterController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $existingUser = User::query()->where('email', $request->email)->first();
+        $existingUser = User::withTrashed()->where('email', $request->email)->first();
 
         if ($existingUser) {
-            if ($existingUser->hasVerifiedEmail()) {
+            if ($existingUser->trashed()) {
+                // If previously deleted by admin, restore user as an active customer requiring verification
+                $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
+
+                $existingUser->restore();
+                $existingUser->update([
+                    'name' => $request->name,
+                    'password' => $request->password,
+                    'role_id' => $customerRole->id,
+                    'status' => User::STATUS_ACTIVE,
+                    'email_verified_at' => null,
+                ]);
+
+                $user = $existingUser;
+            } elseif ($existingUser->hasVerifiedEmail()) {
                 return back()->withErrors([
                     'email' => 'This email address is already registered and verified. Please log in instead.',
                 ])->withInput();
+            } else {
+                // Unverified user: update pending account details & password
+                $existingUser->update([
+                    'name' => $request->name,
+                    'password' => $request->password,
+                    'status' => User::STATUS_ACTIVE,
+                ]);
+
+                $user = $existingUser;
             }
-
-            // Unverified user: update pending account details & password
-            $existingUser->update([
-                'name' => $request->name,
-                'password' => $request->password,
-                'status' => User::STATUS_ACTIVE,
-            ]);
-
-            $user = $existingUser;
         } else {
             $customerRole = Role::query()->where('slug', RoleSlug::Customer->value)->firstOrFail();
 

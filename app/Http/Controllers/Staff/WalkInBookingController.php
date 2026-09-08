@@ -107,7 +107,7 @@ class WalkInBookingController extends Controller
                     ? trim($request->new_email)
                     : 'customer_'.($cleanPhone ?: Str::lower(Str::random(8))).'@autoproject.ph';
 
-                if (User::where('email', $email)->exists()) {
+                if (User::withTrashed()->where('email', $email)->exists()) {
                     $email = 'customer_'.($cleanPhone ?: Str::lower(Str::random(4))).'_'.Str::lower(Str::random(4)).'@autoproject.ph';
                 }
 

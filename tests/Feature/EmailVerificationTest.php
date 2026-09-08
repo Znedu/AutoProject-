@@ -286,4 +286,39 @@ class EmailVerificationTest extends TestCase
         $response->assertRedirect('/');
         $this->assertFalse(session()->has('verification_email'));
     }
+
+    public function test_soft_deleted_user_can_re_register_without_server_error(): void
+    {
+        Notification::fake();
+
+        $deletedUser = User::factory()->create([
+            'role_id' => $this->customerRole->id,
+            'name' => 'Old Deleted User',
+            'email' => 'deleteduser@example.com',
+            'email_verified_at' => now(),
+        ]);
+        $deletedUser->delete();
+
+        $this->assertSoftDeleted('users', ['id' => $deletedUser->id]);
+
+        $response = $this->post('/register', [
+            'name' => 'Reborn Customer',
+            'email' => 'deleteduser@example.com',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertRedirect(route('verification.notice'));
+        $this->assertGuest();
+        $this->assertEquals('deleteduser@example.com', session('verification_email'));
+
+        $deletedUser->refresh();
+        $this->assertNull($deletedUser->deleted_at);
+        $this->assertEquals('Reborn Customer', $deletedUser->name);
+        $this->assertNull($deletedUser->email_verified_at);
+        $this->assertEquals(User::STATUS_ACTIVE, $deletedUser->status);
+
+        Notification::assertSentTo($deletedUser, EmailVerificationCodeNotification::class);
+    }
 }
+

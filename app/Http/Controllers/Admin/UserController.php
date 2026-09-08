@@ -47,15 +47,30 @@ class UserController extends Controller
     {
         $role = Role::where('slug', $request->role)->firstOrFail();
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'role_id' => $role->id,
-            'status' => $request->status,
-            'password' => Hash::make($request->password),
-            'email_verified_at' => now(),
-        ]);
+        $existingUser = User::withTrashed()->where('email', $request->email)->first();
+
+        if ($existingUser && $existingUser->trashed()) {
+            $existingUser->restore();
+            $existingUser->update([
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'role_id' => $role->id,
+                'status' => $request->status,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => now(),
+            ]);
+            $user = $existingUser;
+        } else {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'role_id' => $role->id,
+                'status' => $request->status,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => now(),
+            ]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
