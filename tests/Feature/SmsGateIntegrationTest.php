@@ -249,4 +249,52 @@ class SmsGateIntegrationTest extends TestCase
         $this->assertDatabaseMissing('sms_outbox', ['id' => $oldSent->id]);
         $this->assertDatabaseHas('sms_outbox', ['id' => $recentSent->id]);
     }
+
+    public function test_service_update_notification_includes_stage_status_and_progress_in_sms(): void
+    {
+        Http::fake([
+            'api.sms-gate.app/3rdparty/v1/message' => Http::response([
+                'id'    => 'gw-msg-service-update',
+                'state' => 'Pending',
+            ], 200),
+        ]);
+
+        $booking = new Booking();
+        $booking->id = 10;
+        $booking->booking_number = 'BK-2026';
+        $booking->user_id = $this->customer->id;
+
+        $jobOrder = new \App\Models\JobOrder();
+        $jobOrder->id = 5;
+        $jobOrder->job_number = 'JO-5001';
+        $jobOrder->booking_id = $booking->id;
+        $jobOrder->progress_percent = 60;
+        $jobOrder->setRelation('booking', $booking);
+
+        $update = new \App\Models\ServiceUpdate();
+        $update->id = 20;
+        $update->job_order_id = $jobOrder->id;
+        $update->message = 'Brake pads replaced and rotors resurfaced.';
+        $update->setRelation('jobOrder', $jobOrder);
+
+        $this->customer->notify(new \App\Notifications\Job\ServiceUpdateNotification(
+            $update,
+            'In Progress',
+            60
+        ));
+
+        Http::assertSent(function (Request $request) {
+            return $request['phoneNumbers'] === ['+639171234567']
+                && str_contains($request['message'], 'BK-2026')
+                && str_contains($request['message'], 'Status: In Progress (60%)')
+                && str_contains($request['message'], 'Brake pads replaced');
+        });
+
+        $this->assertDatabaseHas('sms_outbox', [
+            'to'         => '+639171234567',
+            'status'     => SmsStatus::SENT->value,
+            'gateway_id' => 'gw-msg-service-update',
+        ]);
+    }
 }
+

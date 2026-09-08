@@ -100,10 +100,6 @@ class NoteController extends Controller
             'is_visible_to_customer' => true,
         ]);
 
-        if ($update->is_visible_to_customer && $job->booking?->user) {
-            app(NotificationDispatcherService::class)->notifyUser($job->booking->user, new ServiceUpdateNotification($update));
-        }
-
         // Process file uploads if files exist
         if ($request->hasFile('photos')) {
             foreach ($request->file('photos') as $index => $file) {
@@ -118,9 +114,14 @@ class NoteController extends Controller
             }
         }
 
+        $selectedStageName = null;
+
         // Auto-calculate progress percentage based on active service stage
         if ($request->filled('stage_id')) {
             $selectedStageId = (int) $request->stage_id;
+            $selectedStage = ServiceStage::find($selectedStageId);
+            $selectedStageName = $selectedStage?->name;
+
             $allStages = ServiceStage::orderBy('sort_order')->get();
             $stagesCount = $allStages->count();
             $selectedStageIndex = 0;
@@ -186,6 +187,19 @@ class NoteController extends Controller
                     ]);
                 }
             }
+        }
+
+        // Notify customer with the new stage status and progress
+        if ($update->is_visible_to_customer && $job->booking?->user) {
+            $stageName = $selectedStageName;
+            if (! $stageName && $job->stageProgress) {
+                $stageName = $job->stageProgress()->where('is_current', true)->with('serviceStage')->first()?->serviceStage?->name;
+            }
+
+            app(NotificationDispatcherService::class)->notifyUser(
+                $job->booking->user,
+                new ServiceUpdateNotification($update, $stageName, $job->progress_percent)
+            );
         }
 
         $booking = $job->booking;
