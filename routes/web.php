@@ -37,7 +37,6 @@ use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueContro
 use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 // Import Mechanic Controllers
-use App\Http\Controllers\Api\TxtFlowController;
 use App\Http\Controllers\Staff\JobController as StaffJobController;
 use App\Http\Controllers\Staff\ScheduleController as StaffScheduleController;
 use App\Http\Controllers\Staff\WalkInBookingController as StaffWalkInBookingController;
@@ -435,51 +434,4 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->name('inventory.index');
         });
 });
-
-/*
-|--------------------------------------------------------------------------
-| TxtFlow Android SMS Gateway API Routes
-|--------------------------------------------------------------------------
-|
-| Endpoints polled by the TxtFlow Android app to fetch pending outgoing
-| SMS messages and report delivery status or incoming customer replies.
-| Supports:
-|   1. Root URLs: https://domain.com (when server URL is the base domain)
-|   2. Prefixed URLs: https://domain.com/api/txtflow
-|   3. Path token URLs: https://domain.com/api/txtflow/{token}
-|
-*/
-// 1. Root-level endpoints (matches TxtFlow official PHP sample)
-Route::middleware(['txtflow.token'])
-    ->group(function (): void {
-        Route::get('health-check', [TxtFlowController::class, 'healthCheck']);
-        Route::get('messages', [TxtFlowController::class, 'messages']);
-        Route::post('message', [TxtFlowController::class, 'receiveMessage']);
-        Route::post('cron/clean', [TxtFlowController::class, 'clean']);
-        Route::post('broadcast', [TxtFlowController::class, 'broadcast']);
-    });
-
-// 2. Standard /api/txtflow prefix
-Route::prefix('api/txtflow')
-    ->middleware(['txtflow.token'])
-    ->name('api.txtflow.')
-    ->group(function (): void {
-        Route::get('health-check', [TxtFlowController::class, 'healthCheck'])->name('health-check');
-        Route::get('messages', [TxtFlowController::class, 'messages'])->name('messages');
-        Route::post('message', [TxtFlowController::class, 'receiveMessage'])->name('message');
-        Route::post('cron/clean', [TxtFlowController::class, 'clean'])->name('clean');
-        Route::post('broadcast', [TxtFlowController::class, 'broadcast'])->name('broadcast');
-    });
-
-// 3. Token-in-path prefix: /api/txtflow/{token} (enables entering token directly inside the Server URL)
-Route::prefix('api/txtflow/{token}')
-    ->middleware(['txtflow.token'])
-    ->group(function (): void {
-        Route::get('health-check', [TxtFlowController::class, 'healthCheck']);
-        Route::get('messages', [TxtFlowController::class, 'messages']);
-        Route::post('message', [TxtFlowController::class, 'receiveMessage']);
-        Route::post('cron/clean', [TxtFlowController::class, 'clean']);
-        Route::post('broadcast', [TxtFlowController::class, 'broadcast']);
-    });
-
 
