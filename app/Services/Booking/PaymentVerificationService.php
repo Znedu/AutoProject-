@@ -127,7 +127,7 @@ class PaymentVerificationService
     }
 
     /**
-     * Admin rejects the customer's payment proof.
+     * Admin rejects the customer's proof of payment.
      * Increments payment_attempts. Cancels the booking if MAX_ATTEMPTS reached.
      *
      * Transition: pending_payment_verification → payment_requires_resubmission
@@ -212,7 +212,7 @@ class PaymentVerificationService
     // -------------------------------------------------------------------------
 
     /**
-     * Customer resubmits payment proof after a rejection.
+     * Customer resubmits proof of payment after a rejection.
      * Creates a NEW Payment record so all attempts are preserved in history.
      *
      * Transition: payment_requires_resubmission → pending_payment_verification
@@ -266,7 +266,7 @@ class PaymentVerificationService
                 $previousStatus,
                 Booking::STATUS_PENDING_PAYMENT_VERIFICATION,
                 $customer,
-                'Customer resubmitted payment proof (attempt '.($booking->payment_attempts + 1).' of '.self::MAX_ATTEMPTS.').',
+                'Customer resubmitted proof of payment (attempt '.($booking->payment_attempts + 1).' of '.self::MAX_ATTEMPTS.').',
             );
 
             return $payment->fresh('proofs');

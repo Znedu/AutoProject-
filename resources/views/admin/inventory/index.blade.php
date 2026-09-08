@@ -26,9 +26,47 @@
         </button>
     </div>
 
-    <!-- Alert Banners (Highlighted out-of-stock & low-stock items at top) -->
-    @if($outOfStockItems->isNotEmpty() || $lowStockItems->isNotEmpty())
+    <!-- Alert Banners (Highlighted out-of-stock, low-stock, expired, and expiring-soon items) -->
+    @if($outOfStockItems->isNotEmpty() || $lowStockItems->isNotEmpty() || $expiredItems->isNotEmpty() || $expiringSoonItems->isNotEmpty())
         <div class="space-y-3">
+            @if($expiredItems->isNotEmpty())
+                <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-start md:items-center gap-3">
+                        <span class="p-2 rounded-xl bg-red-500/20 text-red-500 shrink-0">
+                            <x-icon name="alert-triangle" class="w-5 h-5" />
+                        </span>
+                        <div>
+                            <div class="font-bold text-sm">Expired Product Alert: {{ $expiredItems->count() }} Item(s) Past Expiration Date!</div>
+                            <div class="text-xs opacity-80 mt-0.5">
+                                {{ $expiredItems->pluck('name')->take(3)->implode(', ') }} {{ $expiredItems->count() > 3 ? 'and ' . ($expiredItems->count() - 3) . ' more' : '' }}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route(auth()->user()->roleSlug() . '.inventory.index', ['expiration_status' => 'expired']) }}" class="px-3 py-1.5 rounded-xl bg-red-500 text-white font-semibold text-xs transition-all hover:bg-red-600 shrink-0 text-center">
+                        View Expired Items
+                    </a>
+                </div>
+            @endif
+
+            @if($expiringSoonItems->isNotEmpty())
+                <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-start md:items-center gap-3">
+                        <span class="p-2 rounded-xl bg-amber-500/20 text-amber-500 shrink-0">
+                            <x-icon name="alert-triangle" class="w-5 h-5" />
+                        </span>
+                        <div>
+                            <div class="font-bold text-sm">Expiration Warning: {{ $expiringSoonItems->count() }} Item(s) Expiring Within 30 Days</div>
+                            <div class="text-xs opacity-80 mt-0.5">
+                                {{ $expiringSoonItems->pluck('name')->take(3)->implode(', ') }} {{ $expiringSoonItems->count() > 3 ? 'and ' . ($expiringSoonItems->count() - 3) . ' more' : '' }}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route(auth()->user()->roleSlug() . '.inventory.index', ['expiration_status' => 'expiring_soon']) }}" class="px-3 py-1.5 rounded-xl bg-amber-500 text-white font-semibold text-xs transition-all hover:bg-amber-600 shrink-0 text-center">
+                        View Expiring Soon List
+                    </a>
+                </div>
+            @endif
+
             @if($outOfStockItems->isNotEmpty())
                 <div class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div class="flex items-start md:items-center gap-3">
@@ -70,7 +108,7 @@
     @endif
 
     <!-- Key Metrics Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="p-4 rounded-2xl bg-white dark:glass-card border border-gray-200 dark:border-white/10">
             <div class="text-xs font-medium text-gray-500 dark:text-white/60">Total Active SKUs</div>
             <div class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ $stats['total_sku'] }}</div>
@@ -80,12 +118,20 @@
             <div class="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mt-1">₱{{ number_format($stats['total_stock_value'], 2) }}</div>
         </div>
         <div class="p-4 rounded-2xl bg-white dark:glass-card border border-amber-500/20 bg-amber-500/5">
-            <div class="text-xs font-medium text-amber-600 dark:text-amber-400">Low Stock Warning</div>
+            <div class="text-xs font-medium text-amber-600 dark:text-amber-400">Low Stock</div>
             <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ $stats['low_stock'] }}</div>
         </div>
         <div class="p-4 rounded-2xl bg-white dark:glass-card border border-red-500/20 bg-red-500/5">
             <div class="text-xs font-medium text-red-600 dark:text-red-400">Out of Stock</div>
             <div class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{{ $stats['out_of_stock'] }}</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white dark:glass-card border border-purple-500/20 bg-purple-500/5">
+            <div class="text-xs font-medium text-purple-600 dark:text-purple-400">Expiring Soon</div>
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{{ $stats['expiring_soon'] }}</div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white dark:glass-card border border-rose-500/20 bg-rose-500/5">
+            <div class="text-xs font-medium text-rose-600 dark:text-rose-400">Expired Items</div>
+            <div class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{{ $stats['expired'] }}</div>
         </div>
     </div>
 
@@ -117,7 +163,7 @@
                 </select>
             </div>
 
-            <div class="w-full md:w-48">
+            <div class="w-full md:w-44">
                 <select 
                     name="stock_status" 
                     onchange="this.form.submit()"
@@ -130,7 +176,20 @@
                 </select>
             </div>
 
-            @if($search || ($category && $category !== 'all') || $stockStatus)
+            <div class="w-full md:w-48">
+                <select 
+                    name="expiration_status" 
+                    onchange="this.form.submit()"
+                    class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946]"
+                >
+                    <option value="">All Expiration Status</option>
+                    <option value="expired" {{ $expirationStatus === 'expired' ? 'selected' : '' }}>Expired Items</option>
+                    <option value="expiring_soon" {{ $expirationStatus === 'expiring_soon' ? 'selected' : '' }}>Expiring Soon (&le; 30 Days)</option>
+                    <option value="has_expiration" {{ $expirationStatus === 'has_expiration' ? 'selected' : '' }}>Has Expiration Date</option>
+                </select>
+            </div>
+
+            @if($search || ($category && $category !== 'all') || $stockStatus || $expirationStatus)
                 <a href="{{ route(auth()->user()->roleSlug() . '.inventory.index') }}" class="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium flex items-center justify-center gap-2">
                     <x-icon name="x" class="w-4 h-4" />
                     Reset
@@ -152,6 +211,7 @@
                         <th class="py-4 px-6 text-center">Current Stock</th>
                         <th class="py-4 px-6 text-center">Reorder Level</th>
                         <th class="py-4 px-6">Location</th>
+                        <th class="py-4 px-6">Expiration Date</th>
                         <th class="py-4 px-6">Status</th>
                         <th class="py-4 px-6 text-center">Actions</th>
                     </tr>
@@ -201,6 +261,27 @@
                             <!-- Location -->
                             <td class="py-4 px-6 text-xs text-gray-600 dark:text-white/70">
                                 {{ $product->location ?? 'N/A' }}
+                            </td>
+
+                            <!-- Expiration Date -->
+                            <td class="py-4 px-6 text-xs whitespace-nowrap">
+                                @if($product->expiration_date)
+                                    @if($product->is_expired)
+                                        <span class="text-red-600 dark:text-red-400 font-semibold">
+                                            Expired ({{ $product->expiration_date->format('M d, Y') }})
+                                        </span>
+                                    @elseif($product->is_expiring_soon)
+                                        <span class="text-amber-600 dark:text-amber-400 font-semibold">
+                                            Expiring Soon ({{ $product->expiration_date->format('M d, Y') }})
+                                        </span>
+                                    @else
+                                        <span class="font-mono text-gray-700 dark:text-white/80">
+                                            {{ $product->expiration_date->format('M d, Y') }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-400 dark:text-white/40">N/A</span>
+                                @endif
                             </td>
 
                             <!-- Status Badge -->
@@ -260,7 +341,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="py-12 text-center text-gray-500 dark:text-white/50">
+                            <td colspan="10" class="py-12 text-center text-gray-500 dark:text-white/50">
                                 No inventory items found matching your filters.
                             </td>
                         </tr>
@@ -328,7 +409,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">Initial Quantity *</label>
                         <input type="number" min="0" name="stock_quantity" value="0" required class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
@@ -337,9 +418,18 @@
                         <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">Reorder Level / Min Stock *</label>
                         <input type="number" min="0" name="min_stock_threshold" value="5" required class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">Physical Location</label>
                         <input type="text" name="location" placeholder="Rack A-1 / Shelf 2" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">
+                            Expiration Date <span class="text-gray-400 font-normal">(Optional - oils, paints, fluids)</span>
+                        </label>
+                        <input type="date" name="expiration_date" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
                     </div>
                 </div>
 
@@ -432,6 +522,21 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-white/80">
+                                Expiration Date <span class="text-gray-400 font-normal">(Update when restocking batch)</span>
+                            </label>
+                            <button type="button" @click="activeProduct.expiration_date = ''" class="text-[11px] text-[#E63946] hover:underline font-medium cursor-pointer" x-show="activeProduct?.expiration_date">
+                                Clear Date
+                            </button>
+                        </div>
+                        <input type="date" name="expiration_date" x-model="activeProduct.expiration_date" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
+                        <p class="text-[11px] text-gray-500 dark:text-white/50 mt-1">Select new expiration date when restocking perishable fluids, oils, or paints.</p>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">Description</label>
                     <textarea name="description" rows="2" x-model="activeProduct.description" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white"></textarea>
@@ -451,7 +556,7 @@
             <div class="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <x-icon name="refresh-cw" class="w-5 h-5 text-blue-500" />
-                    Adjust Stock: <span class="text-[#E63946]" x-text="activeProduct?.name"></span>
+                    Adjust Stock / Restock: <span class="text-[#E63946]" x-text="activeProduct?.name"></span>
                 </h3>
                 <button @click="showStockModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                     <x-icon name="x" class="w-5 h-5" />
@@ -477,6 +582,18 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-white/80 mb-1">Quantity *</label>
                     <input type="number" min="1" name="quantity" required placeholder="1" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-white/80">
+                            Batch Expiration Date <span class="text-gray-400 font-normal">(Optional - update on restock)</span>
+                        </label>
+                        <button type="button" @click="activeProduct.expiration_date = ''" class="text-[11px] text-[#E63946] hover:underline font-medium cursor-pointer" x-show="activeProduct?.expiration_date">
+                            Clear Date
+                        </button>
+                    </div>
+                    <input type="date" name="expiration_date" x-model="activeProduct.expiration_date" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:border-[#E63946] text-gray-900 dark:text-white">
                 </div>
 
                 <div>
@@ -556,11 +673,21 @@
 
             openEditModal(product) {
                 this.activeProduct = Object.assign({}, product);
+                if (product.expiration_date) {
+                    this.activeProduct.expiration_date = String(product.expiration_date).split('T')[0];
+                } else {
+                    this.activeProduct.expiration_date = '';
+                }
                 this.showEditModal = true;
             },
 
             openStockModal(product) {
                 this.activeProduct = Object.assign({}, product);
+                if (product.expiration_date) {
+                    this.activeProduct.expiration_date = String(product.expiration_date).split('T')[0];
+                } else {
+                    this.activeProduct.expiration_date = '';
+                }
                 this.showStockModal = true;
             },
 

@@ -105,6 +105,7 @@
                         <th class="py-4 px-6">Part Name & SKU</th>
                         <th class="py-4 px-6">Category</th>
                         <th class="py-4 px-6 text-center">Available Stock</th>
+                        <th class="py-4 px-6">Expiration Date</th>
                         <th class="py-4 px-6">Status</th>
                     </tr>
                 </thead>
@@ -140,6 +141,27 @@
                                 <span class="text-xs text-gray-500 dark:text-white/40 block">{{ $product->unit_label }}</span>
                             </td>
 
+                            <!-- Expiration Date -->
+                            <td class="py-4 px-6 text-xs whitespace-nowrap">
+                                @if($product->expiration_date)
+                                    @if($product->is_expired)
+                                        <span class="text-red-600 dark:text-red-400 font-semibold">
+                                            Expired ({{ $product->expiration_date->format('M d, Y') }})
+                                        </span>
+                                    @elseif($product->is_expiring_soon)
+                                        <span class="text-amber-600 dark:text-amber-400 font-semibold">
+                                            Expiring Soon ({{ $product->expiration_date->format('M d, Y') }})
+                                        </span>
+                                    @else
+                                        <span class="font-mono text-gray-700 dark:text-white/80">
+                                            {{ $product->expiration_date->format('M d, Y') }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-gray-400 dark:text-white/40">N/A</span>
+                                @endif
+                            </td>
+
                             <!-- Status Badge -->
                             <td class="py-4 px-6">
                                 @if($product->stock_status === 'in_stock')
@@ -162,7 +184,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-12 text-center text-gray-500 dark:text-white/50">
+                            <td colspan="6" class="py-12 text-center text-gray-500 dark:text-white/50">
                                 No inventory items match your search filter.
                             </td>
                         </tr>

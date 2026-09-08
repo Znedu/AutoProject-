@@ -118,7 +118,7 @@ class BookingApprovalController extends Controller
     }
 
     /**
-     * Reject a customer's payment proof, with mandatory reason.
+     * Reject a customer's proof of payment, with mandatory reason.
      */
     public function rejectPayment(RejectPaymentRequest $request, Booking $booking, PaymentVerificationService $verification): RedirectResponse
     {

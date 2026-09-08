@@ -14,8 +14,8 @@ class PaymentRejectedNotification extends BaseNotification
     {
         return [
             'type' => NotificationType::PAYMENT_REJECTED->value,
-            'title' => 'Payment Proof Rejected',
-            'message' => "Payment proof for booking #{$this->booking->booking_number} was rejected: {$this->reason}. Please resubmit proof.",
+            'title' => 'Proof of Payment Rejected',
+            'message' => "Proof of payment for booking #{$this->booking->booking_number} was rejected: {$this->reason}. Please resubmit proof.",
             'action_url' => route('customer.payment', $this->booking->id),
             'icon' => 'info',
             'entity_type' => 'payment',

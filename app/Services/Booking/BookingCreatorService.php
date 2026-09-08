@@ -117,7 +117,7 @@ class BookingCreatorService
                 ]);
             }
 
-            $this->statusLogger->log($booking, null, Booking::STATUS_PENDING_PAYMENT_VERIFICATION, $customer, 'Booking submitted by customer with payment proof.');
+            $this->statusLogger->log($booking, null, Booking::STATUS_PENDING_PAYMENT_VERIFICATION, $customer, 'Booking submitted by customer with proof of payment.');
 
             return $booking->load([
                 'vehicle',

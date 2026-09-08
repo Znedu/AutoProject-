@@ -168,7 +168,7 @@
                         </div>
                     </div>
 
-                    {{-- Payment Proof + Info --}}
+                    {{-- Proof of Payment + Info --}}
                     @if ($payment)
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                             {{-- Payment Details --}}
@@ -210,7 +210,7 @@
 
                             {{-- Screenshot Proof --}}
                             <div>
-                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Payment Proof</h4>
+                                <h4 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Proof of Payment</h4>
                                 @if ($screenshotUrl)
                                     <a href="{{ $screenshotUrl }}" target="_blank"
                                        class="block relative group overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 shadow-sm hover:shadow-lg transition-all bg-gray-50 dark:bg-black/20">

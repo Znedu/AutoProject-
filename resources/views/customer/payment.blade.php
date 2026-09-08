@@ -65,7 +65,7 @@
                         <span class="font-semibold">Reason:</span> {{ $payment->rejection_reason }}
                     </p>
                     <p class="text-xs text-red-600/70 dark:text-red-400/70 mt-2">
-                        Please resubmit your payment proof below.
+                        Please resubmit your proof of payment below.
                         Attempt {{ $paymentAttempts }} of {{ $maxAttempts }} used.
                     </p>
                 </div>
@@ -403,12 +403,12 @@
                     {{-- Right: Screenshot --}}
                     <div>
                         <x-card class="h-full flex flex-col">
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Payment Screenshot Proof</h2>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Proof of Payment Screenshot</h2>
 
                             <div x-show="!isEditing" class="flex-1 flex flex-col items-center justify-center bg-gray-100 dark:bg-neutral-900 rounded-xl p-4 border border-gray-300 dark:border-white/10">
                                 @if ($screenshotUrl)
                                     <a href="{{ $screenshotUrl }}" target="_blank" class="block relative group overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all w-full text-center">
-                                        <img src="{{ $screenshotUrl }}" alt="Payment Screenshot Proof" class="mx-auto max-w-full h-auto max-h-96 object-contain rounded-lg transition-transform duration-300 group-hover:scale-105" />
+                                        <img src="{{ $screenshotUrl }}" alt="Proof of Payment Screenshot" class="mx-auto max-w-full h-auto max-h-96 object-contain rounded-lg transition-transform duration-300 group-hover:scale-105" />
                                         <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <span class="text-white text-xs font-bold uppercase tracking-wider bg-black/60 px-3 py-1.5 rounded-lg">View Full Image</span>
                                         </div>

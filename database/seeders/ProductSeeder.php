@@ -21,6 +21,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 18,
                 'min_stock_threshold' => 5,
                 'location' => 'Rack A1 - Shelf 2',
+                'expiration_date' => now()->addMonths(18)->format('Y-m-d'),
                 'unit_label' => 'can',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -34,6 +35,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 3, // LOW STOCK
                 'min_stock_threshold' => 8,
                 'location' => 'Rack A1 - Bin 04',
+                'expiration_date' => null,
                 'unit_label' => 'pc',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -49,6 +51,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 12,
                 'min_stock_threshold' => 4,
                 'location' => 'Rack B2 - Shelf 1',
+                'expiration_date' => null,
                 'unit_label' => 'set',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -62,6 +65,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 0, // OUT OF STOCK
                 'min_stock_threshold' => 2,
                 'location' => 'Bay 3 Heavy Goods Storage',
+                'expiration_date' => null,
                 'unit_label' => 'set',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -77,6 +81,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 2, // LOW STOCK
                 'min_stock_threshold' => 6,
                 'location' => 'Tire Rack T-01',
+                'expiration_date' => null,
                 'unit_label' => 'pc',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -92,6 +97,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 4,
                 'min_stock_threshold' => 2,
                 'location' => 'Bodywork Vault V-2',
+                'expiration_date' => null,
                 'unit_label' => 'pc',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -105,6 +111,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 0, // OUT OF STOCK
                 'min_stock_threshold' => 1,
                 'location' => 'Rack C4',
+                'expiration_date' => null,
                 'unit_label' => 'set',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -120,6 +127,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 15,
                 'min_stock_threshold' => 5,
                 'location' => 'Mixing Room Cabinet 3',
+                'expiration_date' => now()->addDays(15)->format('Y-m-d'), // EXPIRING SOON
                 'unit_label' => 'can',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -133,6 +141,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 1, // LOW STOCK
                 'min_stock_threshold' => 3,
                 'location' => 'Mixing Room Cabinet 1',
+                'expiration_date' => now()->subDays(5)->format('Y-m-d'), // EXPIRED
                 'unit_label' => 'set',
                 'status' => Product::STATUS_ACTIVE,
             ],
@@ -148,6 +157,7 @@ class ProductSeeder extends Seeder
                 'stock_quantity' => 25,
                 'min_stock_threshold' => 10,
                 'location' => 'Rack A2 - Bin 12',
+                'expiration_date' => null,
                 'unit_label' => 'set',
                 'status' => Product::STATUS_ACTIVE,
             ],

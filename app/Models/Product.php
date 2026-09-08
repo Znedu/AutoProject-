@@ -37,6 +37,7 @@ class Product extends Model
         'stock_quantity',
         'min_stock_threshold',
         'location',
+        'expiration_date',
         'unit_label',
         'status',
     ];
@@ -75,6 +76,24 @@ class Product extends Model
     public function scopeOutOfStock(Builder $query): Builder
     {
         return $query->where('stock_quantity', '<=', 0);
+    }
+
+    public function scopeHasExpirationDate(Builder $query): Builder
+    {
+        return $query->whereNotNull('expiration_date');
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('expiration_date')
+            ->where('expiration_date', '<', today());
+    }
+
+    public function scopeExpiringSoon(Builder $query, int $days = 30): Builder
+    {
+        return $query->whereNotNull('expiration_date')
+            ->where('expiration_date', '>=', today())
+            ->where('expiration_date', '<=', today()->addDays($days));
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
@@ -124,6 +143,43 @@ class Product extends Model
     public function getIsOutOfStockAttribute(): bool
     {
         return $this->stock_quantity <= 0;
+    }
+
+    public function getIsExpiredAttribute(): bool
+    {
+        return $this->expiration_date !== null && $this->expiration_date->isPast();
+    }
+
+    public function getIsExpiringSoonAttribute(): bool
+    {
+        return $this->expiration_date !== null && ! $this->is_expired && $this->expiration_date->diffInDays(now()) <= 30;
+    }
+
+    public function getExpirationStatusAttribute(): ?string
+    {
+        if ($this->expiration_date === null) {
+            return null;
+        }
+
+        if ($this->is_expired) {
+            return 'expired';
+        }
+
+        if ($this->is_expiring_soon) {
+            return 'expiring_soon';
+        }
+
+        return 'valid';
+    }
+
+    public function getExpirationStatusLabelAttribute(): string
+    {
+        return match ($this->expiration_status) {
+            'expired' => 'Expired',
+            'expiring_soon' => 'Expiring Soon',
+            'valid' => 'Valid',
+            default => 'N/A',
+        };
     }
 
     /**
@@ -199,6 +255,7 @@ class Product extends Model
             'cost_price' => 'decimal:2',
             'stock_quantity' => 'integer',
             'min_stock_threshold' => 'integer',
+            'expiration_date' => 'date:Y-m-d',
         ];
     }
 }

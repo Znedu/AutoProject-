@@ -14,8 +14,8 @@ class PaymentResubmittedNotification extends BaseNotification
     {
         return [
             'type' => NotificationType::PAYMENT_RESUBMITTED->value,
-            'title' => 'Payment Proof Resubmitted',
-            'message' => "New payment proof resubmitted for booking #{$this->booking->booking_number}.",
+            'title' => 'Proof of Payment Resubmitted',
+            'message' => "New proof of payment resubmitted for booking #{$this->booking->booking_number}.",
             'action_url' => route('admin.approvals.index'),
             'icon' => 'dollar-sign',
             'entity_type' => 'payment',

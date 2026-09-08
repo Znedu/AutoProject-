@@ -55,10 +55,10 @@ class StoreBookingRequest extends FormRequest
         return [
             'service_ids.required' => 'Please select at least one service.',
             'agreed_to_terms.accepted' => 'You must agree to the terms and conditions.',
-            'payment_screenshot.required' => 'Please upload a screenshot of your payment proof.',
-            'payment_screenshot.image' => 'The payment proof must be an image file.',
-            'payment_screenshot.mimes' => 'The payment proof must be a PNG, JPG, or JPEG file.',
-            'payment_screenshot.max' => 'The payment proof may not be larger than 5MB.',
+            'payment_screenshot.required' => 'Please upload a screenshot of your proof of payment.',
+            'payment_screenshot.image' => 'The proof of payment must be an image file.',
+            'payment_screenshot.mimes' => 'The proof of payment must be a PNG, JPG, or JPEG file.',
+            'payment_screenshot.max' => 'The proof of payment may not be larger than 5MB.',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Notification;
 
+use App\Enums\RoleSlug;
 use App\Models\User;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
@@ -49,6 +50,14 @@ class NotificationDispatcherService
     }
 
     /**
+     * Notify all active mechanics.
+     */
+    public function notifyMechanics(Notification $notification): void
+    {
+        $this->notifyUsers(User::active()->mechanics()->get(), $notification);
+    }
+
+    /**
      * Notify all active administrators holding a specific permission.
      */
     public function notifyAdminsWithPermission(string $permission, Notification $notification): void
@@ -68,5 +77,17 @@ class NotificationDispatcherService
     {
         $this->notifyAdmins($notification);
         $this->notifyStaff($notification);
+    }
+
+    /**
+     * Notify all active administrators, staff members, and mechanics.
+     */
+    public function notifyAdminsStaffAndMechanics(Notification $notification): void
+    {
+        $users = User::active()
+            ->role([RoleSlug::Administrator, RoleSlug::Staff, RoleSlug::Mechanic])
+            ->get();
+
+        $this->notifyUsers($users, $notification);
     }
 }

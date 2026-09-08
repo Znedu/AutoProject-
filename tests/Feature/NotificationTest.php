@@ -443,4 +443,42 @@ class NotificationTest extends TestCase
         $clearResponse->assertOk()->assertJson(['success' => true]);
         $this->assertEquals(0, $this->customer->notifications()->count());
     }
+
+    public function test_low_stock_notifies_admin_staff_and_mechanic(): void
+    {
+        Notification::fake();
+
+        $product = \App\Models\Product::create([
+            'sku' => 'PRD-TEST-LOW',
+            'name' => 'Low Stock Test Item',
+            'category' => 'Engine Oils',
+            'cost_price' => 100,
+            'unit_price' => 150,
+            'stock_quantity' => 15,
+            'min_stock_threshold' => 5,
+            'unit_label' => 'bottles',
+            'status' => 'active',
+        ]);
+
+        // Give admin permission to manage inventory
+        $invPerm = Permission::firstOrCreate(
+            ['slug' => 'inventory.manage'],
+            ['name' => 'Manage Inventory', 'description' => 'Manage Inventory']
+        );
+        $this->adminRole->permissions()->syncWithoutDetaching([$invPerm->id]);
+
+        // Adjust stock down to low stock (e.g. 3 <= 5)
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.inventory.adjust', $product), [
+                'type' => 'out',
+                'quantity' => 12,
+                'reason' => 'Used in shop',
+            ]);
+
+        $response->assertRedirect();
+        Notification::assertSentTo($this->admin, \App\Notifications\Inventory\LowStockNotification::class);
+        Notification::assertSentTo($this->staff, \App\Notifications\Inventory\LowStockNotification::class);
+        Notification::assertSentTo($this->mechanic, \App\Notifications\Inventory\LowStockNotification::class);
+        Notification::assertNotSentTo($this->customer, \App\Notifications\Inventory\LowStockNotification::class);
+    }
 }
