@@ -20,6 +20,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Direct /api endpoints (in case API URL is configured as https://domain.com/api)
+Route::middleware(['txtflow.token'])
+    ->group(function (): void {
+        Route::get('health-check', [TxtFlowController::class, 'healthCheck']);
+        Route::get('messages', [TxtFlowController::class, 'messages']);
+        Route::post('message', [TxtFlowController::class, 'receiveMessage']);
+        Route::post('cron/clean', [TxtFlowController::class, 'clean']);
+        Route::post('broadcast', [TxtFlowController::class, 'broadcast']);
+    });
+
 // Standard /api/txtflow prefix
 Route::prefix('txtflow')
     ->middleware(['txtflow.token'])
