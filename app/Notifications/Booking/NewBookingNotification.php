@@ -8,6 +8,8 @@ use App\Notifications\BaseNotification;
 
 class NewBookingNotification extends BaseNotification
 {
+    protected bool $sendSms = false;
+
     public function __construct(public Booking $booking) {}
 
     public function toArray(mixed $notifiable): array

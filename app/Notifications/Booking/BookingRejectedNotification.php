@@ -24,4 +24,10 @@ class BookingRejectedNotification extends BaseNotification
             'entity_id' => $this->booking->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        $reason = $this->booking->rejection_reason ? " Reason: {$this->booking->rejection_reason}" : '';
+        return "[AutoProject+] Booking Rejected: Your booking #{$this->booking->booking_number} was rejected.{$reason} Please visit your account for details.";
+    }
 }

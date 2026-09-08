@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'txtflow' => [
+        'enabled' => (bool) env('TXTFLOW_ENABLED', false),
+        'token' => env('TXTFLOW_TOKEN', ''),
+    ],
+
 ];

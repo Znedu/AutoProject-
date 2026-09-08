@@ -34,5 +34,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('billing.manage', [BookingBillingPolicy::class, 'manage']);
         Gate::define('billing.finalize', [BookingBillingPolicy::class, 'finalize']);
         Gate::define('billing.record-payment', [BookingBillingPolicy::class, 'recordPayment']);
+
+        \Illuminate\Support\Facades\Notification::extend('txtflow', function ($app) {
+            return $app->make(\App\Channels\TxtFlowChannel::class);
+        });
     }
 }

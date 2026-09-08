@@ -24,4 +24,9 @@ class ServiceUpdateNotification extends BaseNotification
             'entity_id' => $this->update->job_order_id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        return "[AutoProject+] Service Update: {$this->update->message}";
+    }
 }

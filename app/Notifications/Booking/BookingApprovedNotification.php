@@ -22,4 +22,9 @@ class BookingApprovedNotification extends BaseNotification
             'entity_id' => $this->booking->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        return "[AutoProject+] Booking Approved: Your booking #{$this->booking->booking_number} has been approved! Track your service at " . route('customer.track', ['booking_id' => $this->booking->id]);
+    }
 }

@@ -8,6 +8,8 @@ use App\Notifications\BaseNotification;
 
 class JobUnassignedNotification extends BaseNotification
 {
+    protected bool $sendSms = false;
+
     public function __construct(public JobOrder $jobOrder) {}
 
     public function toArray(mixed $notifiable): array
