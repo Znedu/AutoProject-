@@ -25,7 +25,7 @@ class ServiceUpdateNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Service Update: {$this->update->message}";
     }

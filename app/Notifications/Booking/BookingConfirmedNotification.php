@@ -23,7 +23,7 @@ class BookingConfirmedNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Booking Confirmed: Your booking #{$this->booking->booking_number} is confirmed. We look forward to serving you!";
     }

@@ -18,6 +18,8 @@ class SmsOutbox extends Model
         'to',
         'body',
         'status',
+        'gateway_id',
+        'error_message',
         'notifiable_type',
         'notifiable_id',
         'context',

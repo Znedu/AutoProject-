@@ -23,7 +23,7 @@ class PaymentRejectedNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Payment Issue: Payment proof for booking #{$this->booking->booking_number} was rejected: {$this->reason}. Please resubmit proof via your portal.";
     }

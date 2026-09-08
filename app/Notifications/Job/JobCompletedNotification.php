@@ -29,7 +29,7 @@ class JobCompletedNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Service Completed: Job order #{$this->jobOrder->job_number} for your vehicle has been completed! You may proceed to pick up your vehicle.";
     }

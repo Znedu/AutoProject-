@@ -37,7 +37,7 @@ class AppointmentScheduledNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         $dateStr = $this->booking->scheduled_date ? $this->booking->scheduled_date->format('M d, Y') : '';
         $timeStr = $this->booking->scheduled_time ? $this->booking->scheduled_time->format('g:i A') : '';

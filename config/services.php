@@ -35,9 +35,11 @@ return [
         ],
     ],
 
-    'txtflow' => [
-        'enabled' => (bool) env('TXTFLOW_ENABLED', false),
-        'token' => env('TXTFLOW_TOKEN', ''),
+    'smsgate' => [
+        'enabled'  => (bool) env('SMSGATE_ENABLED', false),
+        'base_url' => env('SMSGATE_BASE_URL', 'https://api.sms-gate.app/3rdparty/v1'),
+        'login'    => env('SMSGATE_LOGIN', ''),
+        'password' => env('SMSGATE_PASSWORD', ''),
     ],
 
 ];

@@ -435,14 +435,4 @@ Route::middleware(['auth', 'active'])->group(function () {
         });
 });
 
-// Root-level TxtFlow API routes (if app accesses root /health-check, /messages, etc.)
-Route::middleware(['txtflow.token'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
-    ->group(function (): void {
-        Route::get('/health-check', [\App\Http\Controllers\Api\TxtFlowController::class, 'healthCheck']);
-        Route::get('/messages', [\App\Http\Controllers\Api\TxtFlowController::class, 'messages']);
-        Route::post('/message', [\App\Http\Controllers\Api\TxtFlowController::class, 'receiveMessage']);
-        Route::post('/cron/clean', [\App\Http\Controllers\Api\TxtFlowController::class, 'clean']);
-        Route::post('/broadcast', [\App\Http\Controllers\Api\TxtFlowController::class, 'broadcast']);
-    });
 

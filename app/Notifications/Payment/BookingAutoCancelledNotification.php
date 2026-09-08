@@ -27,7 +27,7 @@ class BookingAutoCancelledNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Booking Notice: Booking #{$this->booking->booking_number} was automatically cancelled due to unresolved payment verification.";
     }

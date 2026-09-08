@@ -23,7 +23,7 @@ class JobStartedNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Service Started: Work has begun on your vehicle for job order #{$this->jobOrder->job_number}. Track progress in your portal.";
     }

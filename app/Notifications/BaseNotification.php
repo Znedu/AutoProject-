@@ -7,7 +7,7 @@ use Illuminate\Notifications\Notification;
 abstract class BaseNotification extends Notification
 {
     /**
-     * Whether this notification should also be sent as an SMS via TxtFlow.
+     * Whether this notification should also be sent as an SMS via SMS Gateway.
      * Subclasses can set this to false for staff/admin-only notifications.
      */
     protected bool $sendSms = true;
@@ -21,8 +21,8 @@ abstract class BaseNotification extends Notification
     {
         $channels = ['database'];
 
-        if ($this->sendSms && config('services.txtflow.enabled', false)) {
-            $channels[] = 'txtflow';
+        if ($this->sendSms && config('services.smsgate.enabled', false)) {
+            $channels[] = 'sms';
         }
 
         return $channels;
@@ -46,14 +46,14 @@ abstract class BaseNotification extends Notification
     abstract public function toArray(mixed $notifiable): array;
 
     /**
-     * Get the SMS body for TxtFlow delivery.
+     * Get the SMS body for SMS Gateway delivery.
      *
      * Subclasses should override this method to provide a concise,
      * SMS-friendly message (max ~160 characters recommended).
      *
      * Returns null to skip SMS delivery for this notification instance.
      */
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         $payload = $this->toArray($notifiable);
 

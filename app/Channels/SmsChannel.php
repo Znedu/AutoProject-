@@ -2,21 +2,21 @@
 
 namespace App\Channels;
 
-use App\Services\Notification\TxtFlowService;
+use App\Services\Notification\SmsGateService;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
-class TxtFlowChannel
+class SmsChannel
 {
-    public function __construct(private readonly TxtFlowService $service) {}
+    public function __construct(private readonly SmsGateService $service) {}
 
     /**
-     * Send the given notification via TxtFlow SMS gateway.
+     * Send the given notification via SMS Gateway for Android.
      */
     public function send(mixed $notifiable, Notification $notification): void
     {
         // Guard: feature must be enabled in config.
-        if (! config('services.txtflow.enabled', false)) {
+        if (! config('services.smsgate.enabled', false)) {
             return;
         }
 
@@ -47,24 +47,28 @@ class TxtFlowChannel
             return;
         }
 
-        // Guard: notification must implement toTxtFlow().
-        if (! method_exists($notification, 'toTxtFlow')) {
+        // Guard: notification must implement toSms().
+        if (! method_exists($notification, 'toSms')) {
             return;
         }
 
         try {
-            $body = $notification->toTxtFlow($notifiable);
+            $body = $notification->toSms($notifiable);
 
             if (empty($body)) {
                 return;
             }
 
-            $this->service->queue($phone, $body);
+            $this->service->send(
+                $phone,
+                $body,
+                $notifiable instanceof \Illuminate\Database\Eloquent\Model ? $notifiable : null
+            );
         } catch (\Throwable $e) {
-            Log::channel('stack')->error('[TxtFlow] Failed to queue SMS', [
-                'phone'     => $phone,
-                'error'     => $e->getMessage(),
-                'notifiable'=> get_class($notifiable),
+            Log::channel('stack')->error('[SmsGate] Failed to send SMS via channel', [
+                'phone'      => $phone,
+                'error'      => $e->getMessage(),
+                'notifiable' => is_object($notifiable) ? get_class($notifiable) : gettype($notifiable),
             ]);
         }
     }

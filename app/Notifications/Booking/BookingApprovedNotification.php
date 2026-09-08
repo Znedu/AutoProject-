@@ -23,7 +23,7 @@ class BookingApprovedNotification extends BaseNotification
         ];
     }
 
-    public function toTxtFlow(mixed $notifiable): ?string
+    public function toSms(mixed $notifiable): ?string
     {
         return "[AutoProject+] Booking Approved: Your booking #{$this->booking->booking_number} has been approved! Track your service at " . route('customer.track', ['booking_id' => $this->booking->id]);
     }
