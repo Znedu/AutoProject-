@@ -20,11 +20,26 @@ class TxtFlowChannel
             return;
         }
 
-        // Guard: notifiable must have a phone number.
+        // 1. Resolve phone number: check notifiable->phone first
         $phone = $notifiable->phone ?? null;
+
+        // Fallback to booking contact number if user profile has no phone
+        if (empty($phone)) {
+            if (isset($notification->booking) && ! empty($notification->booking->contact_number)) {
+                $phone = $notification->booking->contact_number;
+            } elseif (isset($notification->jobOrder?->booking) && ! empty($notification->jobOrder->booking->contact_number)) {
+                $phone = $notification->jobOrder->booking->contact_number;
+            }
+        }
 
         if (empty($phone)) {
             return;
+        }
+
+        // Sanitize phone number (strip whitespace, dashes, parens)
+        $phone = preg_replace('/[^\d+]/', '', trim((string) $phone));
+        if (str_starts_with($phone, '09')) {
+            $phone = '+63' . substr($phone, 1);
         }
 
         // Safety guard: only send SMS to customers (admins/staff/mechanics do not receive SMS)

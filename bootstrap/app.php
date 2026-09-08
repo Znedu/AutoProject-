@@ -26,6 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'api/txtflow/*',
+            'api/txtflow',
+            'health-check',
+            'messages',
+            'message',
+            'cron/clean',
+            'broadcast',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

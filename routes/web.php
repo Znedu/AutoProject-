@@ -443,8 +443,23 @@ Route::middleware(['auth', 'active'])->group(function () {
 |
 | Endpoints polled by the TxtFlow Android app to fetch pending outgoing
 | SMS messages and report delivery status or incoming customer replies.
+| Supports:
+|   1. Root URLs: https://domain.com (when server URL is the base domain)
+|   2. Prefixed URLs: https://domain.com/api/txtflow
+|   3. Path token URLs: https://domain.com/api/txtflow/{token}
 |
 */
+// 1. Root-level endpoints (matches TxtFlow official PHP sample)
+Route::middleware(['txtflow.token'])
+    ->group(function (): void {
+        Route::get('health-check', [TxtFlowController::class, 'healthCheck']);
+        Route::get('messages', [TxtFlowController::class, 'messages']);
+        Route::post('message', [TxtFlowController::class, 'receiveMessage']);
+        Route::post('cron/clean', [TxtFlowController::class, 'clean']);
+        Route::post('broadcast', [TxtFlowController::class, 'broadcast']);
+    });
+
+// 2. Standard /api/txtflow prefix
 Route::prefix('api/txtflow')
     ->middleware(['txtflow.token'])
     ->name('api.txtflow.')
@@ -453,5 +468,18 @@ Route::prefix('api/txtflow')
         Route::get('messages', [TxtFlowController::class, 'messages'])->name('messages');
         Route::post('message', [TxtFlowController::class, 'receiveMessage'])->name('message');
         Route::post('cron/clean', [TxtFlowController::class, 'clean'])->name('clean');
+        Route::post('broadcast', [TxtFlowController::class, 'broadcast'])->name('broadcast');
     });
+
+// 3. Token-in-path prefix: /api/txtflow/{token} (enables entering token directly inside the Server URL)
+Route::prefix('api/txtflow/{token}')
+    ->middleware(['txtflow.token'])
+    ->group(function (): void {
+        Route::get('health-check', [TxtFlowController::class, 'healthCheck']);
+        Route::get('messages', [TxtFlowController::class, 'messages']);
+        Route::post('message', [TxtFlowController::class, 'receiveMessage']);
+        Route::post('cron/clean', [TxtFlowController::class, 'clean']);
+        Route::post('broadcast', [TxtFlowController::class, 'broadcast']);
+    });
+
 

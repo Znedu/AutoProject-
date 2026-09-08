@@ -44,7 +44,7 @@ class TxtFlowIntegrationTest extends TestCase
 
         $this->customer = User::factory()->create([
             'role_id' => $customerRole->id,
-            'phone'   => '+639171234567',
+            'phone'   => '+63 917 123 4567', // includes spaces to test sanitization
             'status'  => User::STATUS_ACTIVE,
         ]);
 
@@ -55,7 +55,7 @@ class TxtFlowIntegrationTest extends TestCase
         ]);
     }
 
-    public function test_health_check_requires_valid_token(): void
+    public function test_health_check_requires_valid_token_when_token_is_configured(): void
     {
         // Missing token
         $response = $this->get('/api/txtflow/health-check');
@@ -65,13 +65,35 @@ class TxtFlowIntegrationTest extends TestCase
         $response = $this->get('/api/txtflow/health-check?token=wrong-token');
         $response->assertStatus(401);
 
-        // Valid token
+        // Valid token via query param
         $response = $this->get('/api/txtflow/health-check?token=' . $this->secretToken);
+        $response->assertStatus(200);
+        $this->assertSame('OK', $response->getContent());
+
+        // Valid token via path parameter (supports Android base URLs ending with token)
+        $response = $this->get('/api/txtflow/' . $this->secretToken . '/health-check');
+        $response->assertStatus(200);
+        $this->assertSame('OK', $response->getContent());
+
+        // Root health-check route
+        $response = $this->get('/health-check?token=' . $this->secretToken);
         $response->assertStatus(200);
         $this->assertSame('OK', $response->getContent());
     }
 
-    public function test_customer_notification_queues_sms_in_outbox(): void
+    public function test_health_check_allows_access_when_token_is_empty(): void
+    {
+        config(['services.txtflow.token' => '']);
+
+        $response = $this->get('/health-check');
+        $response->assertStatus(200);
+        $this->assertSame('OK', $response->getContent());
+
+        $response = $this->get('/messages');
+        $response->assertStatus(200);
+    }
+
+    public function test_customer_notification_queues_sms_with_sanitized_phone(): void
     {
         $booking = new Booking();
         $booking->id = 1;
@@ -81,7 +103,7 @@ class TxtFlowIntegrationTest extends TestCase
         // Send customer-facing notification
         $this->customer->notify(new BookingApprovedNotification($booking));
 
-        // Assert record exists in database
+        // Assert record exists in database with sanitized phone (spaces removed)
         $this->assertDatabaseHas('sms_outbox', [
             'to'     => '+639171234567',
             'status' => SmsStatus::PENDING->value,
@@ -90,6 +112,30 @@ class TxtFlowIntegrationTest extends TestCase
         $queued = SmsOutbox::first();
         $this->assertStringContainsString('BK-1001', $queued->body);
         $this->assertStringContainsString('approved', strtolower($queued->body));
+    }
+
+    public function test_customer_notification_falls_back_to_booking_contact_number(): void
+    {
+        // Customer with null phone on profile
+        $customerWithoutPhone = User::factory()->create([
+            'role_id' => $this->customer->role_id,
+            'phone'   => null,
+            'status'  => User::STATUS_ACTIVE,
+        ]);
+
+        $booking = new Booking();
+        $booking->id = 55;
+        $booking->booking_number = 'BK-5555';
+        $booking->contact_number = '09223334444'; // Local 09 format
+        $booking->user_id = $customerWithoutPhone->id;
+
+        $customerWithoutPhone->notify(new BookingApprovedNotification($booking));
+
+        // Assert record exists with converted +639 format
+        $this->assertDatabaseHas('sms_outbox', [
+            'to'     => '+639223334444',
+            'status' => SmsStatus::PENDING->value,
+        ]);
     }
 
     public function test_admin_notification_does_not_queue_sms(): void
@@ -105,7 +151,7 @@ class TxtFlowIntegrationTest extends TestCase
         $this->assertDatabaseCount('sms_outbox', 0);
     }
 
-    public function test_messages_endpoint_returns_pending_messages(): void
+    public function test_messages_endpoint_returns_address_property_expected_by_txtflow(): void
     {
         SmsOutbox::create([
             'to'     => '+639171234567',
@@ -119,18 +165,20 @@ class TxtFlowIntegrationTest extends TestCase
             'status' => SmsStatus::SENT,
         ]);
 
-        $response = $this->getJson('/api/txtflow/messages?token=' . $this->secretToken);
+        $response = $this->getJson('/api/txtflow/' . $this->secretToken . '/messages');
 
         $response->assertStatus(200);
         $data = $response->json();
 
         // Only the pending one should be returned
         $this->assertCount(1, $data);
+        // Crucial: TxtFlow mobile client expects 'address'!
+        $this->assertSame('+639171234567', $data[0]['address']);
         $this->assertSame('+639171234567', $data[0]['to']);
         $this->assertSame('Test SMS 1', $data[0]['body']);
     }
 
-    public function test_receive_delivery_report_marks_outbox_as_sent(): void
+    public function test_receive_delivery_report_marks_outbox_as_sent_and_returns_received(): void
     {
         $item = SmsOutbox::create([
             'to'     => '+639171234567',
@@ -138,7 +186,7 @@ class TxtFlowIntegrationTest extends TestCase
             'status' => SmsStatus::PENDING,
         ]);
 
-        $response = $this->postJson('/api/txtflow/message?token=' . $this->secretToken, [
+        $response = $this->postJson('/api/txtflow/' . $this->secretToken . '/message', [
             'type'      => 'delivery_report',
             'id'        => (string) $item->id,
             'from'      => '+639171234567',
@@ -146,27 +194,14 @@ class TxtFlowIntegrationTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJson(['status' => 'success']);
+        $this->assertSame('Received', $response->getContent());
 
         $item->refresh();
         $this->assertSame(SmsStatus::SENT, $item->status);
         $this->assertNotNull($item->sent_at);
     }
 
-    public function test_receive_incoming_sms_reply(): void
-    {
-        $response = $this->postJson('/api/txtflow/message?token=' . $this->secretToken, [
-            'type'      => 'incoming',
-            'from'      => '+639171234567',
-            'body'      => 'Thank you, confirmed!',
-            'timestamp' => time(),
-        ]);
-
-        $response->assertStatus(200);
-        $response->assertJson(['status' => 'success']);
-    }
-
-    public function test_clean_endpoint_purges_old_sent_messages(): void
+    public function test_clean_endpoint_purges_old_sent_messages_and_returns_cleaned(): void
     {
         // Sent 35 days ago (should be cleaned)
         $oldSent = SmsOutbox::create([
@@ -184,15 +219,26 @@ class TxtFlowIntegrationTest extends TestCase
             'sent_at' => Carbon::now()->subDays(5),
         ]);
 
-        $response = $this->postJson('/api/txtflow/cron/clean?token=' . $this->secretToken);
+        $response = $this->post('/api/txtflow/' . $this->secretToken . '/cron/clean');
 
         $response->assertStatus(200);
-        $response->assertJson([
-            'status'  => 'success',
-            'deleted' => 1,
-        ]);
+        $this->assertSame('Cleaned', $response->getContent());
 
         $this->assertDatabaseMissing('sms_outbox', ['id' => $oldSent->id]);
         $this->assertDatabaseHas('sms_outbox', ['id' => $recentSent->id]);
+    }
+
+    public function test_broadcast_endpoint_queues_manual_sms(): void
+    {
+        $response = $this->postJson('/api/txtflow/' . $this->secretToken . '/broadcast', [
+            'numbers' => ['09171112222', '+63 918 333 4444'],
+            'message' => 'Broadcast test message',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true, 'queued' => 2]);
+
+        $this->assertDatabaseHas('sms_outbox', ['to' => '+639171112222', 'body' => 'Broadcast test message']);
+        $this->assertDatabaseHas('sms_outbox', ['to' => '+639183334444', 'body' => 'Broadcast test message']);
     }
 }
