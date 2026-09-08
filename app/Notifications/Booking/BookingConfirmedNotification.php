@@ -22,4 +22,9 @@ class BookingConfirmedNotification extends BaseNotification
             'entity_id' => $this->booking->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        return "[AutoProject+] Booking Confirmed: Your booking #{$this->booking->booking_number} is confirmed. We look forward to serving you!";
+    }
 }

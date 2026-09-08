@@ -22,4 +22,9 @@ class JobStartedNotification extends BaseNotification
             'entity_id' => $this->jobOrder->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        return "[AutoProject+] Service Started: Work has begun on your vehicle for job order #{$this->jobOrder->job_number}. Track progress in your portal.";
+    }
 }

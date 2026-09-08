@@ -37,6 +37,7 @@ use App\Http\Controllers\Staff\BookingQueueController as StaffBookingQueueContro
 use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 // Import Mechanic Controllers
+use App\Http\Controllers\Api\TxtFlowController;
 use App\Http\Controllers\Staff\JobController as StaffJobController;
 use App\Http\Controllers\Staff\ScheduleController as StaffScheduleController;
 use App\Http\Controllers\Staff\WalkInBookingController as StaffWalkInBookingController;
@@ -434,3 +435,23 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->name('inventory.index');
         });
 });
+
+/*
+|--------------------------------------------------------------------------
+| TxtFlow Android SMS Gateway API Routes
+|--------------------------------------------------------------------------
+|
+| Endpoints polled by the TxtFlow Android app to fetch pending outgoing
+| SMS messages and report delivery status or incoming customer replies.
+|
+*/
+Route::prefix('api/txtflow')
+    ->middleware(['txtflow.token'])
+    ->name('api.txtflow.')
+    ->group(function (): void {
+        Route::get('health-check', [TxtFlowController::class, 'healthCheck'])->name('health-check');
+        Route::get('messages', [TxtFlowController::class, 'messages'])->name('messages');
+        Route::post('message', [TxtFlowController::class, 'receiveMessage'])->name('message');
+        Route::post('cron/clean', [TxtFlowController::class, 'clean'])->name('clean');
+    });
+

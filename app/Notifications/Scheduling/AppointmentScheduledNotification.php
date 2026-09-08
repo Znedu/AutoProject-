@@ -36,4 +36,13 @@ class AppointmentScheduledNotification extends BaseNotification
             'entity_id' => $this->booking->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        $dateStr = $this->booking->scheduled_date ? $this->booking->scheduled_date->format('M d, Y') : '';
+        $timeStr = $this->booking->scheduled_time ? $this->booking->scheduled_time->format('g:i A') : '';
+        $when = trim("{$dateStr} {$timeStr}");
+
+        return "[AutoProject+] Appointment Scheduled: Your booking #{$this->booking->booking_number} is scheduled for {$when}. Please arrive on time!";
+    }
 }

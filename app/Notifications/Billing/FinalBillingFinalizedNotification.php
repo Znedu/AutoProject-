@@ -26,4 +26,10 @@ class FinalBillingFinalizedNotification extends BaseNotification
             'entity_id' => $this->booking->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        $amount = number_format((float) $this->quotation->final_total, 2);
+        return "[AutoProject+] Billing Statement Ready: The final billing for booking #{$this->booking->booking_number} is ₱{$amount}. Please check your account to review details.";
+    }
 }

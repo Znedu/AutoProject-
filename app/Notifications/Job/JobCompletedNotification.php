@@ -28,4 +28,9 @@ class JobCompletedNotification extends BaseNotification
             'entity_id' => $this->jobOrder->id,
         ];
     }
+
+    public function toTxtFlow(mixed $notifiable): ?string
+    {
+        return "[AutoProject+] Service Completed: Job order #{$this->jobOrder->job_number} for your vehicle has been completed! You may proceed to pick up your vehicle.";
+    }
 }
