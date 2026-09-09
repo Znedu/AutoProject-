@@ -81,7 +81,18 @@ class RegisterController extends Controller
         Auth::logout();
         session(['verification_email' => $user->email]);
 
-        app(EmailVerificationService::class)->sendCode($user);
+        try {
+            \Log::info('[Register] Attempting sendCode for user', ['user_id' => $user->id, 'email' => $user->email]);
+            app(EmailVerificationService::class)->sendCode($user);
+            \Log::info('[Register] sendCode completed successfully', ['user_id' => $user->id]);
+        } catch (\Throwable $e) {
+            \Log::error('[Register] sendCode FAILED', [
+                'user_id' => $user->id,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
+        }
 
         return redirect()->route('verification.notice')
             ->with('success', 'A 6-digit verification code has been sent to your email address.');
