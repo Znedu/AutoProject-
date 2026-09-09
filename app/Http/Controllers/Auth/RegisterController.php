@@ -82,15 +82,12 @@ class RegisterController extends Controller
         session(['verification_email' => $user->email]);
 
         try {
-            \Log::info('[Register] Attempting sendCode for user', ['user_id' => $user->id, 'email' => $user->email]);
             app(EmailVerificationService::class)->sendCode($user);
-            \Log::info('[Register] sendCode completed successfully', ['user_id' => $user->id]);
         } catch (\Throwable $e) {
-            \Log::error('[Register] sendCode FAILED', [
+            \Log::error('[Register] sendCode failed unexpectedly', [
                 'user_id' => $user->id,
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),
-                'file' => $e->getFile() . ':' . $e->getLine(),
             ]);
         }
 

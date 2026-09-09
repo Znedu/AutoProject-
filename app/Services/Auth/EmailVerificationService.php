@@ -6,6 +6,7 @@ use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\Auth\EmailVerificationCodeNotification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class EmailVerificationService
 {
@@ -40,7 +41,45 @@ class EmailVerificationService
             'attempts' => 0,
         ]);
 
-        $user->notify(new EmailVerificationCodeNotification($plainCode));
+        try {
+            \Log::info('[EmailVerification] Sending notification', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+            ]);
+
+            $user->notify(new EmailVerificationCodeNotification($plainCode));
+
+            \Log::info('[EmailVerification] Notification sent successfully', ['user_id' => $user->id]);
+        } catch (\Throwable $e) {
+            \Log::error('[EmailVerification] Notification failed, trying direct Mail::send fallback', [
+                'user_id' => $user->id,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ]);
+
+            // Fallback: send using Mail facade directly
+            try {
+                Mail::send('mail.auth.verify-code-plain', [
+                    'name' => $user->name,
+                    'code' => $plainCode,
+                ], function ($message) use ($user) {
+                    $message->to($user->email)
+                            ->subject('Verify your AutoProject+ account');
+                });
+
+                \Log::info('[EmailVerification] Fallback Mail::send succeeded', ['user_id' => $user->id]);
+            } catch (\Throwable $fallbackException) {
+                \Log::error('[EmailVerification] Fallback Mail::send also failed', [
+                    'user_id' => $user->id,
+                    'exception' => get_class($fallbackException),
+                    'message' => $fallbackException->getMessage(),
+                    'trace' => $fallbackException->getTraceAsString(),
+                ]);
+            }
+        }
     }
 
     /**
