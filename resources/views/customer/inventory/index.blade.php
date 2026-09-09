@@ -49,26 +49,26 @@
 
     <!-- Filters & Search Bar -->
     <div class="p-4 rounded-2xl bg-white dark:glass-card border border-gray-200 dark:border-white/10 space-y-4">
-        <form method="GET" action="{{ route('customer.inventory.index') }}" class="flex flex-col md:flex-row gap-3">
+        <form method="GET" action="{{ route('customer.inventory.index') }}" class="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3">
             
             <!-- Search -->
-            <div class="relative flex-1">
-                <x-icon name="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
+            <div class="relative flex-1 min-w-[240px] md:min-w-[280px]">
+                <x-icon name="search" class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 pointer-events-none" />
                 <input 
                     type="text" 
                     name="search" 
                     value="{{ $search }}" 
                     placeholder="Search by part name, SKU, or category..."
-                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946]"
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 text-sm focus:outline-none focus:border-[#E63946]"
                 />
             </div>
 
             <!-- Category Select -->
-            <div class="w-full md:w-56">
+            <div class="w-full sm:w-auto md:w-48">
                 <select 
                     name="category" 
                     onchange="this.form.submit()"
-                    class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946]"
+                    class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946] cursor-pointer"
                 >
                     <option value="all">All Categories</option>
                     @foreach($categories as $cat)
@@ -78,22 +78,22 @@
             </div>
 
             <!-- Stock Status Filter -->
-            <div class="w-full md:w-48">
+            <div class="w-full sm:w-auto md:w-36">
                 <select 
                     name="stock_status" 
                     onchange="this.form.submit()"
-                    class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946]"
+                    class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-[#E63946] cursor-pointer"
                 >
-                    <option value="">All Stock Status</option>
-                    <option value="in_stock" {{ $stockStatus === 'in_stock' ? 'selected' : '' }}>In Stock Only</option>
-                    <option value="low_stock" {{ $stockStatus === 'low_stock' ? 'selected' : '' }}>Low Stock Only</option>
-                    <option value="out_of_stock" {{ $stockStatus === 'out_of_stock' ? 'selected' : '' }}>Out of Stock Only</option>
+                    <option value="">All Stock</option>
+                    <option value="in_stock" {{ $stockStatus === 'in_stock' ? 'selected' : '' }}>In Stock</option>
+                    <option value="low_stock" {{ $stockStatus === 'low_stock' ? 'selected' : '' }}>Low Stock</option>
+                    <option value="out_of_stock" {{ $stockStatus === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
                 </select>
             </div>
 
             <!-- Reset -->
             @if($search || ($category && $category !== 'all') || $stockStatus)
-                <a href="{{ route('customer.inventory.index') }}" class="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium flex items-center justify-center gap-2">
+                <a href="{{ route('customer.inventory.index') }}" class="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium flex items-center justify-center gap-2 whitespace-nowrap">
                     <x-icon name="x" class="w-4 h-4" />
                     Clear
                 </a>

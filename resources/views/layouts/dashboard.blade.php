@@ -22,7 +22,7 @@
                 (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
             document.documentElement.classList.remove('light', 'dark');
             document.documentElement.classList.add(theme);
-            if (theme === 'dark') {
+            if (theme === 'dark' && document.body) {
                 document.body.classList.add('dark');
             }
         })();
