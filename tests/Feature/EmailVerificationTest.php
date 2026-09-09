@@ -38,8 +38,8 @@ class EmailVerificationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Test Customer',
             'email' => 'test@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]);
 
         $response->assertRedirect(route('verification.notice'));
@@ -244,8 +244,8 @@ class EmailVerificationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'New Name',
             'email' => 'pending@example.com',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response->assertRedirect(route('verification.notice'));
@@ -270,8 +270,8 @@ class EmailVerificationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Another User',
             'email' => 'verified@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]);
 
         $response->assertSessionHasErrors('email');
@@ -304,8 +304,8 @@ class EmailVerificationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Reborn Customer',
             'email' => 'deleteduser@example.com',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response->assertRedirect(route('verification.notice'));
@@ -319,6 +319,19 @@ class EmailVerificationTest extends TestCase
         $this->assertEquals(User::STATUS_ACTIVE, $deletedUser->status);
 
         Notification::assertSentTo($deletedUser, EmailVerificationCodeNotification::class);
+    }
+
+    public function test_registration_fails_if_password_does_not_meet_complexity_requirements(): void
+    {
+        // Missing uppercase and special character
+        $response = $this->post('/register', [
+            'name' => 'Weak Password User',
+            'email' => 'weak@example.com',
+            'password' => 'simplepass1',
+            'password_confirmation' => 'simplepass1',
+        ]);
+
+        $response->assertSessionHasErrors('password');
     }
 }
 

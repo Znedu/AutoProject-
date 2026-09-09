@@ -71,7 +71,16 @@
                     </div>
 
                     {{-- Password --}}
-                    <div x-data="{ showPassword: false }">
+                    <div x-data="{ 
+                        showPassword: false, 
+                        password: '',
+                        get hasMinLength() { return this.password.length >= 8; },
+                        get hasUppercase() { return /[A-Z]/.test(this.password); },
+                        get hasLowercase() { return /[a-z]/.test(this.password); },
+                        get hasNumber() { return /[0-9]/.test(this.password); },
+                        get hasSpecial() { return /[^A-Za-z0-9]/.test(this.password); },
+                        get allValid() { return this.hasMinLength && this.hasUppercase && this.hasLowercase && this.hasNumber && this.hasSpecial; }
+                    }">
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">
                             Password <span class="text-[#E63946]">*</span>
                         </label>
@@ -80,8 +89,10 @@
                                 id="password"
                                 :type="showPassword ? 'text' : 'password'"
                                 name="password"
+                                x-model="password"
                                 placeholder="Create a strong password"
                                 required
+                                minlength="8"
                                 class="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#E63946] focus:ring-1 focus:ring-[#E63946] transition-all duration-300"
                             />
                             <button
@@ -98,6 +109,52 @@
                                 </template>
                             </button>
                         </div>
+
+                        {{-- Real-time Password Requirements Checklist --}}
+                        <div class="mt-2.5 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs space-y-1.5">
+                            <p class="font-medium text-gray-700 mb-1">Password must contain:</p>
+                            
+                            <div class="flex items-center gap-2 transition-colors duration-200" :class="hasMinLength ? 'text-emerald-600 font-medium' : 'text-gray-500'">
+                                <span class="w-4 h-4 flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200" :class="hasMinLength ? 'bg-emerald-100 text-emerald-600 ring-1 ring-emerald-400/30' : 'bg-gray-200 text-gray-400'">
+                                    <template x-if="hasMinLength">&#x2713;</template>
+                                    <template x-if="!hasMinLength">&bull;</template>
+                                </span>
+                                <span>Minimum 8 characters</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 transition-colors duration-200" :class="hasUppercase ? 'text-emerald-600 font-medium' : 'text-gray-500'">
+                                <span class="w-4 h-4 flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200" :class="hasUppercase ? 'bg-emerald-100 text-emerald-600 ring-1 ring-emerald-400/30' : 'bg-gray-200 text-gray-400'">
+                                    <template x-if="hasUppercase">&#x2713;</template>
+                                    <template x-if="!hasUppercase">&bull;</template>
+                                </span>
+                                <span>At least 1 uppercase letter</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 transition-colors duration-200" :class="hasLowercase ? 'text-emerald-600 font-medium' : 'text-gray-500'">
+                                <span class="w-4 h-4 flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200" :class="hasLowercase ? 'bg-emerald-100 text-emerald-600 ring-1 ring-emerald-400/30' : 'bg-gray-200 text-gray-400'">
+                                    <template x-if="hasLowercase">&#x2713;</template>
+                                    <template x-if="!hasLowercase">&bull;</template>
+                                </span>
+                                <span>At least 1 lowercase letter</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 transition-colors duration-200" :class="hasNumber ? 'text-emerald-600 font-medium' : 'text-gray-500'">
+                                <span class="w-4 h-4 flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200" :class="hasNumber ? 'bg-emerald-100 text-emerald-600 ring-1 ring-emerald-400/30' : 'bg-gray-200 text-gray-400'">
+                                    <template x-if="hasNumber">&#x2713;</template>
+                                    <template x-if="!hasNumber">&bull;</template>
+                                </span>
+                                <span>At least 1 number</span>
+                            </div>
+
+                            <div class="flex items-center gap-2 transition-colors duration-200" :class="hasSpecial ? 'text-emerald-600 font-medium' : 'text-gray-500'">
+                                <span class="w-4 h-4 flex items-center justify-center rounded-full text-[11px] font-bold transition-all duration-200" :class="hasSpecial ? 'bg-emerald-100 text-emerald-600 ring-1 ring-emerald-400/30' : 'bg-gray-200 text-gray-400'">
+                                    <template x-if="hasSpecial">&#x2713;</template>
+                                    <template x-if="!hasSpecial">&bull;</template>
+                                </span>
+                                <span>At least 1 special character</span>
+                            </div>
+                        </div>
+
                         @error('password')
                             <p class="text-[#E63946] text-sm mt-1">{{ $message }}</p>
                         @enderror

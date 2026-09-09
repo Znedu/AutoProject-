@@ -10,6 +10,7 @@ use App\Services\Auth\DashboardRedirectService;
 use App\Services\Auth\EmailVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -32,7 +33,16 @@ class RegisterController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
+            ],
         ]);
 
         $existingUser = User::withTrashed()->where('email', $request->email)->first();
