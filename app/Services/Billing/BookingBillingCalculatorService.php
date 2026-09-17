@@ -79,17 +79,9 @@ class BookingBillingCalculatorService
             ->where('type', Payment::TYPE_RESERVATION_FEE)
             ->sum('amount');
 
-        // Check if explicit fee line item exists in quotation line items
-        $hasFeeLineItem = $lineItems->contains(function (QuotationLineItem $item) {
-            $desc = strtolower($item->description);
-            return $item->item_type === QuotationLineItem::ITEM_TYPE_FEE
-                || str_contains($desc, 'convenience')
-                || str_contains($desc, 'reservation');
-        });
-
-        if (! $hasFeeLineItem && $reservationFeePaid > 0) {
-            $feesSubtotal += $reservationFeePaid;
-        }
+        // Note: The reservation fee is NOT auto-added to feesSubtotal here.
+        // It is already credited via $creditablePaid (below) so the balance due
+        // stays correct without inflating the Total Charges display.
 
         $finalTotal = round(max(0, $servicesSubtotal + $productsSubtotal + $laborSubtotal + $feesSubtotal - $discountsTotal), 2);
 

@@ -294,10 +294,15 @@
                                 <span class="font-mono font-semibold text-gray-900 dark:text-white">₱{{ number_format($summary->finalTotal, 2) }}</span>
                             </div>
 
-                            @if ($summary->reservationFeePaid > 0)
+                            @if ($summary->reservationFeePaid > 0 && $summary->feesSubtotal > 0)
                                 <div class="flex justify-between text-xs text-blue-600 dark:text-blue-400">
                                     <span>Prepaid Fee Credited (GCash)</span>
                                     <span class="font-mono font-semibold">-₱{{ number_format($summary->reservationFeePaid, 2) }}</span>
+                                </div>
+                            @elseif ($summary->reservationFeePaid > 0 && $summary->feesSubtotal <= 0)
+                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 italic">
+                                    <span>₱{{ number_format($summary->reservationFeePaid, 2) }} booking fee already collected</span>
+                                    <span class="font-mono text-green-600 dark:text-green-400 font-semibold not-italic">Settled</span>
                                 </div>
                             @endif
 
@@ -308,10 +313,16 @@
                                 </div>
                             @endif
 
-                            <div class="flex justify-between text-sm text-green-600 font-medium pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
-                                <span>Total Payments Credited</span>
-                                <span class="font-mono font-bold">₱{{ number_format($summary->totalPaid, 2) }}</span>
-                            </div>
+                            @php
+                                $showTotalCredited = ($summary->depositsPaid + $summary->finalPaymentsPaid > 0)
+                                    || ($summary->reservationFeePaid > 0 && $summary->feesSubtotal > 0);
+                            @endphp
+                            @if ($showTotalCredited)
+                                <div class="flex justify-between text-sm text-green-600 font-medium pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
+                                    <span>Total Payments Credited</span>
+                                    <span class="font-mono font-bold">₱{{ number_format($summary->totalPaid, 2) }}</span>
+                                </div>
+                            @endif
 
                             <div class="pt-3 border-t border-gray-200 dark:border-white/10">
                                 <p class="text-xs text-gray-500">Remaining Balance Due</p>

@@ -99,9 +99,9 @@
                 <div class="p-3 bg-white dark:bg-[#1A1A1A] rounded-xl border border-gray-200 dark:border-white/10 space-y-1">
                     <div class="flex items-center gap-1.5 font-bold text-blue-500">
                         <span class="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">2</span>
-                        <span>Reservation Fee Subtracted</span>
+                        <span>Booking Fee Already Settled</span>
                     </div>
-                    <p class="text-gray-600 dark:text-gray-400">The customer's paid <strong>Reservation Fee</strong> is automatically subtracted as a credit row from Total Charges.</p>
+                    <p class="text-gray-600 dark:text-gray-400">The customer's <strong>₱200 Reservation Fee</strong> is already collected and is <em>not</em> included in Total Charges. It shows as <strong>"Already Settled"</strong> in the balance widget.</p>
                 </div>
 
                 <div class="p-3 bg-white dark:bg-[#1A1A1A] rounded-xl border border-gray-200 dark:border-white/10 space-y-1">
