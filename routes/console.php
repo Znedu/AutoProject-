@@ -27,3 +27,6 @@ Schedule::call(function () {
         }
     }
 })->daily();
+
+// Check for products expiring within 1 week (7 days) and notify admins, staff, and mechanics daily at 8:00 AM
+Schedule::command('inventory:check-expiring --days=7')->dailyAt('08:00');

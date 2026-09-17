@@ -1,5 +1,8 @@
 @php
     $user = auth()->user();
+    if ($user && ($user->isAdmin() || $user->isStaff() || $user->isMechanic())) {
+        app(\App\Services\Inventory\InventoryExpirationService::class)->notifyExpiringProducts(7);
+    }
     $initialUnreadCount = $user ? $user->unreadNotifications()->count() : 0;
     $initialNotifications = $user ? $user->notifications()->latest()->limit(20)->get()->map(function ($n) {
         return [
@@ -99,9 +102,18 @@
         },
 
         async markAsRead(notification, navigate = true) {
-            const actionUrl = notification.data && notification.data.action_url
+            let actionUrl = notification.data && notification.data.action_url
                 ? notification.data.action_url
                 : null;
+
+            if (actionUrl) {
+                try {
+                    const parsed = new URL(actionUrl, window.location.origin);
+                    actionUrl = parsed.pathname + parsed.search + parsed.hash;
+                } catch (e) {
+                    // Fallback to actionUrl directly
+                }
+            }
 
             if (!notification.is_read) {
                 try {

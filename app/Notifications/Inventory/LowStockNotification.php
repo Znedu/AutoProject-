@@ -14,8 +14,8 @@ class LowStockNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         $actionUrl = match (true) {
-            $notifiable instanceof User && $notifiable->isMechanic() => route('mechanic.inventory.index'),
-            default => route('admin.inventory.index'),
+            $notifiable instanceof User && $notifiable->isMechanic() => route('mechanic.inventory.index', ['search' => $this->product->sku], false),
+            default => route('admin.inventory.index', ['search' => $this->product->sku, 'highlight' => $this->product->id], false),
         };
 
         return [

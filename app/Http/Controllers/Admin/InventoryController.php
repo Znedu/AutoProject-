@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InventoryAdjustment;
 use App\Models\Product;
 use App\Notifications\Inventory\LowStockNotification;
+use App\Services\Inventory\InventoryExpirationService;
 use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,6 +80,9 @@ class InventoryController extends Controller
             'expiring_soon' => $expiringSoonItems->count(),
         ];
 
+        // Automatically notify admins/staff/mechanics for products expiring in 1 week (deduplicated daily)
+        app(InventoryExpirationService::class)->notifyExpiringProducts(7);
+
         return view('admin.inventory.index', compact(
             'products',
             'categories',
@@ -136,6 +140,9 @@ class InventoryController extends Controller
             app(NotificationDispatcherService::class)->notifyAdminsStaffAndMechanics(new LowStockNotification($product));
         }
 
+        // Notify if product is expiring within 1 week
+        app(InventoryExpirationService::class)->checkAndNotifyProduct($product, 7);
+
         return redirect()->back()->with('toast', [
             'type' => 'success',
             'message' => "Product '{$product->name}' created successfully!",
@@ -164,6 +171,9 @@ class InventoryController extends Controller
         if ($product->is_low_stock && (! $wasLowStock || $product->wasChanged('min_stock_threshold'))) {
             app(NotificationDispatcherService::class)->notifyAdminsStaffAndMechanics(new LowStockNotification($product->fresh()));
         }
+
+        // Notify if product is expiring within 1 week
+        app(InventoryExpirationService::class)->checkAndNotifyProduct($product->fresh(), 7);
 
         return redirect()->back()->with('toast', [
             'type' => 'success',

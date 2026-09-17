@@ -111,7 +111,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-white/5 text-sm">
                     @forelse($products as $product)
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                        <tr id="product-{{ $product->id }}" class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all duration-300 {{ (request('search') === $product->sku || request('highlight') == $product->id) ? 'bg-[#E63946]/10 dark:bg-[#E63946]/15 ring-2 ring-inset ring-[#E63946]/40 shadow-sm' : '' }}">
                             <!-- Location -->
                             <td class="py-4 px-6 font-medium">
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white font-mono text-xs border border-gray-200 dark:border-white/10">
@@ -145,8 +145,17 @@
                             <td class="py-4 px-6 text-xs whitespace-nowrap">
                                 @if($product->expiration_date)
                                     @if($product->is_expired)
-                                        <span class="text-red-600 dark:text-red-400 font-semibold">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                                             Expired ({{ $product->expiration_date->format('M d, Y') }})
+                                        </span>
+                                    @elseif($product->is_expiring_within_week)
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-[#E63946] dark:text-red-400 border border-[#E63946]/30" title="Expires in {{ $product->days_until_expiration }} day(s)">
+                                            <span class="relative flex h-2 w-2">
+                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E63946] opacity-75"></span>
+                                                <span class="relative inline-flex rounded-full h-2 w-2 bg-[#E63946]"></span>
+                                            </span>
+                                            Expires in {{ $product->days_until_expiration == 0 ? 'today' : ($product->days_until_expiration == 1 ? '1 day' : $product->days_until_expiration . ' days') }} ({{ $product->expiration_date->format('M d, Y') }})
                                         </span>
                                     @elseif($product->is_expiring_soon)
                                         <span class="text-amber-600 dark:text-amber-400 font-semibold">

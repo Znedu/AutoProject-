@@ -96,6 +96,11 @@ class Product extends Model
             ->where('expiration_date', '<=', today()->addDays($days));
     }
 
+    public function scopeExpiringWithinWeek(Builder $query): Builder
+    {
+        return $this->scopeExpiringSoon($query, 7);
+    }
+
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         if (blank($term)) {
@@ -153,6 +158,33 @@ class Product extends Model
     public function getIsExpiringSoonAttribute(): bool
     {
         return $this->expiration_date !== null && ! $this->is_expired && $this->expiration_date->diffInDays(now()) <= 30;
+    }
+
+    /**
+     * Returns days remaining until expiration (0 = expires today, negative = already expired).
+     */
+    public function getDaysUntilExpirationAttribute(): ?int
+    {
+        if (! $this->expiration_date) {
+            return null;
+        }
+
+        return (int) today()->diffInDays($this->expiration_date, false);
+    }
+
+    /**
+     * True when expiration is exactly 7 days or fewer away (and not yet expired).
+     * Used for the 1-week advance warning ping indicator and scheduled notification.
+     */
+    public function getIsExpiringWithinWeekAttribute(): bool
+    {
+        if (! $this->expiration_date || $this->is_expired) {
+            return false;
+        }
+
+        $days = $this->days_until_expiration;
+
+        return $days !== null && $days >= 0 && $days <= 7;
     }
 
     public function getExpirationStatusAttribute(): ?string

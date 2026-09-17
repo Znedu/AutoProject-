@@ -27,4 +27,5 @@ enum NotificationType: string
     case APPOINTMENT_SCHEDULED = 'appointment_scheduled';
     case FINAL_BILLING_FINALIZED = 'final_billing_finalized';
     case LOW_STOCK = 'low_stock';
+    case EXPIRING_PRODUCT = 'expiring_product';
 }

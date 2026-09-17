@@ -15,6 +15,10 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        if ($user && ($user->isAdmin() || $user->isStaff() || $user->isMechanic())) {
+            app(\App\Services\Inventory\InventoryExpirationService::class)->notifyExpiringProducts(7);
+        }
+
         $unreadCount = $user->unreadNotifications()->count();
         $totalCount = $user->notifications()->count();
 
