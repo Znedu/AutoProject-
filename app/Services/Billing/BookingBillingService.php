@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Models\Booking;
+use App\Models\InventoryAdjustment;
 use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\QuotationLineItem;
@@ -161,6 +162,32 @@ class BookingBillingService
                 'sort_order' => $maxSortOrder + 1,
             ]);
 
+            // Deduct inventory stock for product/material line items
+            if ($product && in_array($itemType, [
+                QuotationLineItem::ITEM_TYPE_PRODUCT,
+                QuotationLineItem::ITEM_TYPE_MATERIAL,
+            ], true)) {
+                $lockedProduct = Product::lockForUpdate()->find($product->id);
+                if ($lockedProduct) {
+                    $deduct = (int) ceil($quantity);
+                    $before = $lockedProduct->stock_quantity;
+                    $after = max(0, $before - $deduct);
+
+                    $lockedProduct->decrement('stock_quantity', $before - $after);
+
+                    InventoryAdjustment::create([
+                        'product_id'      => $lockedProduct->id,
+                        'user_id'         => $user->id,
+                        'type'            => 'out',
+                        'quantity_change'  => -($before - $after),
+                        'quantity_before'  => $before,
+                        'quantity_after'   => $after,
+                        'reason'          => 'Billing deduction for booking #' . ($quotation->booking->booking_number ?? $quotation->booking_id),
+                        'notes'           => 'Line item ID: ' . $lineItem->id,
+                    ]);
+                }
+            }
+
             $this->recalculateDraft($quotation);
 
             return $lineItem->load(['product', 'service']);
@@ -231,6 +258,32 @@ class BookingBillingService
         }
 
         DB::transaction(function () use ($item, $quotation): void {
+            // Restore inventory stock when removing a product/material line item
+            if ($item->product_id && in_array($item->item_type, [
+                QuotationLineItem::ITEM_TYPE_PRODUCT,
+                QuotationLineItem::ITEM_TYPE_MATERIAL,
+            ], true)) {
+                $lockedProduct = Product::lockForUpdate()->find($item->product_id);
+                if ($lockedProduct) {
+                    $restore = (int) ceil((float) $item->quantity);
+                    $before  = $lockedProduct->stock_quantity;
+                    $after   = $before + $restore;
+
+                    $lockedProduct->increment('stock_quantity', $restore);
+
+                    InventoryAdjustment::create([
+                        'product_id'     => $lockedProduct->id,
+                        'user_id'        => auth()->id(),
+                        'type'           => 'in',
+                        'quantity_change' => $restore,
+                        'quantity_before' => $before,
+                        'quantity_after'  => $after,
+                        'reason'         => 'Billing line item removal reversal for booking #' . ($quotation->booking->booking_number ?? $quotation->booking_id),
+                        'notes'          => 'Line item ID: ' . $item->id,
+                    ]);
+                }
+            }
+
             $item->delete();
             $this->recalculateDraft($quotation);
         });

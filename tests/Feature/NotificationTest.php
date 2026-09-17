@@ -152,7 +152,7 @@ class NotificationTest extends TestCase
             'vehicle_model' => 'Civic',
             'vehicle_year' => 2022,
             'plate_number' => 'ABC9999',
-            'preferred_date' => today()->addDays(3)->format('Y-m-d'),
+            'preferred_date' => today()->nextWeekday()->format('Y-m-d'),
             'preferred_time' => '10:00:00',
             'payment_method' => 'gcash',
             'reference_number' => 'REF-NEW-BOOKING-001',

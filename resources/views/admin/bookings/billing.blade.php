@@ -12,13 +12,15 @@
     $finalizeRoute = route('admin.bookings.billing.finalize', $booking);
     $recordPaymentRoute = $isStaff ? route('staff.bookings.billing.payments.store', $booking) : route('admin.bookings.billing.payments.store', $booking);
     $productSearchUrl = $isStaff ? route('staff.products.search') : route('admin.products.search');
+    $products = $products ?? \App\Models\Product::query()->active()->orderBy('name')->get(['id', 'sku', 'name', 'category', 'unit_price', 'unit_label', 'stock_quantity']);
 @endphp
 
 <div
     x-data="billingManager({
         searchUrl: '{{ $productSearchUrl }}',
         bookingId: {{ $booking->id }},
-        grossSubtotal: {{ (float) ($summary->servicesSubtotal + $summary->productsSubtotal + $summary->laborSubtotal + $summary->feesSubtotal) }}
+        grossSubtotal: {{ (float) ($summary->servicesSubtotal + $summary->productsSubtotal + $summary->laborSubtotal + $summary->feesSubtotal) }},
+        products: {{ Js::from($products) }}
     })"
     class="space-y-6 animate-fade-in"
 >
@@ -123,7 +125,9 @@
 
     {{-- Add Line Item Card (Only if editable) --}}
     @if ($canManage && ! $summary->isFinalized)
-        <x-card>
+        {{-- relative z-10 ensures this card's stacking context (with its absolute dropdown) renders above the breakdown card below --}}
+        <div class="relative z-10" style="overflow: visible;">
+        <x-card style="overflow: visible;">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="font-bold text-gray-900 dark:text-white">Add Billing Line Item</h3>
@@ -156,48 +160,138 @@
                         </select>
                     </div>
 
-                    {{-- Description / Product Search / Discount Dropdown --}}
+                    {{-- Description / Product Dropdown / Text Input / Discount Dropdown --}}
                     <div class="lg:col-span-2 relative">
                         <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            <span x-text="form.item_type === 'discount' ? 'Discount Name / Description' : (form.item_type === 'labor' ? 'Labor Task Description' : 'Description / Item Name')"></span>
+                            <span x-text="form.item_type === 'discount' ? 'Discount Name / Description' : (form.item_type === 'labor' ? 'Labor Task Description' : ((form.item_type === 'product' || form.item_type === 'material') ? 'Select Part / Product from Inventory' : 'Description / Item Name'))"></span>
                         </label>
 
-                        {{-- Standard / Labor Description Input --}}
-                        <div x-show="form.item_type !== 'discount'">
-                            <input
-                                type="text"
-                                name="description"
-                                x-model="form.description"
-                                @input.debounce.300ms="searchProducts()"
-                                @focus="showSearchResults = (form.item_type === 'product' || form.item_type === 'material') && searchResults.length > 0"
-                                :required="form.item_type !== 'discount'"
-                                :placeholder="form.item_type === 'labor' ? 'e.g., Surface Prep & Sanding, Body Panel Alignment' : 'Enter description or search parts catalog...'"
-                                class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#E63946] focus:outline-none"
-                            >
-                            <input type="hidden" name="product_id" :value="form.product_id">
-                            <input type="hidden" name="sku" :value="form.sku">
+                        {{-- 1. Searchable Product / Material Dropdown Combobox (When item_type is 'product' or 'material') --}}
+                        <div
+                            x-show="form.item_type === 'product' || form.item_type === 'material'"
+                            class="relative"
+                            @click.away="isProductDropdownOpen = false"
+                        >
+                            {{-- Combobox Input --}}
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    x-model="productSearchQuery"
+                                    @focus="isProductDropdownOpen = true; if (form.product_id) $event.target.select();"
+                                    @click="isProductDropdownOpen = true"
+                                    @input="isProductDropdownOpen = true; if (form.product_id && productSearchQuery !== (productsMap[form.product_id]?.name || '')) { form.product_id = ''; form.sku = null; form.description = ''; }"
+                                    @keydown.escape="isProductDropdownOpen = false"
+                                    @keydown.enter.prevent="if (isProductDropdownOpen && filteredProducts.length > 0) { selectProduct(filteredProducts[0]); }"
+                                    placeholder="Type to search or select parts from inventory..."
+                                    class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1A1A1A] text-gray-900 dark:text-white pl-9 pr-9 py-2 text-sm focus:ring-2 focus:ring-[#E63946] focus:outline-none placeholder-gray-400"
+                                    :class="form.product_id ? 'border-green-500/50 dark:border-green-500/50' : ''"
+                                >
+                                {{-- Search Icon --}}
+                                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                    <x-icon name="search" class="w-4 h-4" />
+                                </div>
 
-                            {{-- Autocomplete Dropdown --}}
+                                {{-- Clear Button --}}
+                                <button
+                                    type="button"
+                                    x-show="form.product_id || productSearchQuery"
+                                    @click="clearProductSelection()"
+                                    class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                                    title="Clear selection"
+                                >
+                                    <x-icon name="x" class="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+
+                            {{-- Dropdown Menu --}}
                             <div
-                                x-show="showSearchResults && searchResults.length > 0"
-                                @click.away="showSearchResults = false"
-                                class="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl max-h-48 overflow-y-auto"
-                                style="display: none;"
+                                x-show="isProductDropdownOpen"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 translate-y-0"
+                                x-transition:leave-end="opacity-0 -translate-y-1"
+                                class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#1A1A1A] border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl"
+                                style="display: none; max-height: 16rem; overflow-y: auto;"
                             >
-                                <template x-for="p in searchResults" :key="p.id">
-                                    <button
-                                        type="button"
-                                        @click="selectProduct(p)"
-                                        class="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-white/10 flex justify-between items-center text-sm border-b border-gray-100 dark:border-white/5 last:border-0"
-                                    >
-                                        <div>
-                                            <p class="font-medium text-gray-900 dark:text-white" x-text="p.name"></p>
-                                            <p class="text-xs text-gray-500 font-mono" x-text="p.sku || 'No SKU'"></p>
+                                {{-- No results message --}}
+                                <div x-show="filteredProducts.length === 0" class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 text-center">
+                                    No inventory items matching "<span class="font-medium text-gray-700 dark:text-gray-300" x-text="productSearchQuery"></span>"
+                                </div>
+
+                                {{-- Grouped items --}}
+                                <template x-for="(items, categoryName) in filteredProductsGrouped" :key="categoryName">
+                                    <div>
+                                        <div class="sticky top-0 z-10 px-3 py-1.5 bg-gray-100/95 dark:bg-[#222222]/95 backdrop-blur-sm border-b border-gray-200/60 dark:border-white/5 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                                            <span x-text="categoryName"></span>
+                                            <span class="font-mono font-normal text-[10px] text-gray-400" x-text="items.length + (items.length === 1 ? ' item' : ' items')"></span>
                                         </div>
-                                        <span class="font-mono font-semibold text-[#E63946]" x-text="'₱' + Number(p.unit_price).toFixed(2)"></span>
-                                    </button>
+
+                                        <div class="divide-y divide-gray-100 dark:divide-white/5">
+                                            <template x-for="p in items" :key="p.id">
+                                                <button
+                                                    type="button"
+                                                    @click="p.stock_quantity > 0 ? selectProduct(p) : null"
+                                                    :disabled="p.stock_quantity <= 0"
+                                                    class="w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm transition"
+                                                    :class="{
+                                                        'bg-red-50/70 dark:bg-red-500/10': form.product_id == p.id,
+                                                        'opacity-45 cursor-not-allowed bg-gray-50/60 dark:bg-white/[0.02]': p.stock_quantity <= 0,
+                                                        'hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer': p.stock_quantity > 0
+                                                    }"
+                                                >
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="font-medium truncate" :class="p.stock_quantity <= 0 ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'" x-text="p.name"></p>
+                                                            <span x-show="form.product_id == p.id" class="text-green-600 dark:text-green-400 flex-shrink-0">
+                                                                <x-icon name="check-circle" class="w-4 h-4" />
+                                                            </span>
+                                                            <span x-show="p.stock_quantity <= 0" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 uppercase tracking-wide flex-shrink-0">
+                                                                Out of Stock
+                                                            </span>
+                                                        </div>
+                                                        <div class="flex items-center gap-2 mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                            <span class="font-mono text-gray-600 dark:text-gray-300 font-medium" x-text="p.sku || 'No SKU'"></span>
+                                                            <span>•</span>
+                                                            <span
+                                                                :class="p.stock_quantity <= 0 ? 'text-red-500 font-semibold' : 'text-gray-500 dark:text-gray-400'"
+                                                                x-text="p.stock_quantity > 0 ? (p.stock_quantity + ' ' + (p.unit_label || 'units') + ' in stock') : '0 in stock'"
+                                                            ></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right flex-shrink-0">
+                                                        <span class="font-mono font-semibold" :class="p.stock_quantity <= 0 ? 'text-gray-400 line-through' : 'text-[#E63946]'" x-text="'₱' + Number(p.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                                    </div>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </template>
                             </div>
+
+                            {{-- Selected Inventory Item Details Pill --}}
+                            <div x-show="form.product_id && productsMap[form.product_id]" class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span class="font-mono font-medium text-gray-700 dark:text-gray-300" x-text="'SKU: ' + (productsMap[form.product_id]?.sku || 'N/A')"></span>
+                                <span>•</span>
+                                <span x-text="'Category: ' + (productsMap[form.product_id]?.category || 'General')"></span>
+                                <span>•</span>
+                                <span
+                                    :class="(productsMap[form.product_id]?.stock_quantity || 0) <= 0 ? 'text-red-500 font-semibold' : 'text-green-600 dark:text-green-400 font-medium'"
+                                    x-text="(productsMap[form.product_id]?.stock_quantity || 0) > 0 ? ((productsMap[form.product_id]?.stock_quantity) + ' ' + (productsMap[form.product_id]?.unit_label || 'units') + ' available') : 'Currently Out of Stock'"
+                                ></span>
+                            </div>
+                        </div>
+
+                        {{-- 2. Standard Text Input (When item_type is labor, service, additional_service, fee, etc.) --}}
+                        <div x-show="form.item_type !== 'product' && form.item_type !== 'material' && form.item_type !== 'discount'">
+                            <input
+                                type="text"
+                                x-model="form.description"
+                                :required="form.item_type !== 'product' && form.item_type !== 'material' && form.item_type !== 'discount'"
+                                :placeholder="form.item_type === 'labor' ? 'e.g., Surface Prep & Sanding, Body Panel Alignment' : 'Enter description or item name...'"
+                                class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#E63946] focus:outline-none"
+                            >
                         </div>
 
                         {{-- Discount Preset Dropdown & Custom Text --}}
@@ -223,9 +317,12 @@
                                     class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-1.5 text-xs focus:ring-2 focus:ring-[#E63946] focus:outline-none"
                                 >
                             </div>
-
-                            <input type="hidden" name="description" :value="form.description">
                         </div>
+
+                        {{-- Hidden inputs submitted with the form --}}
+                        <input type="hidden" name="description" :value="form.description">
+                        <input type="hidden" name="product_id" :value="form.product_id">
+                        <input type="hidden" name="sku" :value="form.sku">
                     </div>
 
                     {{-- Quantity / Hours Worked / Discount Mode & Value --}}
@@ -242,10 +339,17 @@
                                 x-model.number="form.quantity"
                                 :step="form.item_type === 'labor' ? '0.1' : '0.01'"
                                 :min="form.item_type === 'labor' ? '0.1' : '0.01'"
+                                :max="(form.item_type === 'product' || form.item_type === 'material') && form.product_id && productsMap[form.product_id] ? productsMap[form.product_id].stock_quantity : null"
                                 :required="form.item_type !== 'discount'"
                                 :placeholder="form.item_type === 'labor' ? '1.0' : '1'"
                                 class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-2 text-sm text-center font-mono focus:ring-2 focus:ring-[#E63946] focus:outline-none"
+                                :class="{
+                                    'border-red-500 dark:border-red-500/50 focus:ring-red-500': isExceedingStock()
+                                }"
                             >
+                            <div x-show="isExceedingStock()" class="text-[11px] text-red-500 font-medium mt-1 text-center" style="display: none;">
+                                Exceeds available stock (<span x-text="productsMap[form.product_id]?.stock_quantity || 0"></span> max)
+                            </div>
                         </div>
 
                         {{-- Discount Mode Selector & Value Input --}}
@@ -314,7 +418,7 @@
 
                     {{-- Add Button --}}
                     <div class="lg:col-span-1 flex items-end">
-                        <x-button type="submit" variant="primary" class="w-full">
+                        <x-button type="submit" variant="primary" class="w-full" x-bind:disabled="isAddDisabled()">
                             <x-icon name="plus" class="w-4 h-4 mr-1.5" />
                             Add Line
                         </x-button>
@@ -322,6 +426,7 @@
                 </div>
             </form>
         </x-card>
+        </div>
     @endif
 
     {{-- Main Price Breakdown Component --}}
@@ -596,12 +701,14 @@ function billingManager(config) {
         searchUrl: config.searchUrl,
         bookingId: config.bookingId,
         grossSubtotal: config.grossSubtotal || 0,
+        products: config.products || [],
+        productsMap: {},
         showFinalizeModal: false,
         showPaymentModal: false,
         showEditModal: false,
         paymentMethod: 'cash',
-        showSearchResults: false,
-        searchResults: [],
+        productSearchQuery: '',
+        isProductDropdownOpen: false,
         form: {
             item_type: 'product',
             description: '',
@@ -609,7 +716,7 @@ function billingManager(config) {
             custom_description: '',
             discount_mode: 'percent',
             discount_value: 5,
-            product_id: null,
+            product_id: '',
             sku: null,
             quantity: 1,
             unit_final: null,
@@ -625,7 +732,41 @@ function billingManager(config) {
             notes: ''
         },
 
+        get filteredProducts() {
+            const raw = (this.productSearchQuery || '').trim();
+            if (this.form.product_id && raw === (this.productsMap[this.form.product_id]?.name || '')) {
+                return this.products || [];
+            }
+            const q = raw.toLowerCase();
+            if (!q) {
+                return this.products || [];
+            }
+            return (this.products || []).filter(p => {
+                const name = (p.name || '').toLowerCase();
+                const sku = (p.sku || '').toLowerCase();
+                const cat = (p.category || '').toLowerCase();
+                return name.includes(q) || sku.includes(q) || cat.includes(q);
+            });
+        },
+
+        get filteredProductsGrouped() {
+            const list = this.filteredProducts;
+            const groups = {};
+            for (const p of list) {
+                const cat = p.category || 'Other Parts & Supplies';
+                if (!groups[cat]) {
+                    groups[cat] = [];
+                }
+                groups[cat].push(p);
+            }
+            return groups;
+        },
+
         init() {
+            (this.products || []).forEach(p => {
+                this.productsMap[p.id] = p;
+            });
+
             window.addEventListener('edit-line', (e) => {
                 const data = e.detail;
                 const isStaff = '{{ $isStaff ? "1" : "0" }}' === '1';
@@ -641,17 +782,61 @@ function billingManager(config) {
             });
         },
 
+        selectProduct(p) {
+            if (!p || p.stock_quantity <= 0) {
+                return;
+            }
+            this.form.product_id = p.id;
+            this.form.sku = p.sku;
+            this.form.description = p.name;
+            this.productSearchQuery = p.name;
+            this.form.unit_final = parseFloat(p.unit_price);
+            this.isProductDropdownOpen = false;
+        },
+
+        isAddDisabled() {
+            if (this.form.item_type === 'product' || this.form.item_type === 'material') {
+                if (!this.form.product_id) return true;
+                const p = this.productsMap[this.form.product_id];
+                if (!p) return true;
+                if (p.stock_quantity <= 0) return true;
+                const qty = parseFloat(this.form.quantity);
+                if (isNaN(qty) || qty <= 0 || qty > p.stock_quantity) return true;
+            }
+            return false;
+        },
+
+        isExceedingStock() {
+            if ((this.form.item_type === 'product' || this.form.item_type === 'material') && this.form.product_id) {
+                const p = this.productsMap[this.form.product_id];
+                if (p && p.stock_quantity > 0) {
+                    const qty = parseFloat(this.form.quantity);
+                    return !isNaN(qty) && qty > p.stock_quantity;
+                }
+            }
+            return false;
+        },
+
+        clearProductSelection() {
+            this.form.product_id = '';
+            this.form.sku = null;
+            this.form.description = '';
+            this.productSearchQuery = '';
+            this.form.unit_final = null;
+            this.isProductDropdownOpen = true;
+        },
+
         handleTypeChange() {
-            this.form.product_id = null;
+            this.form.product_id = '';
             this.form.sku = null;
             this.form.notes = '';
+            this.productSearchQuery = '';
+            this.isProductDropdownOpen = false;
 
             if (this.form.item_type === 'labor') {
                 this.form.quantity = 1;
                 this.form.unit_final = null;
                 this.form.description = '';
-                this.searchResults = [];
-                this.showSearchResults = false;
             } else if (this.form.item_type === 'discount') {
                 this.form.discount_preset = 'Senior Citizen Discount';
                 this.form.discount_mode = 'percent';
@@ -659,13 +844,14 @@ function billingManager(config) {
                 this.form.quantity = 1;
                 this.updateDiscountDescription();
                 this.calculateDiscount();
-                this.searchResults = [];
-                this.showSearchResults = false;
             } else if (this.form.item_type === 'product' || this.form.item_type === 'material') {
-                this.searchProducts();
+                this.form.description = '';
+                this.form.unit_final = null;
+                this.form.quantity = 1;
             } else {
-                this.searchResults = [];
-                this.showSearchResults = false;
+                this.form.quantity = 1;
+                this.form.unit_final = null;
+                this.form.description = '';
             }
         },
 
@@ -693,32 +879,6 @@ function billingManager(config) {
 
             this.form.unit_final = deductible;
             this.form.quantity = 1;
-        },
-
-        async searchProducts() {
-            if (this.form.item_type !== 'product' && this.form.item_type !== 'material') {
-                this.searchResults = [];
-                this.showSearchResults = false;
-                return;
-            }
-
-            try {
-                const res = await fetch(`${this.searchUrl}?category=${this.form.item_type}&q=${encodeURIComponent(this.form.description)}`);
-                if (res.ok) {
-                    this.searchResults = await res.json();
-                    this.showSearchResults = this.searchResults.length > 0;
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        },
-
-        selectProduct(p) {
-            this.form.product_id = p.id;
-            this.form.description = p.name;
-            this.form.sku = p.sku;
-            this.form.unit_final = parseFloat(p.unit_price);
-            this.showSearchResults = false;
         }
     };
 }

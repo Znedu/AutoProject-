@@ -16,17 +16,20 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->active()
-            ->when($category, fn ($query) => $query->where('category', $category))
+            ->when($category && !in_array(strtolower($category), ['product', 'material', 'all'], true), function ($query) use ($category) {
+                $query->where('category', $category);
+            })
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('name', 'like', "%{$q}%")
                         ->orWhere('sku', 'like', "%{$q}%")
+                        ->orWhere('category', 'like', "%{$q}%")
                         ->orWhere('description', 'like', "%{$q}%");
                 });
             })
             ->orderBy('name')
-            ->limit(20)
-            ->get(['id', 'sku', 'name', 'category', 'unit_price', 'unit_label']);
+            ->limit(100)
+            ->get(['id', 'sku', 'name', 'category', 'unit_price', 'unit_label', 'stock_quantity']);
 
         return response()->json($products);
     }

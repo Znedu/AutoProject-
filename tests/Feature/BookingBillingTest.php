@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\RoleSlug;
 use App\Models\Booking;
+use App\Models\InventoryAdjustment;
 use App\Models\Permission;
 use App\Models\Product;
 use App\Models\Quotation;
+use App\Models\QuotationLineItem;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\ServiceCategory;
@@ -131,6 +133,7 @@ class BookingBillingTest extends TestCase
             'name' => 'Brake Fluid DOT4',
             'category' => Product::CATEGORY_MATERIAL,
             'unit_price' => 350.00,
+            'stock_quantity' => 20,
             'status' => Product::STATUS_ACTIVE,
         ]);
 
@@ -351,5 +354,141 @@ class BookingBillingTest extends TestCase
             ]);
 
         $response->assertForbidden();
+    }
+
+    public function test_admin_and_staff_can_search_inventory_products_for_billing(): void
+    {
+        // Admin search with category=product returns all active products
+        $responseAdmin = $this->actingAs($this->admin)
+            ->getJson(route('admin.products.search', ['category' => 'product']));
+
+        $responseAdmin->assertOk();
+        $responseAdmin->assertJsonFragment(['id' => $this->product->id]);
+
+        // Staff search with term
+        $responseStaff = $this->actingAs($this->staff)
+            ->getJson(route('staff.products.search', ['category' => 'product', 'q' => 'Brake Fluid']));
+
+        $responseStaff->assertOk();
+        $responseStaff->assertJsonFragment(['name' => 'Brake Fluid DOT4']);
+    }
+
+    public function test_adding_product_line_reduces_inventory_stock_and_records_adjustment(): void
+    {
+        // Initial stock is 20
+        $this->assertEquals(20, $this->product->fresh()->stock_quantity);
+
+        // Ensure draft exists
+        $this->actingAs($this->admin)->get(route('admin.bookings.billing.show', $this->booking));
+
+        // Add 3 units of product
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'product',
+                'product_id' => $this->product->id,
+                'description' => 'Brake Fluid DOT4',
+                'quantity' => 3,
+                'unit_final' => 350.00,
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        // Verify stock reduced by 3 (from 20 to 17)
+        $this->assertEquals(17, $this->product->fresh()->stock_quantity);
+
+        // Verify inventory adjustment log created
+        $this->assertDatabaseHas('inventory_adjustments', [
+            'product_id' => $this->product->id,
+            'user_id' => $this->admin->id,
+            'type' => 'out',
+            'quantity_change' => -3,
+            'quantity_before' => 20,
+            'quantity_after' => 17,
+        ]);
+    }
+
+    public function test_out_of_stock_product_cannot_be_added_to_billing(): void
+    {
+        // Set stock to 0
+        $this->product->update(['stock_quantity' => 0]);
+
+        $this->actingAs($this->admin)->get(route('admin.bookings.billing.show', $this->booking));
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'product',
+                'product_id' => $this->product->id,
+                'description' => 'Brake Fluid DOT4',
+                'quantity' => 1,
+                'unit_final' => 350.00,
+            ]);
+
+        $response->assertSessionHasErrors('product_id');
+        // Stock remains 0
+        $this->assertEquals(0, $this->product->fresh()->stock_quantity);
+    }
+
+    public function test_quantity_exceeding_stock_cannot_be_added(): void
+    {
+        // Stock is 5
+        $this->product->update(['stock_quantity' => 5]);
+
+        $this->actingAs($this->admin)->get(route('admin.bookings.billing.show', $this->booking));
+
+        // Request 10 units
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'product',
+                'product_id' => $this->product->id,
+                'description' => 'Brake Fluid DOT4',
+                'quantity' => 10,
+                'unit_final' => 350.00,
+            ]);
+
+        $response->assertSessionHasErrors('quantity');
+        // Stock remains 5
+        $this->assertEquals(5, $this->product->fresh()->stock_quantity);
+    }
+
+    public function test_removing_product_line_restores_inventory_stock_and_records_adjustment(): void
+    {
+        $this->product->update(['stock_quantity' => 20]);
+
+        $this->actingAs($this->admin)->get(route('admin.bookings.billing.show', $this->booking));
+
+        // Add 4 units of product
+        $this->actingAs($this->admin)
+            ->post(route('admin.bookings.billing.lines.store', $this->booking), [
+                'item_type' => 'product',
+                'product_id' => $this->product->id,
+                'description' => 'Brake Fluid DOT4',
+                'quantity' => 4,
+                'unit_final' => 350.00,
+            ]);
+
+        $this->assertEquals(16, $this->product->fresh()->stock_quantity);
+
+        $lineItem = QuotationLineItem::where('product_id', $this->product->id)->first();
+        $this->assertNotNull($lineItem);
+
+        // Delete line item
+        $response = $this->actingAs($this->admin)
+            ->delete(route('admin.bookings.billing.lines.destroy', [$this->booking, $lineItem]));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        // Stock restored back to 20
+        $this->assertEquals(20, $this->product->fresh()->stock_quantity);
+
+        // Verify restoration adjustment logged
+        $this->assertDatabaseHas('inventory_adjustments', [
+            'product_id' => $this->product->id,
+            'type' => 'in',
+            'quantity_change' => 4,
+            'quantity_before' => 16,
+            'quantity_after' => 20,
+        ]);
     }
 }

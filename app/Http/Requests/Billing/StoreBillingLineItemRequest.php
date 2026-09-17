@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests\Billing;
 
+use App\Models\Product;
 use App\Models\QuotationLineItem;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreBillingLineItemRequest extends FormRequest
 {
@@ -45,5 +47,40 @@ class StoreBillingLineItemRequest extends FormRequest
             'service_id' => ['nullable', 'integer', 'exists:services,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
+    }
+
+    /**
+     * Block adding out-of-stock products after base validation passes.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            $productId = $this->input('product_id');
+            $itemType  = $this->input('item_type');
+
+            $isInventoryType = in_array($itemType, [
+                QuotationLineItem::ITEM_TYPE_PRODUCT,
+                QuotationLineItem::ITEM_TYPE_MATERIAL,
+            ], true);
+
+            if ($productId && $isInventoryType) {
+                $product  = Product::find((int) $productId);
+                $quantity = (float) ($this->input('quantity', 1));
+
+                if (! $product) {
+                    $v->errors()->add('product_id', 'The selected product no longer exists in the inventory.');
+                    return;
+                }
+
+                if ($product->stock_quantity <= 0) {
+                    $v->errors()->add('product_id', "'{$product->name}' is out of stock and cannot be added to the bill.");
+                    return;
+                }
+
+                if ($product->stock_quantity < ceil($quantity)) {
+                    $v->errors()->add('quantity', "Only {$product->stock_quantity} {$product->unit_label} of '{$product->name}' are available in stock.");
+                }
+            }
+        });
     }
 }

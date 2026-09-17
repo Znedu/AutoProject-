@@ -286,6 +286,18 @@
         </svg>
         @break
 
+    @case('chevron-down')
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{{ $class }}">
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+        @break
+
+    @case('chevron-up')
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{{ $class }}">
+            <polyline points="18 15 12 9 6 15" />
+        </svg>
+        @break
+
     @case('check')
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{{ $class }}">
             <path d="M20 6 9 17l-5-5" />

@@ -9,6 +9,7 @@ use App\Http\Requests\Billing\RecordFinalPaymentRequest;
 use App\Http\Requests\Billing\StoreBillingLineItemRequest;
 use App\Http\Requests\Billing\UpdateBillingLineItemRequest;
 use App\Models\Booking;
+use App\Models\Product;
 use App\Models\QuotationLineItem;
 use App\Services\Billing\BookingBillingService;
 use App\Services\Billing\BookingFinalPaymentService;
@@ -46,9 +47,15 @@ class BookingBillingController extends Controller
 
         $summary = BookingBillingSummary::from($booking);
 
+        $products = Product::query()
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'sku', 'name', 'category', 'unit_price', 'unit_label', 'stock_quantity']);
+
         return view('admin.bookings.billing', [
             'booking' => $booking,
             'summary' => $summary,
+            'products' => $products,
         ]);
     }
 
