@@ -301,14 +301,11 @@
                                 @change="updateDiscountDescription()"
                                 class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-[#E63946] focus:outline-none"
                             >
-                                <option value="Senior Citizen Discount">Senior Citizen Discount</option>
-                                <option value="PWD Discount">PWD Discount</option>
                                 <option value="Promotional / Seasonal Discount">Promotional / Seasonal Discount</option>
                                 <option value="Custom / Loyalty Discount">Custom / Loyalty Discount</option>
-                                <option value="Custom">Other / Write-in Custom Text</option>
                             </select>
 
-                            <div x-show="form.discount_preset === 'Custom' || form.discount_preset === 'Custom / Loyalty Discount'">
+                            <div x-show="form.discount_preset === 'Custom / Loyalty Discount'">
                                 <input
                                     type="text"
                                     x-model="form.custom_description"
@@ -712,7 +709,7 @@ function billingManager(config) {
         form: {
             item_type: 'product',
             description: '',
-            discount_preset: 'Senior Citizen Discount',
+            discount_preset: 'Promotional / Seasonal Discount',
             custom_description: '',
             discount_mode: 'percent',
             discount_value: 5,
@@ -838,7 +835,7 @@ function billingManager(config) {
                 this.form.unit_final = null;
                 this.form.description = '';
             } else if (this.form.item_type === 'discount') {
-                this.form.discount_preset = 'Senior Citizen Discount';
+                this.form.discount_preset = 'Promotional / Seasonal Discount';
                 this.form.discount_mode = 'percent';
                 this.form.discount_value = 5;
                 this.form.quantity = 1;
@@ -856,7 +853,7 @@ function billingManager(config) {
         },
 
         updateDiscountDescription() {
-            if (this.form.discount_preset === 'Custom' || this.form.discount_preset === 'Custom / Loyalty Discount') {
+            if (this.form.discount_preset === 'Custom / Loyalty Discount') {
                 this.form.description = this.form.custom_description || this.form.discount_preset;
             } else {
                 this.form.description = this.form.discount_preset;

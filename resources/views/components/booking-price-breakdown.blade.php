@@ -140,16 +140,20 @@
                                                 >
                                                     <x-icon name="pencil" class="w-4 h-4" />
                                                 </button>
+                                                @php
+                                                    $removeConfirmMessage = 'Are you sure you want to remove "' . $item->description . '" from this billing statement?'
+                                                        . ($item->product_id ? ' The reserved quantity (' . (float) $item->quantity . ') will be returned to inventory stock.' : '');
+                                                @endphp
                                                 <form
                                                     method="POST"
                                                     action="{{ route(auth()->user()->hasRole('staff') ? 'staff.bookings.billing.lines.destroy' : 'admin.bookings.billing.lines.destroy', ['booking' => $booking->id, 'lineItem' => $item->id]) }}"
-                                                    onsubmit="return confirm('Are you sure you want to remove this line item?');"
+                                                    onsubmit="event.preventDefault(); const form = this; if (window.showConfirm) { window.showConfirm({ title: 'Remove Line Item', message: {{ json_encode($removeConfirmMessage) }}, confirmText: 'Yes, Remove Line', cancelText: 'Cancel', variant: 'danger', onConfirm: () => form.submit() }); } else if (confirm({{ json_encode($removeConfirmMessage) }})) { form.submit(); }"
                                                 >
                                                     @csrf
                                                     @method('DELETE')
                                                     <button
                                                         type="submit"
-                                                        class="p-1 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-600 transition"
+                                                        class="p-1 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-600 transition cursor-pointer"
                                                         title="Remove Line"
                                                     >
                                                         <x-icon name="trash" class="w-4 h-4" />
