@@ -3,6 +3,7 @@
     'value',
     'trend' => null,
     'color' => 'red',
+    'icon' => null,
 ])
 
 @php
@@ -18,7 +19,11 @@
 
 <x-card class="flex items-start gap-4 hover:scale-105 cursor-pointer" hover>
     <div class="p-4 rounded-xl {{ $colorClass }}">
-        {{ $icon ?? '' }}
+        @if (is_string($icon) && $icon)
+            <x-icon :name="$icon" class="w-6 h-6" />
+        @else
+            {{ $icon ?? '' }}
+        @endif
     </div>
     <div class="flex-1">
         <p class="text-sm text-gray-600 dark:text-[#B8B8B8] mb-1">{{ $title }}</p>
