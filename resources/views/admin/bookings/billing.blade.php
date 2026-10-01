@@ -511,8 +511,8 @@
                             type="number"
                             name="quantity"
                             x-model.number="editForm.quantity"
-                            :step="editForm.item_type === 'labor' ? '0.1' : '0.01'"
-                            min="0.01"
+                            step="any"
+                            min="0"
                             required
                             class="w-full rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-white/5 text-gray-900 dark:text-white px-3 py-2 text-sm font-mono text-center"
                         >
