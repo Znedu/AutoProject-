@@ -79,6 +79,7 @@
             }
         },
         agreedToTerms: false,
+        isSubmitting: false,
         showTerms: false,
         selectedTimeSlot: @js(old('preferred_time', '')),
         slotAvailability: {},
@@ -279,6 +280,10 @@
         },
 
         handleSubmit() {
+            if (this.isSubmitting) {
+                return;
+            }
+
             if (!this.paymentMethod) {
                 showToast.error('Please select a payment method');
                 return;
@@ -294,6 +299,14 @@
             if (!this.agreedToTerms) {
                 showToast.error('Please agree to the terms and conditions');
                 return;
+            }
+
+            this.isSubmitting = true;
+
+            const submitBtn = document.getElementById('submit-booking-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.pointerEvents = 'none';
             }
 
             const form = document.getElementById('booking-submit-form');
@@ -903,7 +916,7 @@
 
     {{-- STEP 3: Payment & Terms --}}
     <div x-show="currentStep === 3" class="space-y-6">
-        <form @submit.prevent="handleSubmit()" class="space-y-6">
+        <form @submit.prevent="if (!isSubmitting) handleSubmit()" class="space-y-6">
             {{-- Booking Summary --}}
             <x-card>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Booking Summary</h2>
@@ -1154,17 +1167,39 @@
 
             {{-- Actions --}}
             <div class="flex gap-4 justify-between pb-8">
-                <x-button type="button" variant="outline" @click="currentStep = 2">
+                <x-button type="button" variant="outline" @click="if (!isSubmitting) currentStep = 2" x-bind:disabled="isSubmitting">
                     <x-icon name="chevron-right" class="w-5 h-5 mr-2 inline-block transform rotate-180" />
                     Back to Details
                 </x-button>
                 <div class="flex gap-4">
-                    <a href="{{ url('/customer') }}">
-                        <x-button type="button" variant="outline" class="border-red-500 text-red-500 hover:bg-red-500 hover:text-white">Cancel</x-button>
+                    <a href="{{ url('/customer') }}" x-bind:class="isSubmitting ? 'pointer-events-none opacity-50' : ''">
+                        <x-button type="button" variant="outline" class="border-red-500 text-red-500 hover:bg-red-500 hover:text-white" x-bind:disabled="isSubmitting">Cancel</x-button>
                     </a>
-                    <x-button type="submit" size="lg" variant="accent" class="text-white bg-green-600 hover:bg-green-700 border-green-600">
-                        <x-icon name="check-square" class="w-5 h-5 mr-2 inline-block text-white" />
-                        Submit Booking & Payment
+                    <x-button 
+                        id="submit-booking-btn"
+                        type="submit" 
+                        size="lg" 
+                        variant="accent" 
+                        class="text-white bg-green-600 hover:bg-green-700 border-green-600 transition-all duration-300"
+                        x-bind:disabled="isSubmitting"
+                        x-bind:class="isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+                        @click="if (isSubmitting) { $event.preventDefault(); return false; }"
+                    >
+                        <template x-if="isSubmitting">
+                            <span class="inline-flex items-center">
+                                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                </svg>
+                                Submitting Booking...
+                            </span>
+                        </template>
+                        <template x-if="!isSubmitting">
+                            <span class="inline-flex items-center">
+                                <x-icon name="check-square" class="w-5 h-5 mr-2 inline-block text-white" />
+                                Submit Booking &amp; Payment
+                            </span>
+                        </template>
                     </x-button>
                 </div>
             </div>

@@ -12,6 +12,7 @@ use App\Models\Vehicle;
 use App\Notifications\Booking\NewBookingNotification;
 use App\Services\Notification\NotificationDispatcherService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class BookingCreatorService
@@ -46,6 +47,53 @@ class BookingCreatorService
      * }  $data
      */
     public function create(User $customer, array $data): Booking
+    {
+        $referenceNumber = trim($data['reference_number'] ?? '');
+
+        // 1. Idempotency check: if user already submitted with this reference number
+        if ($referenceNumber !== '') {
+            $existingPayment = Payment::query()
+                ->where('reference_number', $referenceNumber)
+                ->where('user_id', $customer->id)
+                ->first();
+
+            if ($existingPayment && $existingPayment->booking) {
+                return $existingPayment->booking->load([
+                    'vehicle',
+                    'bookingServices.service',
+                    'quotations.lineItems',
+                    'payments',
+                ]);
+            }
+        }
+
+        // 2. Concurrency lock per customer to prevent race conditions on rapid clicking
+        $lockKey = 'booking_create_' . $customer->id . '_' . md5($referenceNumber);
+        $lock = Cache::lock($lockKey, 15);
+
+        return $lock->block(5, function () use ($customer, $data, $referenceNumber): Booking {
+            // Re-check idempotency inside lock
+            if ($referenceNumber !== '') {
+                $existingPayment = Payment::query()
+                    ->where('reference_number', $referenceNumber)
+                    ->where('user_id', $customer->id)
+                    ->first();
+
+                if ($existingPayment && $existingPayment->booking) {
+                    return $existingPayment->booking->load([
+                        'vehicle',
+                        'bookingServices.service',
+                        'quotations.lineItems',
+                        'payments',
+                    ]);
+                }
+            }
+
+            return $this->executeCreation($customer, $data);
+        });
+    }
+
+    protected function executeCreation(User $customer, array $data): Booking
     {
         if (! $this->scheduleAvailability->isSlotAvailable($data['preferred_date'], $data['preferred_time'])) {
             throw new ScheduleNotAvailableException;
