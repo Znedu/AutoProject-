@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Customer->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Carlos Customer',
@@ -47,6 +48,16 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Customer->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
+            ],
+            [
+                'name' => 'Maria Customer',
+                'email' => 'testcustomer@gmail.com',
+                'phone' => '+63 918 444 5555',
+                'role_id' => $roles[RoleSlug::Customer->value],
+                'status' => User::STATUS_ACTIVE,
+                'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Sarah Staff',
@@ -55,6 +66,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Staff->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Mica Staff',
@@ -63,6 +75,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Staff->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'John Mechanic',
@@ -71,6 +84,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Mechanic->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Mike Mechanic',
@@ -79,6 +93,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Mechanic->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Alex Mechanic',
@@ -87,6 +102,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Mechanic->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
             [
                 'name' => 'Paul Mechanic',
@@ -95,6 +111,7 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $roles[RoleSlug::Mechanic->value],
                 'status' => User::STATUS_ACTIVE,
                 'password' => 'demo123',
+                'email_verified_at' => now(),
             ],
         ];
 
