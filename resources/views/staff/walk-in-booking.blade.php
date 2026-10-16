@@ -16,6 +16,11 @@
          selectedVehicle: null,
          useExistingVehicle: false,
          selectedServices: [],
+         paintPanels: @js($paintPanels ?? []),
+         servicesData: @js($services->map(fn($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name, 'is_primary_paint' => $s->isPrimaryPaint(), 'is_paint_related' => $s->isPaintRelated(), 'requires_damage_photos' => $s->requiresDamagePhotos()])),
+         selectedPanels: [],
+         panelSeverity: {},
+
          async searchCustomers() {
              if (this.customerSearch.length < 2) { this.customerResults = []; return; }
              this.isSearching = true;
@@ -46,10 +51,68 @@
          },
          toggleService(id) {
              const idx = this.selectedServices.indexOf(id);
-             if (idx >= 0) this.selectedServices.splice(idx, 1);
-             else this.selectedServices.push(id);
+             if (idx >= 0) {
+                 this.selectedServices.splice(idx, 1);
+             } else {
+                 const target = this.servicesData.find(s => s.id === id);
+                 if (target && target.is_primary_paint) {
+                     this.selectedServices = this.selectedServices.filter(sId => {
+                         const existing = this.servicesData.find(s => s.id === sId);
+                         return !existing || !existing.is_primary_paint;
+                     });
+                 }
+                 this.selectedServices.push(id);
+             }
          },
-         isServiceSelected(id) { return this.selectedServices.includes(id); }
+         isServiceSelected(id) { return this.selectedServices.includes(id); },
+         isPaintRelated() {
+             return this.selectedServices.some(id => {
+                 const s = this.servicesData.find(x => x.id === id);
+                 return s && s.is_paint_related;
+             });
+         },
+         requiresDamagePhotos() {
+             return this.selectedServices.some(id => {
+                 const s = this.servicesData.find(x => x.id === id);
+                 return s && s.requires_damage_photos;
+             });
+         },
+         hasPaintTouchUp() {
+             return this.selectedServices.some(id => {
+                 const s = this.servicesData.find(x => x.id === id);
+                 return s && s.code === 'paint-001';
+             });
+         },
+         currentScopeMode() {
+             if (this.hasPaintTouchUp()) return 'touch_up';
+             if (this.selectedServices.some(id => this.servicesData.find(x => x.id === id)?.code === 'paint-002')) return 'custom_paint';
+             if (this.selectedServices.some(id => this.servicesData.find(x => x.id === id)?.code === 'pkg-001')) return 'full_build';
+             return 'body_repair';
+         },
+         togglePanel(code) {
+             if (this.selectedPanels.includes(code)) {
+                 this.selectedPanels = this.selectedPanels.filter(c => c !== code);
+             } else {
+                 if (this.hasPaintTouchUp() && this.selectedPanels.length >= 2) return;
+                 this.selectedPanels.push(code);
+                 if (!this.panelSeverity[code]) this.panelSeverity[code] = 'paint_only';
+             }
+         },
+         applyPanelPreset(preset) {
+             if (this.hasPaintTouchUp()) return;
+             if (preset === 'front_bumper') this.selectedPanels = ['front_bumper'];
+             else if (preset === 'rear_bumper') this.selectedPanels = ['rear_bumper'];
+             else if (preset === 'both_bumpers') this.selectedPanels = ['front_bumper', 'rear_bumper'];
+             else if (preset === 'hood') this.selectedPanels = ['hood'];
+             else if (preset === 'all_doors') this.selectedPanels = ['lf_door', 'rf_door', 'lr_door', 'rr_door'];
+             else if (preset === 'all_fenders') this.selectedPanels = ['lf_fender', 'rf_fender', 'l_quarter', 'r_quarter'];
+             else if (preset === 'select_all') this.selectedPanels = this.paintPanels.map(p => p.code);
+             else if (preset === 'clear_all') this.selectedPanels = [];
+
+             this.selectedPanels.forEach(code => {
+                 if (!this.panelSeverity[code]) this.panelSeverity[code] = 'paint_only';
+             });
+         }
      }">
 
     {{-- Page Header --}}
@@ -78,7 +141,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('staff.walk-in-booking.store') }}">
+    <form method="POST" action="{{ route('staff.walk-in-booking.store') }}" enctype="multipart/form-data">
         @csrf
 
         {{-- ── Customer ── --}}
@@ -368,6 +431,143 @@
                 <p class="mt-3 text-sm text-red-500">{{ $message }}</p>
             @enderror
         </x-card>
+
+        {{-- ── Paint Scope & Inspection (Only for Paint / Custom Build Services) ── --}}
+        <template x-if="isPaintRelated() || requiresDamagePhotos()">
+            <x-card class="mb-6 border-2 border-[#E63946]/40 dark:border-[#E63946]/30 overflow-hidden space-y-6">
+                <div class="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-200 dark:border-white/10">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg bg-[#E63946]/10">
+                            <x-icon name="tool" class="w-5 h-5 text-[#E63946]" />
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Paint Scope & Damage Inspection</h2>
+                            <p class="text-xs text-gray-500">Record target panels, damage severity, and damage photos for estimate.</p>
+                        </div>
+                    </div>
+
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30">
+                        <span x-text="hasPaintTouchUp() ? 'Touch Up (1-2 Panels)' : (selectedServices.some(id => servicesData.find(x => x.id === id)?.code === 'paint-002') ? 'Custom Paint (Multi-Panel)' : 'Inspection')"></span>
+                    </span>
+                </div>
+
+                <input type="hidden" name="paint_scope" :value="currentScopeMode()">
+
+                {{-- Presets Toolbar --}}
+                <div x-show="!hasPaintTouchUp()" class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Quick Presets</label>
+                        <span class="text-xs text-gray-500">Selected: <strong class="text-[#E63946]" x-text="selectedPanels.length"></strong> panels</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" @click="applyPanelPreset('front_bumper')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Front Bumper</button>
+                        <button type="button" @click="applyPanelPreset('rear_bumper')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Rear Bumper</button>
+                        <button type="button" @click="applyPanelPreset('both_bumpers')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Both Bumpers</button>
+                        <button type="button" @click="applyPanelPreset('hood')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Hood</button>
+                        <button type="button" @click="applyPanelPreset('all_doors')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">All Doors</button>
+                        <button type="button" @click="applyPanelPreset('all_fenders')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">All Fenders</button>
+                        <button type="button" @click="applyPanelPreset('select_all')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#E63946] text-white hover:bg-[#c92a37] transition-all">Select All</button>
+                        <button type="button" @click="applyPanelPreset('clear_all')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">Clear All</button>
+                    </div>
+                </div>
+
+                {{-- Touch Up Note --}}
+                <div x-show="hasPaintTouchUp()" class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                    <x-icon name="info" class="w-4 h-4 flex-shrink-0" />
+                    <span>Touch up is strictly limited to <strong>1 or 2 panels</strong>.</span>
+                </div>
+
+                {{-- Panel Checklist --}}
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-bold text-gray-900 dark:text-white">Panels & Severity</label>
+                        <span class="text-xs text-gray-500">Choosing <em>Dent</em> or <em>Body Work</em> includes Body Repair (+₱5,000–₱7,000)</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @php
+                            $panelGroups = [
+                                'front' => 'Front Panels',
+                                'doors' => 'Doors',
+                                'rear_side' => 'Rear & Quarters',
+                                'other' => 'Roof & Accents',
+                            ];
+                        @endphp
+
+                        @foreach ($panelGroups as $gKey => $gTitle)
+                            <div class="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02] space-y-3">
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-[#457B9D] dark:text-[#6baac8]">
+                                    {{ $gTitle }}
+                                </h3>
+                                <div class="space-y-2">
+                                    <template x-for="p in paintPanels.filter(item => item.group === '{{ $gKey }}')" :key="p.code">
+                                        <div class="p-2.5 rounded-lg border transition-all"
+                                            :class="selectedPanels.includes(p.code) ? 'border-[#E63946] bg-[#E63946]/5 dark:bg-[#E63946]/10' : 'border-gray-200 dark:border-white/5 bg-white dark:bg-[#151515]'"
+                                        >
+                                            <div class="flex items-center justify-between gap-2">
+                                                <label class="flex items-center gap-2.5 cursor-pointer select-none flex-1">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        :checked="selectedPanels.includes(p.code)"
+                                                        @change="togglePanel(p.code)"
+                                                        class="rounded border-gray-300 text-[#E63946] focus:ring-[#E63946] w-4 h-4 cursor-pointer"
+                                                    />
+                                                    <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="p.name"></span>
+                                                </label>
+
+                                                <template x-if="selectedPanels.includes(p.code)">
+                                                    <span x-show="panelSeverity[p.code] === 'dent' || panelSeverity[p.code] === 'body_work'" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold">
+                                                        +Body Repair
+                                                    </span>
+                                                </template>
+                                            </div>
+
+                                            <template x-if="selectedPanels.includes(p.code)">
+                                                <div class="mt-2.5 pt-2 border-t border-gray-200/60 dark:border-white/10 flex items-center gap-2">
+                                                    <span class="text-xs text-gray-500 shrink-0">Severity:</span>
+                                                    <select
+                                                        :value="panelSeverity[p.code] || 'paint_only'"
+                                                        @change="panelSeverity[p.code] = $event.target.value"
+                                                        class="text-xs py-1 px-2 rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#E63946]"
+                                                    >
+                                                        <option value="light_scratch">Light Scratch</option>
+                                                        <option value="paint_only">Paint Only</option>
+                                                        <option value="dent">Dent (Requires Body Repair)</option>
+                                                        <option value="body_work">Heavy Body Work</option>
+                                                        <option value="replace_panel">Panel Replacement</option>
+                                                    </select>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Hidden panel inputs for submission --}}
+                <template x-for="pCode in selectedPanels" :key="pCode">
+                    <div>
+                        <input type="hidden" name="panels[]" :value="pCode">
+                        <input type="hidden" :name="'panel_severity[' + pCode + ']'" :value="panelSeverity[pCode] || 'paint_only'">
+                    </div>
+                </template>
+
+                {{-- Damage Photos Upload --}}
+                <div class="space-y-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
+                            Damage Photos <span class="text-xs font-normal text-gray-500">(1 to 6 photos, PNG/JPG max 5MB each)</span>
+                        </label>
+                        <input type="file" name="damage_photos[]" multiple accept="image/png,image/jpeg,image/jpg"
+                            class="w-full px-4 py-2 text-sm rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#E63946] file:text-white hover:file:bg-[#c92a37]">
+                    </div>
+                    @error('damage_photos') <p class="text-sm text-red-500">{{ $message }}</p> @enderror
+                    @error('damage_photos.*') <p class="text-sm text-red-500">{{ $message }}</p> @enderror
+                </div>
+            </x-card>
+        </template>
 
         {{-- ── Preferred Schedule ── --}}
         <x-card class="mb-6">

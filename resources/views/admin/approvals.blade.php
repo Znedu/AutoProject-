@@ -168,6 +168,60 @@
                         </div>
                     </div>
 
+                    {{-- Paint Scope, Damage Panels & Photos --}}
+                    @if ($booking->paintPanels->isNotEmpty() || $booking->damagePhotos->isNotEmpty() || $booking->paintScope)
+                        <div class="space-y-3 pb-5 border-b border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-white/[0.02] p-4 rounded-xl border border-gray-200 dark:border-white/5">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-2">
+                                    <x-icon name="tool" class="w-4 h-4 text-[#E63946]" />
+                                    <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Paint Scope & Damage Inspection</h4>
+                                </div>
+                                @if ($booking->paintScope)
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20">
+                                        Scope: {{ ucfirst(str_replace('_', ' ', $booking->paintScope->scope_mode)) }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            {{-- Panels List --}}
+                            @if ($booking->paintPanels->isNotEmpty())
+                                <div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Selected Panels & Condition ({{ $booking->paintPanels->count() }}):</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($booking->paintPanels as $pp)
+                                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1E1E1E] shadow-sm">
+                                                <span class="font-semibold text-gray-900 dark:text-white">{{ $pp->panel?->name ?? $pp->panel_code }}</span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold {{ in_array($pp->severity, ['dent', 'body_work', 'replace_panel']) ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">
+                                                    {{ str_replace('_', ' ', $pp->severity) }}
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Damage Photos Gallery --}}
+                            @if ($booking->damagePhotos->isNotEmpty())
+                                <div class="pt-2">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">Customer Damage Photos ({{ $booking->damagePhotos->count() }}):</p>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                        @foreach ($booking->damagePhotos as $photo)
+                                            <a href="{{ $photo->url }}" target="_blank"
+                                               class="block relative group overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all bg-black aspect-square">
+                                                <img src="{{ $photo->url }}"
+                                                     alt="{{ $photo->original_name }}"
+                                                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <span class="text-white text-[10px] font-bold uppercase tracking-wider bg-black/60 px-2 py-1 rounded">View</span>
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
                     {{-- Proof of Payment + Info --}}
                     @if ($payment)
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">

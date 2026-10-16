@@ -191,6 +191,10 @@ class BookingApprovalController extends Controller
             'payments' => fn ($query) => $query->reservationFees()->latest()->limit(1),
             'payments.proofs',
             'statusLogs' => fn ($query) => $query->latest('created_at')->limit(10),
+            'paintScope',
+            'paintPanels.panel',
+            'attachments',
+            'damagePhotos',
         ]);
     }
 }

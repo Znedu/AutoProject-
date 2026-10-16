@@ -18,7 +18,48 @@ class DashboardController extends Controller
         $totalBookings = Booking::count();
         $activeServicesCount = Booking::active()->count();
         $completedJobsCount = JobOrder::status(JobOrder::STATUS_COMPLETED)->count();
-        $totalRevenue = Payment::verified()->sum('amount');
+        $totalRevenue = (float) Payment::verified()->sum('amount');
+
+        // Current Month Revenue (reflects all verified payments this month, including reservation fees)
+        $currentMonthRevenue = (float) Payment::verified()
+            ->where(function ($q) {
+                $q->whereYear('verified_at', now()->year)
+                  ->whereMonth('verified_at', now()->month)
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('verified_at')
+                         ->whereYear('paid_at', now()->year)
+                         ->whereMonth('paid_at', now()->month);
+                  })
+                  ->orWhere(function ($q3) {
+                      $q3->whereNull('verified_at')
+                         ->whereNull('paid_at')
+                         ->whereYear('created_at', now()->year)
+                         ->whereMonth('created_at', now()->month);
+                  });
+            })
+            ->sum('amount');
+
+        $lastMonthRevenue = (float) Payment::verified()
+            ->where(function ($q) {
+                $q->whereYear('verified_at', now()->subMonth()->year)
+                  ->whereMonth('verified_at', now()->subMonth()->month)
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('verified_at')
+                         ->whereYear('paid_at', now()->subMonth()->year)
+                         ->whereMonth('paid_at', now()->subMonth()->month);
+                  })
+                  ->orWhere(function ($q3) {
+                      $q3->whereNull('verified_at')
+                         ->whereNull('paid_at')
+                         ->whereYear('created_at', now()->subMonth()->year)
+                         ->whereMonth('created_at', now()->subMonth()->month);
+                  });
+            })
+            ->sum('amount');
+
+        $revenueGrowth = $lastMonthRevenue > 0
+            ? round((($currentMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100)
+            : ($currentMonthRevenue > 0 ? 100 : 0);
 
         // Recent Booking Requests
         $recentBookings = Booking::with(['services', 'user'])
@@ -65,8 +106,21 @@ class DashboardController extends Controller
         foreach ($months as $index => $monthName) {
             $date = now()->subMonths(5 - $index);
             $sum = Payment::verified()
-                ->whereYear('verified_at', $date->year)
-                ->whereMonth('verified_at', $date->month)
+                ->where(function ($q) use ($date) {
+                    $q->whereYear('verified_at', $date->year)
+                      ->whereMonth('verified_at', $date->month)
+                      ->orWhere(function ($q2) use ($date) {
+                          $q2->whereNull('verified_at')
+                             ->whereYear('paid_at', $date->year)
+                             ->whereMonth('paid_at', $date->month);
+                      })
+                      ->orWhere(function ($q3) use ($date) {
+                          $q3->whereNull('verified_at')
+                             ->whereNull('paid_at')
+                             ->whereYear('created_at', $date->year)
+                             ->whereMonth('created_at', $date->month);
+                      });
+                })
                 ->sum('amount');
             $revenueData[] = (float) $sum;
         }
@@ -94,6 +148,8 @@ class DashboardController extends Controller
             'activeServicesCount' => $activeServicesCount,
             'completedJobsCount' => $completedJobsCount,
             'totalRevenue' => $totalRevenue,
+            'currentMonthRevenue' => $currentMonthRevenue,
+            'revenueGrowth' => $revenueGrowth,
             'recentBookings' => $recentBookings,
             'totalCustomers' => $totalCustomers,
             'activeMechanics' => $activeMechanics,

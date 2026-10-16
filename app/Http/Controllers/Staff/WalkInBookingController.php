@@ -55,11 +55,13 @@ class WalkInBookingController extends Controller
         $fee = BusinessSetting::getValue('reservation_fee', 200.00);
         $gcashNumber = BusinessSetting::getValue('gcash_account_number', '0912-345-6789');
         $mayaNumber = BusinessSetting::getValue('maya_account_number', '0917-888-9999');
+        $paintPanels = \App\Models\PaintPanel::active()->ordered()->get();
 
         return view('staff.walk-in-booking', [
             'serviceCategories' => $serviceCategories,
             'services' => $services,
             'customers' => $customers,
+            'paintPanels' => $paintPanels,
             'fee' => $fee,
             'gcashNumber' => $gcashNumber,
             'mayaNumber' => $mayaNumber,
@@ -70,7 +72,15 @@ class WalkInBookingController extends Controller
         Request $request,
         BookingCreatorService $creator
     ): RedirectResponse {
-        $request->validate([
+        $serviceIds = (array) $request->input('service_ids', []);
+        $selectedServices = Service::query()->whereIn('id', $serviceIds)->get();
+
+        $hasPaintTouchUp = $selectedServices->contains(fn (Service $s) => $s->isPaintTouchUp());
+        $hasCustomPaint = $selectedServices->contains(fn (Service $s) => $s->isCustomPaint());
+        $hasBodyRepair = $selectedServices->contains(fn (Service $s) => $s->isBodyRepair());
+        $hasPaintRelated = $selectedServices->contains(fn (Service $s) => $s->isPaintRelated());
+
+        $validationRules = [
             'booking_type' => ['required', 'in:existing,new'],
             'customer_id' => ['required_if:booking_type,existing', 'nullable', 'integer', 'exists:users,id'],
             'customer_name' => ['required', 'string', 'max:255'],
@@ -89,7 +99,35 @@ class WalkInBookingController extends Controller
             'preferred_date' => ['required', 'date', 'after_or_equal:today'],
             'preferred_time' => ['required', 'string'],
             'notes' => ['nullable', 'string'],
-        ]);
+            // Paint & Photos
+            'paint_scope' => ['nullable', 'string', 'in:touch_up,custom_paint,body_repair,full_build'],
+            'panels' => ['nullable', 'array'],
+            'panels.*' => ['string', 'exists:paint_panels,code'],
+            'panel_severity' => ['nullable', 'array'],
+            'panel_severity.*' => ['nullable', 'string', 'in:light_scratch,paint_only,dent,body_work,replace_panel'],
+            'damage_photos' => ['nullable', 'array'],
+            'damage_photos.*' => ['file', 'image', 'mimes:png,jpg,jpeg', 'max:5120'],
+        ];
+
+        if ($hasPaintRelated) {
+            $validationRules['damage_photos'] = ['required', 'array', 'min:1', 'max:6'];
+            $validationRules['damage_photos.*'] = ['required', 'file', 'image', 'mimes:png,jpg,jpeg', 'max:5120'];
+        }
+
+        if ($hasPaintTouchUp) {
+            $validationRules['panels'] = ['required', 'array', 'min:1', 'max:2'];
+        } elseif ($hasCustomPaint || $hasBodyRepair) {
+            $validationRules['panels'] = ['required', 'array', 'min:1'];
+        }
+
+        $request->validate($validationRules);
+
+        $primaryPaintCount = $selectedServices->filter(fn (Service $s) => $s->isPrimaryPaint())->count();
+        if ($primaryPaintCount > 1) {
+            return back()->withInput()->withErrors([
+                'service_ids' => 'Please select only one primary paint service (Paint touch up, Custom paint job, or Full custom build package).',
+            ]);
+        }
 
         if (\Carbon\Carbon::parse($request->preferred_date)->isSunday()) {
             return back()->withInput()->withErrors(['preferred_date' => 'We are closed on Sundays. Please select a weekday (Monday-Saturday).']);
@@ -130,6 +168,11 @@ class WalkInBookingController extends Controller
                 $customer = User::findOrFail($request->customer_id);
             }
 
+            $damagePhotos = $request->file('damage_photos');
+            if ($damagePhotos && ! is_array($damagePhotos)) {
+                $damagePhotos = [$damagePhotos];
+            }
+
             $booking = $creator->create($customer, [
                 'service_ids' => $request->service_ids,
                 'brands' => $request->input('brands', []),
@@ -142,6 +185,10 @@ class WalkInBookingController extends Controller
                 'preferred_date' => $request->preferred_date,
                 'preferred_time' => $request->preferred_time,
                 'notes' => $request->notes,
+                'paint_scope' => $request->paint_scope,
+                'panels' => $request->input('panels', []),
+                'panel_severity' => $request->input('panel_severity', []),
+                'damage_photos' => $damagePhotos ?? [],
                 // Walk-ins don't have an online payment — reservation fee is collected in-store
                 'payment_method' => 'cash',
                 'reference_number' => 'WALKIN-'.strtoupper(Str::random(8)),

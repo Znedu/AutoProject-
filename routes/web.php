@@ -24,6 +24,7 @@ use App\Http\Controllers\Customer\PaymentController as CustomerPaymentController
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Customer\ScheduleAvailabilityController;
 use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
+use App\Http\Controllers\Customer\ServiceHistoryController as CustomerServiceHistoryController;
 use App\Http\Controllers\Customer\TrackController as CustomerTrackController;
 use App\Http\Controllers\Customer\VehicleController as CustomerVehicleController;
 use App\Http\Controllers\Mechanic\DashboardController as MechanicDashboardController;
@@ -228,6 +229,10 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->middleware('permission:bookings.create')
                 ->name('book-service');
 
+            Route::match(['get', 'post'], '/booking/paint-estimate', [BookingController::class, 'paintEstimate'])
+                ->middleware('permission:bookings.create')
+                ->name('booking.paint-estimate');
+
             Route::post('/bookings', [BookingController::class, 'store'])
                 ->middleware('permission:bookings.create')
                 ->name('bookings.store');
@@ -297,6 +302,14 @@ Route::middleware(['auth', 'active'])->group(function () {
                 ->name('vehicles.update');
             Route::delete('/vehicles/{vehicle}', [CustomerVehicleController::class, 'destroy'])
                 ->name('vehicles.destroy');
+
+            // Vehicle Service Records & History
+            Route::get('/service-history', [CustomerServiceHistoryController::class, 'index'])
+                ->middleware('permission:bookings.view')
+                ->name('service-history');
+            Route::get('/service-history/{booking}/print', [CustomerServiceHistoryController::class, 'show'])
+                ->middleware('permission:bookings.view')
+                ->name('service-history.print');
 
             // Booking Billing (Read-Only)
             Route::get('/bookings/{booking}/billing', [CustomerBookingBillingController::class, 'show'])

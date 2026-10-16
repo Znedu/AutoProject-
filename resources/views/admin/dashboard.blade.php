@@ -45,8 +45,12 @@
 
         <x-stat-card
             title="Monthly Revenue"
-            value="₱{{ number_format($totalRevenue) }}"
+            value="₱{{ number_format($currentMonthRevenue, 2) }}"
             color="charcoal"
+            :trend="[
+                'value' => ($revenueGrowth >= 0 ? '+' : '') . $revenueGrowth . '% from last month',
+                'isPositive' => $revenueGrowth >= 0,
+            ]"
         >
             <x-slot:icon>
                 <x-icon name="dollar-sign" class="w-6 h-6" />

@@ -4,13 +4,28 @@
 
 @section('content')
 @php
+    $paintPanelsPayload = ($paintPanels ?? \App\Models\PaintPanel::active()->ordered()->get())->map(fn ($p) => [
+        'id' => $p->id,
+        'code' => $p->code,
+        'name' => $p->name,
+        'group' => $p->group,
+    ])->values();
+
     $servicesPayload = $services->map(fn ($service) => [
         'id' => $service->id,
+        'code' => $service->code,
         'name' => $service->name,
         'category' => $service->category->slug,
+        'isPaint' => $service->isPaintRelated(),
+        'isPrimaryPaint' => $service->isPrimaryPaint(),
+        'isTouchUp' => $service->isPaintTouchUp(),
+        'isCustomPaint' => $service->isCustomPaint(),
+        'isBodyRepair' => $service->isBodyRepair(),
+        'isFullBuild' => $service->isFullCustomBuild(),
+        'requiresDamagePhotos' => $service->requiresDamagePhotos(),
         'estimatedPrice' => ['min' => (float) $service->min_cost, 'max' => (float) $service->max_cost],
         'description' => $service->description,
-        'brands' => $service->brands->map(fn ($b) => [
+        'brands' => $service->isPaintRelated() ? [] : $service->brands->map(fn ($b) => [
             'id' => $b->id,
             'name' => $b->name,
             'price' => (float) $b->price,
@@ -104,14 +119,207 @@
             '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'
         ],
 
+        paintPanels: @js($paintPanelsPayload),
+        selectedPanels: @js(old('panels', [])),
+        panelSeverity: @js(old('panel_severity', (object)[])),
+        damagePhotoFiles: [],
+        damagePhotoPreviews: [],
+        serverEstimate: null,
+        paintScope: 'custom_paint',
+
+        hasPaintRelated() {
+            return this.isPaintRelated();
+        },
+
+        isPaintRelated() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && (s.isPaint || s.requiresDamagePhotos);
+            });
+        },
+
+        requiresDamagePhotos() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && (s.requiresDamagePhotos || s.isPaint);
+            });
+        },
+
+        hasPaintTouchUp() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && s.code === 'paint-001';
+            });
+        },
+
+        hasCustomPaint() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && s.code === 'paint-002';
+            });
+        },
+
+        hasBodyRepair() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && s.code === 'body-001';
+            });
+        },
+
+        hasFullBuild() {
+            return this.selectedServices.some(id => {
+                const s = this.services.find(svc => svc.id === id);
+                return s && s.code === 'pkg-001';
+            });
+        },
+
+        currentScopeMode() {
+            if (this.hasPaintTouchUp()) return 'touch_up';
+            if (this.hasCustomPaint()) return 'custom_paint';
+            if (this.hasFullBuild()) return 'full_build';
+            if (this.hasBodyRepair()) return 'body_repair';
+            return this.paintScope || 'custom_paint';
+        },
+
+        togglePanel(code) {
+            if (this.selectedPanels.includes(code)) {
+                this.selectedPanels = this.selectedPanels.filter(c => c !== code);
+            } else {
+                if (this.hasPaintTouchUp() && this.selectedPanels.length >= 2) {
+                    showToast.error('Paint touch up is limited to maximum 2 panels.');
+                    return;
+                }
+                this.selectedPanels.push(code);
+                if (!this.panelSeverity[code]) {
+                    this.panelSeverity[code] = 'paint_only';
+                }
+            }
+            this.fetchPaintEstimate();
+        },
+
+        applyPanelPreset(preset) {
+            if (this.hasPaintTouchUp()) {
+                showToast.info('Touch up is limited to 1-2 panels. Please select individual panels.');
+                return;
+            }
+            if (preset === 'front_bumper') {
+                this.selectedPanels = ['front_bumper'];
+            } else if (preset === 'rear_bumper') {
+                this.selectedPanels = ['rear_bumper'];
+            } else if (preset === 'both_bumpers') {
+                this.selectedPanels = ['front_bumper', 'rear_bumper'];
+            } else if (preset === 'hood') {
+                this.selectedPanels = ['hood'];
+            } else if (preset === 'all_doors') {
+                this.selectedPanels = ['lf_door', 'rf_door', 'lr_door', 'rr_door'];
+            } else if (preset === 'all_fenders') {
+                this.selectedPanels = ['lf_fender', 'rf_fender', 'l_quarter', 'r_quarter'];
+            } else if (preset === 'select_all') {
+                this.selectedPanels = this.paintPanels.map(p => p.code);
+            } else if (preset === 'clear_all') {
+                this.selectedPanels = [];
+            }
+            this.selectedPanels.forEach(code => {
+                if (!this.panelSeverity[code]) {
+                    this.panelSeverity[code] = 'paint_only';
+                }
+            });
+            this.fetchPaintEstimate();
+        },
+
+        setPanelSeverity(code, severity) {
+            this.panelSeverity = { ...this.panelSeverity, [code]: severity };
+            this.fetchPaintEstimate();
+        },
+
+        handleDamagePhotosUpload(e) {
+            const files = Array.from(e.target.files || []);
+            if (!files.length) return;
+
+            for (let file of files) {
+                if (!file.type.startsWith('image/')) {
+                    showToast.error(`${file.name} is not an image.`);
+                    continue;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast.error(`${file.name} exceeds the 5MB file limit.`);
+                    continue;
+                }
+                if (this.damagePhotoFiles.length >= 6) {
+                    showToast.error('Maximum 6 photos allowed.');
+                    break;
+                }
+                this.damagePhotoFiles.push(file);
+                this.damagePhotoPreviews.push({
+                    name: file.name,
+                    size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+                    url: URL.createObjectURL(file)
+                });
+            }
+            e.target.value = '';
+            this.syncDamagePhotosInput();
+        },
+
+        removeDamagePhoto(index) {
+            this.damagePhotoFiles.splice(index, 1);
+            this.damagePhotoPreviews.splice(index, 1);
+            this.syncDamagePhotosInput();
+        },
+
+        syncDamagePhotosInput() {
+            const input = document.getElementById('hidden-damage-photos');
+            if (!input) return;
+            const dt = new DataTransfer();
+            this.damagePhotoFiles.forEach(f => dt.items.add(f));
+            input.files = dt.files;
+        },
+
+        async fetchPaintEstimate() {
+            if (this.selectedServices.length === 0) {
+                this.serverEstimate = null;
+                return;
+            }
+            try {
+                const res = await fetch('{{ route('customer.booking.paint-estimate') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        service_ids: this.selectedServices,
+                        brands: this.selectedBrands,
+                        panels: this.selectedPanels,
+                        panel_severity: this.panelSeverity,
+                    })
+                });
+                if (res.ok) {
+                    this.serverEstimate = await res.json();
+                }
+            } catch (e) {
+                console.error('Failed to fetch estimate', e);
+            }
+        },
+
         toggleService(id) {
             id = Number(id);
+            const targetService = this.services.find(s => s.id === id);
             if (this.selectedServices.includes(id)) {
                 this.selectedServices = this.selectedServices.filter(x => x !== id);
                 delete this.selectedBrands[id];
             } else {
+                if (targetService && targetService.isPrimaryPaint) {
+                    const existingPrimary = this.services.find(s => this.selectedServices.includes(s.id) && s.isPrimaryPaint && s.id !== id);
+                    if (existingPrimary) {
+                        this.selectedServices = this.selectedServices.filter(x => x !== existingPrimary.id);
+                        delete this.selectedBrands[existingPrimary.id];
+                        showToast.info(`Switched primary paint service to ${targetService.name}.`);
+                    }
+                }
                 this.selectedServices.push(id);
             }
+            this.fetchPaintEstimate();
         },
 
         toggleCategory(id) {
@@ -128,6 +336,7 @@
             } else {
                 this.selectedBrands[serviceId] = brandName;
             }
+            this.fetchPaintEstimate();
         },
 
         getSelectedBrandObj(serviceId) {
@@ -148,6 +357,9 @@
         },
 
         getEstimatedCost() {
+            if (this.serverEstimate) {
+                return this.serverEstimate;
+            }
             if (this.selectedServices.length === 0) return null;
             let min = 0;
             let max = 0;
@@ -275,6 +487,35 @@
                 showToast.error('Please select a time slot for your appointment');
                 return;
             }
+
+            if (this.requiresDamagePhotos()) {
+                if (this.damagePhotoFiles.length === 0) {
+                    showToast.error('Please upload at least 1 damage photo for paint/custom build inspection.');
+                    return;
+                }
+                if (this.damagePhotoFiles.length > 6) {
+                    showToast.error('Maximum 6 damage photos allowed.');
+                    return;
+                }
+            }
+
+            if (this.hasPaintTouchUp()) {
+                if (this.selectedPanels.length < 1 || this.selectedPanels.length > 2) {
+                    showToast.error('Paint touch up requires selecting exactly 1 to 2 panels.');
+                    return;
+                }
+            } else if (this.hasCustomPaint()) {
+                if (this.selectedPanels.length < 1) {
+                    showToast.error('Please select at least 1 panel for custom paint job.');
+                    return;
+                }
+            } else if (this.hasBodyRepair()) {
+                if (this.selectedPanels.length < 1) {
+                    showToast.error('Please select at least 1 panel for body repair.');
+                    return;
+                }
+            }
+
             this.currentStep = 3;
             window.scrollTo(0, 0);
         },
@@ -308,6 +549,8 @@
                 submitBtn.disabled = true;
                 submitBtn.style.pointerEvents = 'none';
             }
+
+            this.syncDamagePhotosInput();
 
             const form = document.getElementById('booking-submit-form');
             const fields = {
@@ -349,6 +592,33 @@
                 form.appendChild(input);
             });
 
+            if (this.isPaintRelated() || this.requiresDamagePhotos()) {
+                const scopeInput = document.createElement('input');
+                scopeInput.type = 'hidden';
+                scopeInput.name = 'paint_scope';
+                scopeInput.value = this.currentScopeMode();
+                scopeInput.setAttribute('data-dynamic-input', 'true');
+                form.appendChild(scopeInput);
+
+                this.selectedPanels.forEach(panelCode => {
+                    const pInput = document.createElement('input');
+                    pInput.type = 'hidden';
+                    pInput.name = 'panels[]';
+                    pInput.value = panelCode;
+                    pInput.setAttribute('data-dynamic-input', 'true');
+                    form.appendChild(pInput);
+
+                    if (this.panelSeverity[panelCode]) {
+                        const sInput = document.createElement('input');
+                        sInput.type = 'hidden';
+                        sInput.name = `panel_severity[${panelCode}]`;
+                        sInput.value = this.panelSeverity[panelCode];
+                        sInput.setAttribute('data-dynamic-input', 'true');
+                        form.appendChild(sInput);
+                    }
+                });
+            }
+
             const terms = form.querySelector('[name=agreed_to_terms]');
             if (terms) terms.checked = this.agreedToTerms;
 
@@ -381,6 +651,7 @@
         <input type="hidden" name="payment_method" />
         <input type="hidden" name="reference_number" />
         <input type="file" name="payment_screenshot" id="hidden-payment-screenshot" class="hidden" />
+        <input type="file" name="damage_photos[]" id="hidden-damage-photos" multiple class="hidden" />
         <input type="checkbox" name="agreed_to_terms" value="1" />
     </form>
     {{-- Progress Indicator --}}
@@ -757,6 +1028,201 @@
                 </div>
             </x-card>
 
+            {{-- Paint Scope & Panel Inspection (Only for Paint / Custom Build Services) --}}
+            <template x-if="isPaintRelated() || requiresDamagePhotos()">
+                <x-card class="border-2 border-[#E63946]/40 dark:border-[#E63946]/30 overflow-hidden space-y-6">
+                    <div class="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-200 dark:border-white/10">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="p-2 rounded-lg bg-[#E63946] text-white shadow-sm">
+                                    <x-icon name="tool" class="w-5 h-5" />
+                                </span>
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Paint Scope & Damage Inspection</h2>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                Estimates are shop rate ranges. Final price is confirmed after vehicle and damage photo review.
+                            </p>
+                        </div>
+
+                        <div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/30">
+                                <span class="w-2 h-2 rounded-full bg-[#E63946] mr-2 animate-pulse"></span>
+                                <span x-text="hasPaintTouchUp() ? 'Touch Up Scope (1-2 Panels)' : (hasCustomPaint() ? 'Custom Paint Scope (Multi-Panel)' : (hasFullBuild() ? 'Full Custom Build Package' : 'Body Repair Inspection'))"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Presets Toolbar (Hidden if touch-up, since touch-up is limited to 1-2 panels) --}}
+                    <div x-show="!hasPaintTouchUp()" class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quick Selection Presets</label>
+                            <span class="text-xs text-gray-500">Selected: <strong class="text-[#E63946]" x-text="selectedPanels.length"></strong> panels</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" @click="applyPanelPreset('front_bumper')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Front Bumper</button>
+                            <button type="button" @click="applyPanelPreset('rear_bumper')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Rear Bumper</button>
+                            <button type="button" @click="applyPanelPreset('both_bumpers')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Both Bumpers</button>
+                            <button type="button" @click="applyPanelPreset('hood')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">Hood</button>
+                            <button type="button" @click="applyPanelPreset('all_doors')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">All Doors</button>
+                            <button type="button" @click="applyPanelPreset('all_fenders')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-white/10 bg-white/5 hover:border-[#E63946] hover:text-[#E63946] transition-all">All Fenders</button>
+                            <button type="button" @click="applyPanelPreset('select_all')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#E63946] text-white hover:bg-[#c92a37] transition-all">Select All</button>
+                            <button type="button" @click="applyPanelPreset('clear_all')" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all">Clear All</button>
+                        </div>
+                    </div>
+
+                    {{-- Touch Up Note --}}
+                    <div x-show="hasPaintTouchUp()" class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                        <x-icon name="info" class="w-4 h-4 flex-shrink-0" />
+                        <span>Paint Touch Up scope is strictly limited to <strong>1 or 2 panels</strong>. Select your panels below.</span>
+                    </div>
+
+                    {{-- Panel Checklist Grouped --}}
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm font-bold text-gray-900 dark:text-white">Panel Checklist & Damage Severity</label>
+                            <span class="text-xs text-gray-500">Note: Choosing <em>Dent</em> or <em>Body Work</em> includes Body Repair (+₱5,000–₱7,000)</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @php
+                                $groups = [
+                                    'front' => 'Front Panels',
+                                    'doors' => 'Doors',
+                                    'rear_side' => 'Rear & Quarters',
+                                    'other' => 'Roof & Accents',
+                                ];
+                            @endphp
+
+                            @foreach ($groups as $groupKey => $groupTitle)
+                                <div class="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02] space-y-3">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-[#457B9D] dark:text-[#6baac8] flex items-center justify-between">
+                                        <span>{{ $groupTitle }}</span>
+                                    </h3>
+                                    <div class="space-y-2">
+                                        <template x-for="p in paintPanels.filter(item => item.group === '{{ $groupKey }}')" :key="p.code">
+                                            <div class="p-2.5 rounded-lg border transition-all"
+                                                :class="selectedPanels.includes(p.code) ? 'border-[#E63946] bg-[#E63946]/5 dark:bg-[#E63946]/10' : 'border-gray-200 dark:border-white/5 bg-white dark:bg-[#151515] hover:border-gray-300 dark:hover:border-white/20'"
+                                            >
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <label class="flex items-center gap-2.5 cursor-pointer select-none flex-1">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            :checked="selectedPanels.includes(p.code)"
+                                                            @change="togglePanel(p.code)"
+                                                            class="rounded border-gray-300 text-[#E63946] focus:ring-[#E63946] w-4 h-4 cursor-pointer"
+                                                        />
+                                                        <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="p.name"></span>
+                                                    </label>
+
+                                                    <template x-if="selectedPanels.includes(p.code)">
+                                                        <span x-show="panelSeverity[p.code] === 'dent' || panelSeverity[p.code] === 'body_work'" class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 font-bold">
+                                                            +Body Repair
+                                                        </span>
+                                                    </template>
+                                                </div>
+
+                                                <template x-if="selectedPanels.includes(p.code)">
+                                                    <div class="mt-2.5 pt-2 border-t border-gray-200/60 dark:border-white/10 flex items-center gap-2">
+                                                        <span class="text-xs text-gray-500 shrink-0">Condition:</span>
+                                                        <select
+                                                            :value="panelSeverity[p.code] || 'paint_only'"
+                                                            @change="setPanelSeverity(p.code, $event.target.value)"
+                                                            class="text-xs py-1 px-2 rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1E1E1E] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#E63946]"
+                                                        >
+                                                            <option value="light_scratch">Light Scratch</option>
+                                                            <option value="paint_only">Paint Only</option>
+                                                            <option value="dent">Dent (Requires Body Repair)</option>
+                                                            <option value="body_work">Heavy Body Work</option>
+                                                            <option value="replace_panel">Panel Replacement</option>
+                                                        </select>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Multi-photo upload for damage / inspection --}}
+                    <div class="space-y-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <label class="text-sm font-bold text-gray-900 dark:text-white">
+                                    Damage & Vehicle Inspection Photos <span class="text-red-500">*</span>
+                                </label>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">
+                                    Upload clear photos of the target panels, scratches, or dented areas (1 to 6 photos, max 5MB each, PNG/JPG).
+                                </p>
+                            </div>
+                            <span class="text-xs font-semibold" :class="damagePhotoFiles.length > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'">
+                                <span x-text="damagePhotoFiles.length"></span>/6 Photos
+                            </span>
+                        </div>
+
+                        <input 
+                            type="file" 
+                            x-ref="damagePhotoInput" 
+                            @change="handleDamagePhotosUpload" 
+                            multiple 
+                            accept="image/png,image/jpeg,image/jpg" 
+                            class="hidden" 
+                        />
+
+                        {{-- Dropzone / Upload button --}}
+                        <div 
+                            @click="$refs.damagePhotoInput.click()"
+                            class="border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-[#E63946] rounded-xl p-6 text-center cursor-pointer transition-all bg-white/5 hover:bg-[#E63946]/5"
+                        >
+                            <x-icon name="camera" class="w-8 h-8 mx-auto text-[#E63946] mb-2" />
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">Click or tap to upload damage photos</p>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, or JPEG up to 5MB per photo (1 to 6 photos)</p>
+                        </div>
+
+                        {{-- Photo Preview Grid --}}
+                        <template x-if="damagePhotoPreviews.length > 0">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2">
+                                <template x-for="(preview, idx) in damagePhotoPreviews" :key="idx">
+                                    <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-black aspect-square flex items-center justify-center">
+                                        <img :src="preview.url" :alt="preview.name" class="w-full h-full object-cover" />
+                                        <button 
+                                            type="button" 
+                                            @click.stop="removeDamagePhoto(idx)"
+                                            class="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white hover:bg-red-700 shadow-md transition-all cursor-pointer"
+                                            title="Remove photo"
+                                        >
+                                            <x-icon name="trash" class="w-3.5 h-3.5" />
+                                        </button>
+                                        <div class="absolute bottom-0 inset-x-0 bg-black/70 p-1 text-[10px] text-white truncate text-center" x-text="preview.size"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Live Estimate Breakdown Box --}}
+                    <template x-if="serverEstimate">
+                        <div class="p-4 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Live Estimate Snapshot</span>
+                                <span class="text-base font-extrabold text-[#E63946]" x-text="serverEstimate.display"></span>
+                            </div>
+                            <template x-if="serverEstimate.breakdown && serverEstimate.breakdown.length > 0">
+                                <div class="pt-2 border-t border-gray-200 dark:border-white/10 space-y-1">
+                                    <template x-for="(line, idx) in serverEstimate.breakdown" :key="idx">
+                                        <div class="flex items-center justify-between text-xs text-gray-700 dark:text-gray-300">
+                                            <span x-text="line.title"></span>
+                                            <span class="font-mono font-semibold" x-text="'₱' + Number(line.min).toLocaleString() + ' - ₱' + Number(line.max).toLocaleString()"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </x-card>
+            </template>
+
             {{-- Appointment Details --}}
             <x-card>
                 <div class="flex items-center gap-2 mb-4">
@@ -933,10 +1399,58 @@
                         <span class="text-gray-600 dark:text-gray-400">Plate Number</span>
                         <span class="font-bold text-gray-900 dark:text-white" x-text="formData.plateNumber"></span>
                     </div>
+
+                    {{-- Panels Summary --}}
+                    <template x-if="selectedPanels.length > 0">
+                        <div class="flex justify-between items-start border-t border-gray-100 dark:border-white/5 pt-2">
+                            <span class="text-gray-600 dark:text-gray-400 text-sm">Selected Panels (<span x-text="selectedPanels.length"></span>)</span>
+                            <div class="text-right max-w-md flex flex-wrap justify-end gap-1">
+                                <template x-for="pCode in selectedPanels" :key="pCode">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                        <span x-text="paintPanels.find(p => p.code === pCode)?.name || pCode"></span>
+                                        <template x-if="panelSeverity[pCode] && panelSeverity[pCode] !== 'paint_only'">
+                                            <span class="ml-1 text-[10px] text-amber-600 dark:text-amber-400 font-bold" x-text="'(' + panelSeverity[pCode] + ')'"></span>
+                                        </template>
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    {{-- Damage Photos Summary --}}
+                    <template x-if="damagePhotoPreviews.length > 0">
+                        <div class="flex justify-between items-center border-t border-gray-100 dark:border-white/5 pt-2">
+                            <span class="text-gray-600 dark:text-gray-400 text-sm">Damage Photos</span>
+                            <div class="flex items-center gap-1.5">
+                                <template x-for="(p, idx) in damagePhotoPreviews" :key="idx">
+                                    <img :src="p.url" :alt="p.name" class="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-white/10" />
+                                </template>
+                                <span class="text-xs text-gray-500 ml-1" x-text="'(' + damagePhotoPreviews.length + ' photos)'"></span>
+                            </div>
+                        </div>
+                    </template>
+
                     <div class="flex justify-between border-t border-gray-200 dark:border-white/10 pt-3">
                         <span class="text-gray-600 dark:text-gray-400">Total Estimate</span>
-                        <span class="font-bold text-gray-900 dark:text-white" x-text="getEstimatedCost()?.display"></span>
+                        <div class="text-right">
+                            <span class="font-bold text-gray-900 dark:text-white" x-text="getEstimatedCost()?.display"></span>
+                            <p class="text-[11px] text-gray-500">Estimates are shop rate ranges; final price confirmed after inspection.</p>
+                        </div>
                     </div>
+
+                    {{-- Breakdown if available --}}
+                    <template x-if="serverEstimate && serverEstimate.breakdown && serverEstimate.breakdown.length > 0">
+                        <div class="p-3 rounded-lg bg-gray-50 dark:bg-white/[0.02] border border-gray-200/60 dark:border-white/5 space-y-1">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Quotation Breakdown</span>
+                            <template x-for="(item, idx) in serverEstimate.breakdown" :key="idx">
+                                <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                                    <span x-text="item.title"></span>
+                                    <span class="font-mono" x-text="'₱' + Number(item.min).toLocaleString() + ' - ₱' + Number(item.max).toLocaleString()"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
                     <div class="flex justify-between items-center bg-[#E63946]/10 p-4 rounded-xl">
                         <span class="font-extrabold text-gray-900 dark:text-white">Reservation Fee (Required)</span>
                         <span class="text-2xl font-black text-[#E63946]" x-text="reservationFee"></span>

@@ -96,15 +96,15 @@
     {{-- Key Metrics Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-white">
         <x-card class="bg-gradient-to-br from-[#E63946] to-[#D62839] border-transparent shadow-lg p-6">
-            <p class="text-white/80 text-sm mb-1">Finalized Billing Revenue</p>
-            <p class="text-3xl font-bold">₱{{ number_format($totalFinalizedRevenue, 2) }}</p>
-            <p class="text-xs text-white/70 mt-1">Locked customer billing total</p>
+            <p class="text-white/80 text-sm mb-1">Total Revenue Collected</p>
+            <p class="text-3xl font-bold">₱{{ number_format($totalRevenue, 2) }}</p>
+            <p class="text-xs text-white/70 mt-1">Includes ₱{{ number_format($reservationFeesCollected, 2) }} in reservation fees</p>
         </x-card>
 
         <x-card class="bg-gradient-to-br from-[#457B9D] to-[#5A8FB0] border-transparent shadow-lg p-6">
-            <p class="text-white/80 text-sm mb-1">Total Payments Collected</p>
-            <p class="text-3xl font-bold">₱{{ number_format($totalRevenue, 2) }}</p>
-            <p class="text-xs text-white/70 mt-1">Reservation fees: ₱{{ number_format($reservationFeesCollected, 2) }}</p>
+            <p class="text-white/80 text-sm mb-1">Finalized Billing Invoices</p>
+            <p class="text-3xl font-bold">₱{{ number_format($totalFinalizedRevenue, 2) }}</p>
+            <p class="text-xs text-white/70 mt-1">Locked customer billing total</p>
         </x-card>
 
         <x-card class="bg-gradient-to-br from-amber-500 to-amber-600 border-transparent shadow-lg p-6">

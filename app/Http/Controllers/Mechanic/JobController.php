@@ -15,7 +15,17 @@ class JobController extends Controller
     public function index()
     {
         $jobs = JobOrder::forMechanic(auth()->id())
-            ->with(['booking.services', 'booking.vehicle', 'booking.user', 'stageProgress', 'serviceUpdates.photos', 'serviceUpdates.user'])
+            ->with([
+                'booking.services',
+                'booking.vehicle',
+                'booking.user',
+                'booking.paintPanels.panel',
+                'booking.paintScope',
+                'booking.damagePhotos',
+                'stageProgress',
+                'serviceUpdates.photos',
+                'serviceUpdates.user',
+            ])
             ->get()
             ->map(function ($job) {
                 $booking = $job->booking;
@@ -63,6 +73,23 @@ class JobController extends Controller
                     'priority' => ucfirst($job->priority),
                     'currentStageId' => $currentStageId,
                     'serviceUpdates' => $serviceUpdates,
+                    'notes' => $booking?->notes ?? '',
+                    'paintScope' => $booking?->paintScope ? [
+                        'scope_mode' => $booking->paintScope->scope_mode,
+                        'color_code' => $booking->paintScope->color_code,
+                        'finish_type' => $booking->paintScope->finish_type,
+                        'notes' => $booking->paintScope->notes,
+                    ] : null,
+                    'paintPanels' => $booking?->paintPanels->map(fn ($p) => [
+                        'name' => $p->panel?->name ?? ucwords(str_replace('_', ' ', $p->panel_code)),
+                        'severity' => $p->severity,
+                        'severity_label' => $p->severity_label ?? ucfirst(str_replace('_', ' ', $p->severity ?? '')),
+                    ])->values()->all() ?? [],
+                    'damagePhotos' => $booking?->damagePhotos->map(fn ($d) => [
+                        'id' => $d->id,
+                        'url' => $d->url,
+                        'original_name' => $d->original_name,
+                    ])->values()->all() ?? [],
                 ];
             });
 

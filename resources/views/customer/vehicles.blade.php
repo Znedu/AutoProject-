@@ -118,7 +118,13 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="flex gap-2 flex-shrink-0">
+                    <div class="flex flex-wrap sm:flex-nowrap gap-2 flex-shrink-0">
+                        <a :href="'{{ route('customer.service-history') }}?vehicle_id=' + vehicle.id">
+                            <x-button variant="outline" size="sm" class="text-[#457B9D] border-[#457B9D]/30 hover:bg-[#457B9D]/10">
+                                <x-icon name="history" class="w-4 h-4 mr-1.5" />
+                                Service History
+                            </x-button>
+                        </a>
                         <x-button variant="secondary" size="sm" @click="handleEdit(vehicle)">Edit</x-button>
                         <x-button
                             variant="outline"

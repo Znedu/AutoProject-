@@ -128,7 +128,7 @@ class BookingFinalPaymentTest extends TestCase
             ->post(route('admin.bookings.billing.payments.store', $this->booking), [
                 'type' => 'final_payment',
                 'method' => 'cash',
-                'amount' => 5000.00,
+                'amount' => 4800.00,
                 'notes' => 'Received full final cash payment in person.',
             ]);
 
@@ -138,11 +138,11 @@ class BookingFinalPaymentTest extends TestCase
         $payment = $this->booking->payments()->where('type', 'final_payment')->first();
         $this->assertNotNull($payment);
         $this->assertEquals(Payment::STATUS_VERIFIED, $payment->status);
-        $this->assertEquals(5000.00, (float) $payment->amount);
+        $this->assertEquals(4800.00, (float) $payment->amount);
         $this->assertEquals($this->admin->id, $payment->verified_by);
 
         $this->finalQuotation->refresh();
-        $this->assertEquals(5200.00, (float) $this->finalQuotation->amount_paid_snapshot);
+        $this->assertEquals(5000.00, (float) $this->finalQuotation->amount_paid_snapshot);
         $this->assertEquals(0.00, (float) $this->finalQuotation->balance_due_snapshot);
     }
 

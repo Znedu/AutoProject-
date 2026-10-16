@@ -58,15 +58,37 @@ class BookingController extends Controller
             }
         }
 
+        $paintPanels = \App\Models\PaintPanel::active()->ordered()->get();
+
         return view('customer.book-service', [
             'user' => $user,
             'serviceCategories' => $serviceCategories,
             'services' => $services,
+            'paintPanels' => $paintPanels,
             'vehicles' => $user->vehicles()->latest()->get(),
             'preselectedServiceId' => $selectedServiceId ? (int) $selectedServiceId : null,
             'preselectedBrandName' => $selectedBrandName,
             'selectedProduct' => $selectedProduct,
         ]);
+    }
+
+    public function paintEstimate(Request $request, \App\Services\Booking\QuotationBuilderService $quotationBuilder): \Illuminate\Http\JsonResponse
+    {
+        $serviceIds = (array) $request->input('service_ids', []);
+        $services = Service::query()->whereIn('id', $serviceIds)->get();
+
+        $brands = (array) $request->input('brands', []);
+        $panels = array_values(array_filter((array) $request->input('panels', [])));
+        $panelSeverities = (array) $request->input('panel_severity', []);
+
+        $estimate = $quotationBuilder->calculateEstimateData(
+            $services,
+            $brands,
+            $panels,
+            $panelSeverities
+        );
+
+        return response()->json($estimate);
     }
 
     public function index(Request $request): View
@@ -80,6 +102,11 @@ class BookingController extends Controller
                 'bookingServices.service',
                 'quotations' => fn ($query) => $query->latestVersion()->limit(1),
                 'payments' => fn ($query) => $query->reservationFees()->latest()->limit(1),
+                'payments.proofs',
+                'paintScope',
+                'paintPanels.panel',
+                'attachments',
+                'damagePhotos',
             ])
             ->when($status && $status !== 'all', fn ($query) => $query->status($status))
             ->latest()

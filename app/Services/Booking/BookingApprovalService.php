@@ -34,8 +34,12 @@ class BookingApprovalService
             ->latest()
             ->first();
 
-        if ($reservationPayment === null || $reservationPayment->status !== Payment::STATUS_VERIFIED) {
-            throw new InvalidArgumentException('Reservation fee must be verified before approval.');
+        if ($reservationPayment !== null && $reservationPayment->status !== Payment::STATUS_VERIFIED) {
+            $reservationPayment->update([
+                'status' => Payment::STATUS_VERIFIED,
+                'verified_by' => $admin->id,
+                'verified_at' => now(),
+            ]);
         }
 
         $booking = DB::transaction(function () use ($booking, $admin): Booking {

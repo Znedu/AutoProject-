@@ -103,6 +103,28 @@ class Booking extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function paintScope(): HasOne
+    {
+        return $this->hasOne(BookingPaintScope::class);
+    }
+
+    public function paintPanels(): HasMany
+    {
+        return $this->hasMany(BookingPaintPanel::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(BookingAttachment::class);
+    }
+
+    public function damagePhotos(): HasMany
+    {
+        return $this->hasMany(BookingAttachment::class)
+            ->where('type', BookingAttachment::TYPE_DAMAGE_PHOTO)
+            ->orderBy('sort_order');
+    }
+
     public function finalQuotation(): HasOne
     {
         return $this->hasOne(Quotation::class)

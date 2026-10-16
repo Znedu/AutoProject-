@@ -18,6 +18,28 @@ class Service extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
+    public const CODE_PAINT_TOUCH_UP = 'paint-001';
+    public const CODE_CUSTOM_PAINT = 'paint-002';
+    public const CODE_BODY_REPAIR = 'body-001';
+    public const CODE_FULL_CUSTOM_BUILD = 'pkg-001';
+    public const CODE_PERF_EXHAUST = 'perf-exhaust';
+    public const CODE_PERF_INTAKE = 'perf-intake';
+    public const CODE_PERF_INTERCOOLER = 'perf-intercooler';
+    public const CODE_MAINT_GENERAL = 'maint-general';
+
+    public const PAINT_SERVICE_CODES = [
+        self::CODE_PAINT_TOUCH_UP,
+        self::CODE_CUSTOM_PAINT,
+        self::CODE_BODY_REPAIR,
+        self::CODE_FULL_CUSTOM_BUILD,
+    ];
+
+    public const PRIMARY_PAINT_CODES = [
+        self::CODE_PAINT_TOUCH_UP,
+        self::CODE_CUSTOM_PAINT,
+        self::CODE_FULL_CUSTOM_BUILD,
+    ];
+
     /**
      * @var list<string>
      */
@@ -76,6 +98,41 @@ class Service extends Model
     public function scopeInCategory(Builder $query, int $categoryId): Builder
     {
         return $query->where('service_category_id', $categoryId);
+    }
+
+    public function isPaintRelated(): bool
+    {
+        return in_array($this->code, self::PAINT_SERVICE_CODES, true);
+    }
+
+    public function isPrimaryPaint(): bool
+    {
+        return in_array($this->code, self::PRIMARY_PAINT_CODES, true);
+    }
+
+    public function isPaintTouchUp(): bool
+    {
+        return $this->code === self::CODE_PAINT_TOUCH_UP;
+    }
+
+    public function isCustomPaint(): bool
+    {
+        return $this->code === self::CODE_CUSTOM_PAINT;
+    }
+
+    public function isBodyRepair(): bool
+    {
+        return $this->code === self::CODE_BODY_REPAIR;
+    }
+
+    public function isFullCustomBuild(): bool
+    {
+        return $this->code === self::CODE_FULL_CUSTOM_BUILD;
+    }
+
+    public function requiresDamagePhotos(): bool
+    {
+        return $this->isPaintRelated();
     }
 
     protected function casts(): array

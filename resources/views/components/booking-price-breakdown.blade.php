@@ -294,30 +294,32 @@
                                 <span class="font-mono font-semibold text-gray-900 dark:text-white">₱{{ number_format($summary->finalTotal, 2) }}</span>
                             </div>
 
-                            @if ($summary->reservationFeePaid > 0 && $summary->feesSubtotal > 0)
+                            @if ($summary->reservationFeePaid > 0 && $summary->creditsReservationFee)
                                 <div class="flex justify-between text-xs text-blue-600 dark:text-blue-400">
-                                    <span>Prepaid Fee Credited (GCash)</span>
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <x-icon name="check-circle" class="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                        <span>Prepaid Reservation Fee Credited</span>
+                                    </span>
                                     <span class="font-mono font-semibold">-₱{{ number_format($summary->reservationFeePaid, 2) }}</span>
                                 </div>
-                            @elseif ($summary->reservationFeePaid > 0 && $summary->feesSubtotal <= 0)
+                            @elseif ($summary->reservationFeePaid > 0 && ! $summary->creditsReservationFee)
                                 <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 italic">
-                                    <span>₱{{ number_format($summary->reservationFeePaid, 2) }} booking fee already collected</span>
-                                    <span class="font-mono text-green-600 dark:text-green-400 font-semibold not-italic">Settled</span>
+                                    <span>₱{{ number_format($summary->reservationFeePaid, 2) }} booking fee collected (non-creditable)</span>
+                                    <span class="font-mono text-green-600 dark:text-green-400 font-semibold not-italic">Paid</span>
                                 </div>
                             @endif
 
                             @if ($summary->depositsPaid + $summary->finalPaymentsPaid > 0)
                                 <div class="flex justify-between text-xs text-green-600 dark:text-green-400">
-                                    <span>Additional Payments Credited</span>
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <x-icon name="check-circle" class="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                        <span>Additional Payments Credited</span>
+                                    </span>
                                     <span class="font-mono font-semibold">-₱{{ number_format($summary->depositsPaid + $summary->finalPaymentsPaid, 2) }}</span>
                                 </div>
                             @endif
 
-                            @php
-                                $showTotalCredited = ($summary->depositsPaid + $summary->finalPaymentsPaid > 0)
-                                    || ($summary->reservationFeePaid > 0 && $summary->feesSubtotal > 0);
-                            @endphp
-                            @if ($showTotalCredited)
+                            @if ($summary->totalPaid > 0)
                                 <div class="flex justify-between text-sm text-green-600 font-medium pt-1 border-t border-dashed border-gray-200 dark:border-white/10">
                                     <span>Total Payments Credited</span>
                                     <span class="font-mono font-bold">₱{{ number_format($summary->totalPaid, 2) }}</span>

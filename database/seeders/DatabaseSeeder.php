@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             BusinessSettingsSeeder::class,
             ProductSeeder::class,
+            PaintPanelSeeder::class,
         ]);
 
         $roles = Role::query()->pluck('id', 'slug');

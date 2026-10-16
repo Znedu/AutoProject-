@@ -126,6 +126,10 @@ class BookingCreatorService
             ]);
 
             $brandPreferences = $data['brands'] ?? [];
+            $panels = array_values(array_filter((array) ($data['panels'] ?? [])));
+            $panelSeverities = (array) ($data['panel_severity'] ?? []);
+            $panelNotes = (array) ($data['panel_notes'] ?? []);
+            $damagePhotos = $data['damage_photos'] ?? [];
 
             foreach ($services as $service) {
                 $booking->bookingServices()->create([
@@ -136,7 +140,54 @@ class BookingCreatorService
                 ]);
             }
 
-            $this->quotationBuilder->createInitialEstimate($booking, $services, $brandPreferences);
+            // Create initial quotation estimate including paint details and body repair rules
+            $this->quotationBuilder->createInitialEstimate(
+                $booking,
+                $services,
+                $brandPreferences,
+                $panels,
+                $panelSeverities
+            );
+
+            // Persist paint scope if paint service was selected or explicit scope provided
+            $hasPaintService = $services->contains(fn ($s) => $s->isPaintRelated());
+            if ($hasPaintService || ! empty($data['paint_scope'])) {
+                $scopeMode = $data['paint_scope'] ?? $this->resolveDefaultScopeMode($services);
+                $booking->paintScope()->create([
+                    'scope_mode' => $scopeMode,
+                    'vehicle_size_class' => $data['vehicle_size_class'] ?? null,
+                    'metadata' => [
+                        'panel_count' => count($panels),
+                    ],
+                ]);
+            }
+
+            // Persist individual paint panels and severities
+            foreach ($panels as $panelCode) {
+                $booking->paintPanels()->create([
+                    'panel_code' => $panelCode,
+                    'severity' => $panelSeverities[$panelCode] ?? null,
+                    'note' => $panelNotes[$panelCode] ?? null,
+                ]);
+            }
+
+            // Persist customer damage photos
+            if (is_array($damagePhotos)) {
+                foreach ($damagePhotos as $idx => $photo) {
+                    if ($photo instanceof UploadedFile) {
+                        $path = $photo->store('booking_damage_photos', 'public');
+                        $booking->attachments()->create([
+                            'type' => \App\Models\BookingAttachment::TYPE_DAMAGE_PHOTO,
+                            'disk' => 'public',
+                            'file_path' => $path,
+                            'original_name' => $photo->getClientOriginalName(),
+                            'mime_type' => $photo->getClientMimeType(),
+                            'size_bytes' => $photo->getSize(),
+                            'sort_order' => $idx + 1,
+                        ]);
+                    }
+                }
+            }
 
             $reservationFee = (float) BusinessSetting::getValue('reservation_fee', 200.00);
 
@@ -172,6 +223,9 @@ class BookingCreatorService
                 'bookingServices.service',
                 'quotations.lineItems',
                 'payments',
+                'paintScope',
+                'paintPanels.panel',
+                'attachments',
             ]);
         });
 
@@ -202,5 +256,23 @@ class BookingCreatorService
                 'year' => $data['vehicle_year'],
             ],
         );
+    }
+
+    protected function resolveDefaultScopeMode(\Illuminate\Support\Collection $services): string
+    {
+        if ($services->contains(fn (Service $s) => $s->isPaintTouchUp())) {
+            return \App\Models\BookingPaintScope::MODE_TOUCH_UP;
+        }
+        if ($services->contains(fn (Service $s) => $s->isCustomPaint())) {
+            return \App\Models\BookingPaintScope::MODE_CUSTOM_PAINT;
+        }
+        if ($services->contains(fn (Service $s) => $s->isFullCustomBuild())) {
+            return \App\Models\BookingPaintScope::MODE_FULL_BUILD;
+        }
+        if ($services->contains(fn (Service $s) => $s->isBodyRepair())) {
+            return \App\Models\BookingPaintScope::MODE_BODY_REPAIR;
+        }
+
+        return \App\Models\BookingPaintScope::MODE_CUSTOM_PAINT;
     }
 }

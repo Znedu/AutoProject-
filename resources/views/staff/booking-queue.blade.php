@@ -93,6 +93,62 @@
                             </div>
                         </div>
 
+                        {{-- Paint Scope, Damage Panels & Photos --}}
+                        <template x-if="(booking.paintPanels && booking.paintPanels.length > 0) || (booking.damagePhotos && booking.damagePhotos.length > 0) || booking.paintScope">
+                            <div class="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02] space-y-3">
+                                <div class="flex items-center justify-between flex-wrap gap-2">
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <x-icon name="tool" class="w-4 h-4 text-[#E63946]" />
+                                        <span>Paint Scope & Damage Inspection</span>
+                                    </h4>
+                                    <template x-if="booking.paintScope">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E63946]/10 text-[#E63946] border border-[#E63946]/20 capitalize" x-text="booking.paintScope.scope_mode.replace('_', ' ')">
+                                        </span>
+                                    </template>
+                                </div>
+
+                                {{-- Panel checklist with severity --}}
+                                <template x-if="booking.paintPanels && booking.paintPanels.length > 0">
+                                    <div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium">Panels to Inspect (<span x-text="booking.paintPanels.length"></span>):</p>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <template x-for="panel in booking.paintPanels" :key="panel.name">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-white/10 shadow-sm">
+                                                    <span class="font-semibold" x-text="panel.name"></span>
+                                                    <span
+                                                        class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider"
+                                                        :class="{
+                                                            'bg-red-500/10 text-red-600 border border-red-500/20': panel.severity === 'dent' || panel.severity === 'body_work' || panel.severity === 'replace_panel',
+                                                            'bg-amber-500/10 text-amber-600 border border-amber-500/20': panel.severity === 'light_scratch',
+                                                            'bg-blue-500/10 text-blue-600 border border-blue-500/20': panel.severity === 'paint_only' || !panel.severity
+                                                        }"
+                                                        x-text="panel.severity_label"
+                                                    ></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                {{-- Damage Photos --}}
+                                <template x-if="booking.damagePhotos && booking.damagePhotos.length > 0">
+                                    <div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium">Customer Damage Photos (<span x-text="booking.damagePhotos.length"></span>):</p>
+                                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                                            <template x-for="photo in booking.damagePhotos" :key="photo.id">
+                                                <a :href="photo.url" target="_blank" class="block relative group overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 bg-black aspect-square shadow-sm hover:shadow-md transition-all">
+                                                    <img :src="photo.url" :alt="photo.original_name" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <span class="text-white text-[10px] font-bold uppercase tracking-wider bg-black/60 px-2 py-0.5 rounded">View</span>
+                                                    </div>
+                                                </a>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
                         {{-- Reservation Fee (Read Only info) --}}
                         <div 
                             class="p-4 rounded-xl border transition-colors duration-300 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10"

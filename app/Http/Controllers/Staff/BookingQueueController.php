@@ -14,7 +14,15 @@ class BookingQueueController extends Controller
 {
     public function index()
     {
-        $bookings = Booking::with(['user', 'vehicle', 'services', 'payments'])
+        $bookings = Booking::with([
+            'user',
+            'vehicle',
+            'services',
+            'payments',
+            'paintPanels.panel',
+            'paintScope',
+            'damagePhotos',
+        ])
             ->latest()
             ->get()
             ->map(function ($booking) {
@@ -45,6 +53,22 @@ class BookingQueueController extends Controller
                     'estimatedCost' => $estimatedCost,
                     'notes' => $booking->notes ?? '',
                     'isWalkIn' => (bool) $booking->is_walk_in,
+                    'paintScope' => $booking->paintScope ? [
+                        'scope_mode' => $booking->paintScope->scope_mode,
+                        'color_code' => $booking->paintScope->color_code,
+                        'finish_type' => $booking->paintScope->finish_type,
+                        'notes' => $booking->paintScope->notes,
+                    ] : null,
+                    'paintPanels' => $booking->paintPanels->map(fn ($p) => [
+                        'name' => $p->panel?->name ?? ucwords(str_replace('_', ' ', $p->panel_code)),
+                        'severity' => $p->severity,
+                        'severity_label' => $p->severity_label ?? ucfirst(str_replace('_', ' ', $p->severity ?? '')),
+                    ])->values()->all(),
+                    'damagePhotos' => $booking->damagePhotos->map(fn ($d) => [
+                        'id' => $d->id,
+                        'url' => $d->url,
+                        'original_name' => $d->original_name,
+                    ])->values()->all(),
                     'reservationFee' => [
                         'amount' => $payment ? (float) $payment->amount : $resFeeSetting,
                         'isVerified' => $payment ? $payment->status === Payment::STATUS_VERIFIED : false,
@@ -79,6 +103,21 @@ class BookingQueueController extends Controller
                 'scheduled_date' => $request->input('scheduled_date', $booking->preferred_date),
                 'scheduled_time' => $request->input('scheduled_time', $booking->preferred_time),
             ]);
+
+            // Auto-verify submitted reservation fee so it reflects as recognized revenue
+            $reservationPayment = $booking->payments()
+                ->reservationFees()
+                ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_SUBMITTED])
+                ->latest()
+                ->first();
+
+            if ($reservationPayment) {
+                $reservationPayment->update([
+                    'status' => Payment::STATUS_VERIFIED,
+                    'verified_by' => auth()->id(),
+                    'verified_at' => now(),
+                ]);
+            }
 
             $dispatcher = app(NotificationDispatcherService::class);
             if ($booking->user) {

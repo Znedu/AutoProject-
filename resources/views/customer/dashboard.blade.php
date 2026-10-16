@@ -24,11 +24,13 @@
                 <x-icon name="wrench" class="w-6 h-6" />
             </x-slot>
         </x-stat-card>
-        <x-stat-card title="Completed Services" value="{{ $completedCount }}" color="green">
-            <x-slot name="icon">
-                <x-icon name="check-square" class="w-6 h-6" />
-            </x-slot>
-        </x-stat-card>
+        <a href="{{ route('customer.service-history') }}" class="block transition hover:scale-[1.02]">
+            <x-stat-card title="Completed Services" value="{{ $completedCount }}" color="green">
+                <x-slot name="icon">
+                    <x-icon name="check-square" class="w-6 h-6" />
+                </x-slot>
+            </x-stat-card>
+        </a>
         <x-stat-card title="Support Messages" value="{{ $supportCount }}" color="charcoal">
             <x-slot name="icon">
                 <x-icon name="message-square" class="w-6 h-6" />

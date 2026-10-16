@@ -24,20 +24,40 @@ class ServiceCatalogSeeder extends Seeder
                 'sort_order' => 1,
                 'services' => [
                     [
-                        'code' => 'ext-001',
-                        'name' => 'Full Body Paint / Repaint',
-                        'description' => 'Complete vehicle paint job with premium quality automotive paint',
-                        'min' => 25000,
-                        'max' => 100000,
-                        'duration' => '4-6 days',
-                        'brands' => [
-                            ['name' => 'Anzhal', 'price' => 28000, 'short_description' => 'Standard urethane finish, smooth gloss & budget friendly'],
-                            ['name' => 'Nippon Paint', 'price' => 35000, 'short_description' => 'High-durability Japanese automotive coating with UV protection'],
-                            ['name' => 'Boysen', 'price' => 30000, 'short_description' => 'Reliable local enamel/polyurethane finish'],
-                            ['name' => 'Davies', 'price' => 32000, 'short_description' => 'Vibrant color retention & anti-scratch coating'],
-                            ['name' => 'Glasurit', 'price' => 55000, 'short_description' => 'Ultra-premium German clearcoat & OEM color match'],
-                            ['name' => 'Sikkens', 'price' => 60000, 'short_description' => 'High-end European refinish system with deep mirror shine'],
-                        ],
+                        'code' => 'paint-001',
+                        'name' => 'Paint touch up',
+                        'description' => 'Targeted paint touch-up on chips, scratches, and minor panel blemishes (max 2 panels)',
+                        'min' => 3000,
+                        'max' => 4000,
+                        'duration' => '1-2 days',
+                        'brands' => [],
+                    ],
+                    [
+                        'code' => 'paint-002',
+                        'name' => 'Custom paint job',
+                        'description' => 'Partial or multi-panel custom paint job with premium finish and UV clearcoat',
+                        'min' => 15000,
+                        'max' => 20000,
+                        'duration' => '3-5 days',
+                        'brands' => [],
+                    ],
+                    [
+                        'code' => 'body-001',
+                        'name' => 'Body repair',
+                        'description' => 'Dent repair, panel realignment, and metal/fiberglass restoration',
+                        'min' => 5000,
+                        'max' => 7000,
+                        'duration' => '2-4 days',
+                        'brands' => [],
+                    ],
+                    [
+                        'code' => 'pkg-001',
+                        'name' => 'Full custom build package',
+                        'description' => 'Comprehensive whole-car custom transformation, styling, and paint finish',
+                        'min' => 35000,
+                        'max' => 45000,
+                        'duration' => '1-2 weeks',
+                        'brands' => [],
                     ],
                     [
                         'code' => 'ext-002',
@@ -80,6 +100,33 @@ class ServiceCatalogSeeder extends Seeder
                 'sort_order' => 2,
                 'services' => [
                     [
+                        'code' => 'perf-exhaust',
+                        'name' => 'Exhaust piping',
+                        'description' => 'Custom exhaust piping design and mandrel-bent fabrication',
+                        'min' => 7000,
+                        'max' => 10000,
+                        'duration' => '1-2 days',
+                        'brands' => [],
+                    ],
+                    [
+                        'code' => 'perf-intake',
+                        'name' => 'Intake piping',
+                        'description' => 'Performance cold-air / short-ram intake piping installation',
+                        'min' => 6000,
+                        'max' => 8000,
+                        'duration' => '1 day',
+                        'brands' => [],
+                    ],
+                    [
+                        'code' => 'perf-intercooler',
+                        'name' => 'Intercooler installation',
+                        'description' => 'Front-mount intercooler and charge pipe installation',
+                        'min' => 12000,
+                        'max' => 15000,
+                        'duration' => '2-3 days',
+                        'brands' => [],
+                    ],
+                    [
                         'code' => 'perf-001',
                         'name' => 'Turbocharger Installation',
                         'description' => 'Complete turbo kit installation with tuning and supporting mods',
@@ -91,33 +138,6 @@ class ServiceCatalogSeeder extends Seeder
                             ['name' => 'Garrett', 'price' => 95000, 'short_description' => 'Garrett GTX series twin-scroll turbocharger with ceramic bearings'],
                             ['name' => 'GReddy', 'price' => 80000, 'short_description' => 'T67/T88 series bolt-on turbo kit with wastegate & manifold'],
                             ['name' => 'BorgWarner', 'price' => 105000, 'short_description' => 'AirWerks EFR series turbocharger with integrated bypass valve'],
-                        ],
-                    ],
-                    [
-                        'code' => 'perf-002',
-                        'name' => 'Intercooler Installation',
-                        'description' => 'Front-mount intercooler installation for improved cooling',
-                        'min' => 15000,
-                        'max' => 50000,
-                        'duration' => '2-3 days',
-                        'brands' => [
-                            ['name' => 'HKS', 'price' => 25000, 'short_description' => 'Bar & plate core for efficient intake air cooling'],
-                            ['name' => 'Garrett', 'price' => 28000, 'short_description' => 'High-density intercooler core for maximum thermal heat dissipation'],
-                            ['name' => 'GReddy', 'price' => 24000, 'short_description' => 'Front-mount aluminum intercooler kit'],
-                            ['name' => 'Mishimoto', 'price' => 22000, 'short_description' => 'Direct-fit performance intercooler with lifetime warranty'],
-                        ],
-                    ],
-                    [
-                        'code' => 'perf-003',
-                        'name' => 'Exhaust Fabrication',
-                        'description' => 'Custom exhaust system design and fabrication with quality materials',
-                        'min' => 15000,
-                        'max' => 50000,
-                        'duration' => '2-3 days',
-                        'brands' => [
-                            ['name' => 'HKS', 'price' => 22000, 'short_description' => 'Hi-Power stainless steel mandrel-bent cat-back exhaust'],
-                            ['name' => 'GReddy', 'price' => 25000, 'short_description' => 'Supreme SP cat-back exhaust system with titanium tips'],
-                            ['name' => 'MagnaFlow', 'price' => 20000, 'short_description' => 'Performance straight-through stainless muffler & tubing'],
                         ],
                     ],
                 ],
@@ -150,6 +170,15 @@ class ServiceCatalogSeeder extends Seeder
                 'color' => '#1F2937',
                 'sort_order' => 4,
                 'services' => [
+                    [
+                        'code' => 'maint-general',
+                        'name' => 'General maintenance',
+                        'description' => 'Comprehensive multi-point vehicle inspection, fluid check, and scheduled maintenance',
+                        'min' => 2000,
+                        'max' => 3000,
+                        'duration' => '1 day',
+                        'brands' => [],
+                    ],
                     [
                         'code' => 'eng-001',
                         'name' => 'Engine Oil Change',
@@ -298,7 +327,7 @@ class ServiceCatalogSeeder extends Seeder
                     ],
                 );
 
-                foreach ($serviceData['brands'] as $brandIndex => $brandItem) {
+                foreach ($serviceData['brands'] ?? [] as $brandIndex => $brandItem) {
                     $brandName = is_array($brandItem) ? $brandItem['name'] : $brandItem;
                     $brandPrice = is_array($brandItem) ? ($brandItem['price'] ?? 0) : 0;
                     $brandDesc = is_array($brandItem) ? ($brandItem['short_description'] ?? null) : null;
@@ -318,6 +347,9 @@ class ServiceCatalogSeeder extends Seeder
                 }
             }
         }
+
+        // Deactivate old legacy full body repaint so it does not appear in customer catalog
+        Service::query()->where('code', 'ext-001')->update(['status' => Service::STATUS_INACTIVE]);
 
         foreach (range(1, 6) as $dayOfWeek) {
             AppointmentSlotConfig::query()->updateOrCreate(
